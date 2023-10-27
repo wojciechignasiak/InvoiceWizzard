@@ -1,0 +1,35 @@
+version: '3'
+
+networks:
+  backend-network:
+    name: backend-network
+    driver: bridge
+
+services:
+######################FastAPI SERVICES - Beginning###########################
+
+  main_api_service:
+    container_name: main_api_service
+    build: ./main_api_service
+    image: ghcr.io/wojciechignasiak/main_api_service:0.0.1
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USERNAME=${POSTGRES_USERNAME}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    ports:
+      - 8081:80
+    expose:
+      - 80
+    networks:
+      - backend-network
+    restart: always
+    volumes:
+      - ./main_api_service:/usr/src/main_api_service/
+
+######################FastAPI SERVICES - End###########################
+
