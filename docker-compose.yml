@@ -5,6 +5,9 @@ networks:
     name: backend-network
     driver: bridge
 
+volumes:
+  postgres-volume:
+
 services:
 ######################FastAPI SERVICES - Beginning###########################
 
@@ -30,6 +33,29 @@ services:
     restart: always
     volumes:
       - ./main_api_service:/usr/src/main_api_service/
+    depends_on:
+      - postgresql
 
 ######################FastAPI SERVICES - End###########################
 
+######################Databases - Beginning###########################
+
+  postgresql:
+    container_name: postgresql
+    image: postgres:16.0-alpine
+    ports:
+      - 5433:5432
+    expose:
+      - 5432
+    networks:
+      - backend-network
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    restart: always
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+      - "/etc/localtime:/etc/localtime:ro"
+
+######################Databases - End###########################
