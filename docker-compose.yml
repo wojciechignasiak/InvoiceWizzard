@@ -35,6 +35,7 @@ services:
       - ./main_api_service:/usr/src/main_api_service/
     depends_on:
       - postgresql
+      - redis
 
 ######################FastAPI SERVICES - End###########################
 
@@ -57,5 +58,17 @@ services:
     volumes:
       - postgres-volume:/var/lib/postgresql/data
       - "/etc/localtime:/etc/localtime:ro"
+
+  redis:
+    container_name: redis
+    image: redis:7.2.2-alpine
+    command: ["redis-server", "--save", "\"\"", "--appendonly", "no", "--requirepass", "${REDIS_PASSWORD}"]
+    ports:
+      - "6379:6379"
+    expose:
+      - 6379
+    networks:
+      - backend-network
+    restart: always
 
 ######################Databases - End###########################

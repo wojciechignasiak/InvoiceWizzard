@@ -1,4 +1,5 @@
 import os
+import redis
 import asyncio
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -27,6 +28,10 @@ POSTGRES_DB = os.environ.get("POSTGRES_DB")
 
 POSTGRES_URL = f"postgresql+asyncpg://{POSTGRES_USERNAME}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
+REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
+REDIS_HOST = os.environ.get("REDIS_HOST")
+REDIS_PORT = os.environ.get("REDIS_PORT")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     ''' Run at startup
@@ -54,6 +59,20 @@ async def lifespan(app: FastAPI):
         except SQLAlchemyError:
             await asyncio.sleep(3)
 
+    while True:
+        try:
+            print("Creating Redis client...")
+            app.state.redis_client: redis.Redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD)
+            print("Testing connection to Redis...")
+            redis_info = app.state.redis_client.ping()
+            if redis_info:
+                print('Connection to Redis status: Connected')
+            else:
+                print('Connection to Redis status: Failed. Retrying...')
+                raise ConnectionError
+            break
+        except ConnectionError:
+            await asyncio.sleep(3)
     yield
     ''' Run on shutdown
         Close the connection
