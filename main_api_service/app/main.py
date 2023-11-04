@@ -9,7 +9,7 @@ from sqlalchemy import text
 from contextlib import asynccontextmanager
 from starlette.middleware.cors import CORSMiddleware
 from starlette import middleware
-
+from app.schema.schema import Base
 
 middleware = [
     middleware.Middleware(
@@ -58,7 +58,8 @@ async def lifespan(app: FastAPI):
             break
         except SQLAlchemyError:
             await asyncio.sleep(3)
-
+    async with app.state.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     while True:
         try:
             print("Creating Redis client...")
