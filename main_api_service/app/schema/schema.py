@@ -2,7 +2,6 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
 from uuid import uuid4
 from sqlalchemy.dialects.postgresql import UUID, VARCHAR, DATE, BOOLEAN, FLOAT, INTEGER, BYTEA
-from datetime import datetime
 from typing import Optional, List
 
 
@@ -21,8 +20,8 @@ class User(Base):
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     salt: Mapped[bytes] = mapped_column(BYTEA, nullable=False)
-    registration_date: Mapped[datetime] = mapped_column(DATE, nullable=False)
-    last_login: Mapped[datetime] = mapped_column(DATE, nullable=False)
+    registration_date: Mapped[str] = mapped_column(DATE, nullable=False)
+    last_login: Mapped[str] = mapped_column(DATE, nullable=False)
     email_notification: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=True)
     push_notification: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=True)
 
@@ -63,14 +62,14 @@ class InvoiceRecived(Base):
     external_business_entity: Mapped["ExternalBusinessEntity"] = relationship(back_populates="invoice_recived")
     invoice_pdf: Mapped[bytes] = mapped_column(BYTEA, nullable=False)
     invoice_number: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    issue_date: Mapped[Optional[datetime]] = mapped_column(DATE, nullable=True)
-    sale_date: Mapped[Optional[datetime]] = mapped_column(DATE, nullable=True)
+    issue_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
+    sale_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
     net_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
     gross_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
     currency: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
     payment_method: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    payment_deadline: Mapped[Optional[datetime]] = mapped_column(DATE, nullable=True)
-    added_date: Mapped[Optional[datetime]] = mapped_column(DATE, nullable=False)
+    payment_deadline: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
+    added_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=False)
     is_settled: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
     is_accepted: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
 
@@ -97,14 +96,14 @@ class InvoiceIssued(Base):
     external_business_entity: Mapped["ExternalBusinessEntity"] = relationship(back_populates="invoice_issued")
     invoice_pdf: Mapped[bytes] = mapped_column(BYTEA, nullable=False)
     invoice_number: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    issue_date: Mapped[Optional[datetime]] = mapped_column(DATE, nullable=True)
-    sale_date: Mapped[Optional[datetime]] = mapped_column(DATE, nullable=True)
+    issue_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
+    sale_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
     net_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
     gross_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
     currency: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
     payment_method: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    payment_deadline: Mapped[Optional[datetime]] = mapped_column(DATE, nullable=True)
-    added_date: Mapped[Optional[datetime]] = mapped_column(DATE, nullable=False)
+    payment_deadline: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
+    added_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=False)
     is_settled: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
     is_accepted: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
     invoice_item: Mapped[List["InvoiceIssuedItem"]] = relationship(back_populates="invoice_issued")
