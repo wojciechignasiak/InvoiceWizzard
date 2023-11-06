@@ -10,7 +10,7 @@ class Base(DeclarativeBase):
 
 class User(Base):
     __tablename__ = 'user'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4)
+    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4())
     email: Mapped[str] = mapped_column(VARCHAR(320), nullable=False)
     password: Mapped[str] = mapped_column(VARCHAR(255), nullable=False)
     first_name: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
@@ -27,7 +27,7 @@ class User(Base):
 
 class UserBusinessEntity(Base):
     __tablename__ = 'user_business_entity'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4)
+    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4())
     user_id: Mapped[str] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
     company_name: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     city: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
@@ -40,7 +40,7 @@ class UserBusinessEntity(Base):
 
 class ExternalBusinessEntity(Base):
     __tablename__= 'external_business_entity'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4)
+    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4())
     user_id: Mapped[str] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
     company_name: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     city: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
@@ -54,7 +54,7 @@ class ExternalBusinessEntity(Base):
 
 class InvoiceRecived(Base):
     __tablename__ = 'invoice_recived'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4)
+    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4())
     user_id: Mapped[str] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
     user_business_entity_id: Mapped[str] = mapped_column(ForeignKey("user_business_entity.id", ondelete="CASCADE"))
     user_business_entity: Mapped["UserBusinessEntity"] = relationship(back_populates="invoice_recived")
@@ -76,7 +76,7 @@ class InvoiceRecived(Base):
 
 class InvoiceRecivedItem(Base):
     __tablename__ = 'invoice_recived_item'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4)
+    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4())
     invoice_id: Mapped[str] = mapped_column(ForeignKey("invoice_recived.id", ondelete="CASCADE"), nullable=False)
     invoice_recived: Mapped["InvoiceRecived"] = relationship(back_populates="invoice_item")
     ordinal_number: Mapped[int] = mapped_column(INTEGER, nullable=False)
@@ -88,7 +88,7 @@ class InvoiceRecivedItem(Base):
 
 class InvoiceIssued(Base):
     __tablename__ = 'invoice_issued'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4)
+    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4())
     user_id: Mapped[str] = mapped_column(ForeignKey("user.id"))
     user_business_entity_id: Mapped[str] = mapped_column(ForeignKey("user_business_entity.id", ondelete="CASCADE"), nullable=False)
     user_business_entity: Mapped["UserBusinessEntity"] = relationship(back_populates="invoice_issued")
@@ -111,7 +111,7 @@ class InvoiceIssued(Base):
 
 class InvoiceIssuedItem(Base):
     __tablename__ = 'invoice_issued_item'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4)
+    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4())
     invoice_id: Mapped[str] = mapped_column(ForeignKey("invoice_issued.id", ondelete="CASCADE"), nullable=False)
     invoice_issued: Mapped["InvoiceIssued"] = relationship(back_populates="invoice_item")
     ordinal_number: Mapped[int] = mapped_column(INTEGER, nullable=False)
