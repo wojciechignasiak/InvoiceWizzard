@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
+from kafka.errors import KafkaTimeoutError, KafkaError
+from app.kafka.initialize_topics.startup_topics import startup_topics
 from contextlib import asynccontextmanager
 from starlette.middleware.cors import CORSMiddleware
 from starlette import middleware
@@ -30,6 +32,10 @@ POSTGRES_URL = f"postgresql+asyncpg://{POSTGRES_USERNAME}:{POSTGRES_PASSWORD}@{P
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
 REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PORT = os.environ.get("REDIS_PORT")
+
+KAFKA_HOST = os.environ.get("KAFKA_HOST")
+KAFKA_PORT = os.environ.get("KAFKA_PORT")
+KAFKA_URL = f"{KAFKA_HOST}:{KAFKA_PORT}"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -57,6 +63,7 @@ async def lifespan(app: FastAPI):
             break
         except SQLAlchemyError:
             await asyncio.sleep(3)
+
     while True:
         try:
             print("Creating Redis client...")
@@ -71,6 +78,18 @@ async def lifespan(app: FastAPI):
             break
         except ConnectionError:
             await asyncio.sleep(3)
+
+    while True:
+        try:
+            print("Initializing Kafka topics...")
+            await startup_topics(KAFKA_URL)
+            print("Kafka topics initialized!")
+            break
+        except KafkaTimeoutError as e:
+            print(f'Kafka Timeout error durning topic initialization: {e}')
+        except KafkaError as e:
+            print(f'Kafka error durning topic initalization: {e}')
+
     yield
     ''' Run on shutdown
         Close the connection
@@ -78,6 +97,8 @@ async def lifespan(app: FastAPI):
     '''
     print("Disposing PostgreSQL engine...")
     await app.state.engine.dispose()
+    print("Stopping Kafka producer...")
+    await app.state.kafka_producer.stop()
 
 
 def create_application() -> FastAPI:

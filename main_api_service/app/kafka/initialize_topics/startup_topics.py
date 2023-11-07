@@ -1,0 +1,24 @@
+from kafka.admin import KafkaAdminClient, NewTopic
+
+async def startup_topics(kafka_url: str):
+    admin_client = KafkaAdminClient(
+            bootstrap_servers=f'{kafka_url}',
+            security_protocol="PLAINTEXT"
+        )
+    try:
+        topics = admin_client.list_topics()
+        existing_topics = topics
+        topic_name_list = [
+            'account_registered'
+        ]
+        topic_list = []
+        for topic_name in topic_name_list:
+            if topic_name not in existing_topics:
+                new_topic: NewTopic = NewTopic(name=topic_name, num_partitions=3, replication_factor=1)
+                topic_list.append(new_topic)
+
+        admin_client.create_topics(new_topics=topic_list, validate_only=False)
+    except Exception as e:
+        print("Error in initialize_topics:", e)
+    finally:
+        admin_client.close()
