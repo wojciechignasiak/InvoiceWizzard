@@ -13,10 +13,14 @@ RUN apk update \
     && apk upgrade
 RUN apk add bash
 
+RUN apk add py3-argon2-cffi py3-six
+RUN apk add gcc musl-dev libffi-dev && \
+    pip install -U  cffi pip setuptools
+
 # install python dependencies
 RUN pip install --upgrade pip
 COPY ./requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # add app
 COPY . .

@@ -11,6 +11,9 @@ from app.kafka.initialize_topics.startup_topics import startup_topics
 from contextlib import asynccontextmanager
 from starlette.middleware.cors import CORSMiddleware
 from starlette import middleware
+from app.routers import (user_router)
+from app.schema.schema import Base
+
 
 middleware = [
     middleware.Middleware(
@@ -64,6 +67,9 @@ async def lifespan(app: FastAPI):
         except SQLAlchemyError:
             await asyncio.sleep(3)
 
+    async with app.state.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     while True:
         try:
             print("Creating Redis client...")
@@ -97,12 +103,10 @@ async def lifespan(app: FastAPI):
     '''
     print("Disposing PostgreSQL engine...")
     await app.state.engine.dispose()
-    print("Stopping Kafka producer...")
-    await app.state.kafka_producer.stop()
-
 
 def create_application() -> FastAPI:
     application = FastAPI(lifespan=lifespan, openapi_url="/openapi.json", docs_url="/docs", middleware=middleware)
+    application.include_router(user_router.router, tags=["cities"])
     return application
 
 app = create_application()

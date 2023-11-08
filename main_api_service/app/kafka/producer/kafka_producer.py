@@ -12,6 +12,7 @@ class KafkaProducer:
 
     async def produce_event(self, topic: str, message: dict):
         try:
+            await self.kafka_producer.start()
             await self.kafka_producer.send(topic, json.dumps(message).encode('utf-8'))
         except Exception as e:
             print("KafkaProducer error: ", e)

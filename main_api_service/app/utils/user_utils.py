@@ -1,19 +1,21 @@
 import os 
-from argon2 import PasswordHasher
+import argon2
 
 class UserUtils:
     
-    async def salt_generator(self) -> bytes:
+    async def salt_generator(self) -> str:
         try:
             salt = os.urandom(16)
-            return salt
+            return str(salt)
         except Exception as e:
-            print(f"Error durning generating salt occured: {e}")
+            print("UserUtils.salt_generator() Error:", e)
+            raise Exception("Error durning salt generation occured.")
 
-    async def hash_password(self, salt: bytes, password: str) -> str:
+    async def hash_password(self, salt: str, password: str) -> str:
         try:
-            ph = PasswordHasher()
+            ph = argon2.PasswordHasher()
             hashed_password = ph.hash(password + salt)
             return hashed_password
         except Exception as e:
-            print(f"Error durning hashing password occured: {e}")
+            print("UserUtils.hash_password() Error:", e)
+            print(f"Error durning hashing password occured")
