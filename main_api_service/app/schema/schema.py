@@ -11,11 +11,11 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = 'user'
     id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False, default=uuid4())
-    email: Mapped[str] = mapped_column(VARCHAR(320), nullable=False)
+    email: Mapped[str] = mapped_column(VARCHAR(320), nullable=False, unique=True)
     password: Mapped[str] = mapped_column(VARCHAR(255), nullable=False)
     first_name: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     last_name: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    phone_number: Mapped[Optional[str]] = mapped_column(VARCHAR(30), nullable=True)
+    phone_number: Mapped[Optional[str]] = mapped_column(VARCHAR(30), nullable=True, unique=True)
     city: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
@@ -48,7 +48,6 @@ class ExternalBusinessEntity(Base):
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
     krs: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
-    invoice_item: Mapped[List["InvoiceIssuedItem"]] = relationship(back_populates="invoice_issued")
     invoice_issued: Mapped[List["InvoiceIssued"]] = relationship(back_populates="external_business_entity")
     invoice_recived: Mapped[List["InvoiceRecived"]] = relationship(back_populates="external_business_entity")
 
@@ -72,6 +71,7 @@ class InvoiceRecived(Base):
     added_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=False)
     is_settled: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
     is_accepted: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
+    invoice_item: Mapped[List["InvoiceRecivedItem"]] = relationship(back_populates="invoice_recived")
 
 
 class InvoiceRecivedItem(Base):

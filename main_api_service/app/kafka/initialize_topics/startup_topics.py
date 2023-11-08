@@ -1,5 +1,5 @@
 from kafka.admin import KafkaAdminClient, NewTopic
-
+from app.models.kafka_topics_enum import KafkaTopicsEnum
 async def startup_topics(kafka_url: str):
     admin_client = KafkaAdminClient(
             bootstrap_servers=f'{kafka_url}',
@@ -9,7 +9,7 @@ async def startup_topics(kafka_url: str):
         topics = admin_client.list_topics()
         existing_topics = topics
         topic_name_list = [
-            'account_registered'
+            KafkaTopicsEnum.account_registered.value
         ]
         topic_list = []
         for topic_name in topic_name_list:

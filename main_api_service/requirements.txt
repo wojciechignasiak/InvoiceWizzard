@@ -11,3 +11,6 @@ pytest-asyncio>=0.21.0,<0.22.0
 httpx>=0.25.0,<0.26.0
 kafka-python>=2.0.2,<2.1.0
 aiokafka>=0.8.1,<0.9.0
+argon2>=0.1.10,<0.1.11
+argon2-cffi>=23.1.0,<23.2.0
+
