@@ -2,7 +2,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert, select
 from app.schema.schema import User
 from app.models.user_model import NewUserTemporaryModel
-from datetime import date
+from datetime import datetime, date
+from uuid import uuid4
+
 
 class UserPostgresRepository:
     def __init__(self, session: AsyncSession) -> None:
@@ -12,16 +14,18 @@ class UserPostgresRepository:
         try:
             stmt = (insert(User).
                     values(
+                        id=uuid4(),
                         email=user.email, 
-                        password=user.password, 
+                        password=user.password,
                         salt=user.salt, 
-                        registration_date=user.registration_date,
-                        last_login=date.today().isoformat()
-                        ))
+                        registration_date=datetime.strptime(user.registration_date, '%Y-%m-%d').date(),
+                        last_login=date.today()
+                        ).returning(User.id))
             result = await self.session.execute(stmt)
-            print(result)
+            await self.session.commit()
+            return result.all()
         except Exception as e:
-            self.session.rollback()
+            await self.session.rollback()
             print(e)
 
     async def find_user_by_email(self, email: str) -> list:

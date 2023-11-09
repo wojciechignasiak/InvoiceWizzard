@@ -39,4 +39,21 @@ class UserRedisRepository:
             print("UserRedisRepository.search_user_by_id_or_email() Error: ", e)
             raise RedisError(f"Error durning getting account from database occured")
         
+    async def delete_user_by_id(self, id: str) -> int|None:
+        try:
+            key: list = self.redis_client.keys(f"user:{id}:*")
+
+            if key:
+                result = self.redis_client.delete(key[0])
+            else:
+                return None
+            
+            if result is not None:
+                return result
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.delete_user_by_id() Error: ", e)
+            raise RedisError(f"Error durning deleting account from database occured")
+        
     

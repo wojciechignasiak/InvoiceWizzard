@@ -1,5 +1,4 @@
 from pydantic import BaseModel, ConfigDict, EmailStr
-from datetime import date
 
 class NewUserTemporaryModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
