@@ -14,6 +14,7 @@ import redis
 import re
 
 router = APIRouter()
+
 @router.post("/user-module/register-account/")
 async def register_account(new_user: RegisterUserModel, 
                         redis_client: redis.Redis = Depends(get_redis_client),
@@ -64,8 +65,44 @@ async def register_account(new_user: RegisterUserModel,
                 topic=KafkaTopicsEnum.account_registered.value,
                 message={"id": redis_key_id, "email": new_user.email}
             )
-            return JSONResponse(content="Account has been registered. Now confirm your email address.")
+            return JSONResponse(content={"detail": "Account has been registered. Now confirm your email address."})
         
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+
+@router.post("/user-module/confirm-account/")
+async def confirm_account(id: str, 
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
+    try:
+        user_redis_repository = UserRedisRepository(redis_client)
+
+        temporary_user_data = await user_redis_repository.search_user_by_id_or_email(id)
+
+        if not temporary_user_data:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="There is no such account to confirm.")
+        
+        temporary_user_data = NewUserTemporaryModel.model_validate_json(temporary_user_data)
+
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+        
+        result: list = await user_postgres_repository.create_new_user(temporary_user_data)
+
+        if not result:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving account to database")
+        
+        await user_redis_repository.delete_user_by_id(id)
+        
+        kafka_producer = KafkaProducer()
+        await kafka_producer.produce_event(
+            topic=KafkaTopicsEnum.account_confirmed.value, 
+            message={"email": temporary_user_data.email})
+        
+        return JSONResponse(content={"detail": "Account has been confirmed. Now you can log in."})
+
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
