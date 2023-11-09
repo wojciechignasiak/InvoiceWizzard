@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, update
 from app.schema.schema import User
 from app.models.user_model import NewUserTemporaryModel
 from datetime import datetime, date
@@ -12,15 +12,18 @@ class UserPostgresRepository:
 
     async def create_new_user(self, user: NewUserTemporaryModel):
         try:
-            stmt = (insert(User).
-                    values(
-                        id=uuid4(),
-                        email=user.email, 
-                        password=user.password,
-                        salt=user.salt, 
-                        registration_date=datetime.strptime(user.registration_date, '%Y-%m-%d').date(),
-                        last_login=date.today()
-                        ).returning(User.id))
+            stmt = (
+                insert(User).
+                values(
+                    id=uuid4(),
+                    email=user.email, 
+                    password=user.password,
+                    salt=user.salt, 
+                    registration_date=datetime.strptime(user.registration_date, '%Y-%m-%d').date(),
+                    last_login=date.today()
+                    ).
+                    returning(User.id)
+                )
             result = await self.session.execute(stmt)
             await self.session.commit()
             return result.all()
@@ -35,3 +38,24 @@ class UserPostgresRepository:
             return result.all()
         except Exception as e:
             print(e)
+
+    async def update_last_login(self, id: str) -> list|None:
+        try:
+            stmt = (
+                update(User).
+                where(User.id == id).
+                values(last_login = date.today()).
+                returning(User.last_login)
+            )
+            result = await self.session.execute(stmt)
+            await self.session.commit()
+
+            if result:
+                return result.all()
+            else:
+                return None
+
+        except Exception as e:
+            await self.session.rollback()
+            print(e)
+
