@@ -31,11 +31,12 @@ class UserPostgresRepository:
             await self.session.rollback()
             print(e)
 
-    async def find_user_by_email(self, email: str) -> list:
+    async def find_user_by_email(self, email: str) -> User:
         try:
             stmt = select(User).where(User.email == email)
-            result = await self.session.execute(stmt)
-            return result.all()
+            result = await self.session.scalar(stmt)
+        
+            return result
         except Exception as e:
             print(e)
 

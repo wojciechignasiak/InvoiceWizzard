@@ -10,6 +10,9 @@ from app.database.postgres.session.get_session import get_session
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
 from datetime import date
 from app.models.kafka_topics_enum import KafkaTopicsEnum
+from app.schema.schema import User
+from app.models.jwt_model import JWTDataModel, JWTPayloadModel
+import datetime
 import redis
 import re
 
@@ -73,7 +76,7 @@ async def register_account(new_user: RegisterUserModel,
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
     
 
-@router.post("/user-module/confirm-account/")
+@router.patch("/user-module/confirm-account/")
 async def confirm_account(id: str, 
                         redis_client: redis.Redis = Depends(get_redis_client),
                         postgres_session: AsyncSession = Depends(get_session)):
@@ -102,6 +105,48 @@ async def confirm_account(id: str,
             message={"email": temporary_user_data.email})
         
         return JSONResponse(content={"detail": "Account has been confirmed. Now you can log in."})
+
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+@router.get("/user-module/log-in/")
+async def log_in(email: str, password: str, remember_me: bool, 
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
+    try:
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+
+        user: User = await user_postgres_repository.find_user_by_email(email)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Wrong email adress or password.")
+        
+        user_utils = UserUtils()
+        verify_password: bool = await user_utils.verify_password(user.salt, password, user.password)
+
+        if verify_password == False:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Wrong email adress or password.")
+        
+        if remember_me == True:
+            jwt_expiration_time = datetime.datetime.utcnow() + datetime.timedelta(hours=24*14)
+        else:
+            jwt_expiration_time = datetime.datetime.utcnow() + datetime.timedelta(hours=12)
+
+        jwt_payload = JWTPayloadModel(id=str(user.id), email=user.email, exp=jwt_expiration_time)
+
+        jwt_data = JWTDataModel(secret=user.salt, payload=jwt_payload)
+
+        jwt_token = await user_utils.jwt_encoder(jwt_data)
+
+        user_redis_repository = UserRedisRepository(redis_client)
+
+        result = await user_redis_repository.save_jwt(jwt_token, jwt_payload)
+
+        if result == False:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving JWT token to database")
+        
+        return JSONResponse(content={"jwt_token": f"{jwt_token}"})
 
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
