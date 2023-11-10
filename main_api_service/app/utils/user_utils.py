@@ -1,5 +1,8 @@
-import os 
+import os
 import argon2
+import jwt
+from app.models.jwt_model import JWTDataModel, JWTPayloadModel
+
 
 class UserUtils:
     
@@ -19,3 +22,15 @@ class UserUtils:
         except Exception as e:
             print("UserUtils.hash_password() Error:", e)
             print(f"Error durning hashing password occured")
+
+    async def jwt_encoder(self, jwt_data: JWTDataModel) -> str:
+        try:
+            jwt_token = jwt.encode(
+                jwt_data.payload.model_dump,
+                jwt_data.secret,
+                jwt_data.algorithm
+            )
+            return jwt_token
+        except Exception as e:
+            print("UserUtils.jwt_encoder() Error:", e)
+            raise Exception("Error durning encoding jwt occured.")
