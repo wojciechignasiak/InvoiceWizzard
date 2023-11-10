@@ -69,5 +69,15 @@ class UserRedisRepository:
         except RedisError as e:
             print("UserRedisRepository.save_jwt() Error: ", e)
             raise RedisError(f"Error durning saving jwt to database occured")
-        
+    
+    async def retrieve_jwt(self, jwt_token: str) -> bytes|None:
+        try:
+            result = self.redis_client.get(f"JWT:{jwt_token}")
+            if result == True:
+                return result
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.save_jwt() Error: ", e)
+            raise RedisError(f"Error durning saving jwt to database occured")
     
