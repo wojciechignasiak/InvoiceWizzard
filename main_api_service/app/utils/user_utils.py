@@ -1,7 +1,7 @@
 import os
 import argon2
 import jwt
-from app.models.jwt_model import JWTDataModel, JWTPayloadModel
+from app.models.jwt_model import JWTDataModel
 
 
 class UserUtils:
@@ -21,7 +21,7 @@ class UserUtils:
             return hashed_password
         except Exception as e:
             print("UserUtils.hash_password() Error:", e)
-            print(f"Error durning hashing password occured")
+            raise Exception("Error durning hashing password occured.")
     
     async def verify_password(self, salt: str, password: str, hash: str) -> bool:
         try:
@@ -30,7 +30,7 @@ class UserUtils:
             return is_the_same
         except Exception as e:
             print("UserUtils.verify_password() Error:", e)
-            print(f"Error durning verifying password.")
+            raise Exception("Error durning verifying password.")
 
     async def jwt_encoder(self, jwt_data: JWTDataModel) -> str:
         try:
