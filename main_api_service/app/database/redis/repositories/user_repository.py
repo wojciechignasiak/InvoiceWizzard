@@ -1,6 +1,8 @@
 from redis import Redis
 from app.models.user_model import NewUserTemporaryModel
+from app.models.jwt_model import JWTPayloadModel
 from redis.exceptions import RedisError
+import datetime
 from uuid import uuid4
 
 class UserRedisRepository:
@@ -56,4 +58,27 @@ class UserRedisRepository:
             print("UserRedisRepository.delete_user_by_id() Error: ", e)
             raise RedisError(f"Error durning deleting account from database occured")
         
+    async def save_jwt(self, jwt_token: str, jwt_payload: JWTPayloadModel) -> bool:
+        try:
+            exp_time = jwt_payload.exp - datetime.datetime.utcnow()
+            result = self.redis_client.setex(f"JWT:{jwt_token}:{jwt_payload.email}", exp_time, jwt_payload.model_dump_json())
+            return result
+        except RedisError as e:
+            print("UserRedisRepository.save_jwt() Error: ", e)
+            raise RedisError(f"Error durning saving jwt to database occured")
+    
+    async def retrieve_jwt(self, jwt_token: str) -> bytes|None:
+        try:
+            key: list = self.redis_client.keys(f"JWT:{jwt_token}:*")
+            if key:
+                result = self.redis_client.get(key[0])
+            else:
+                return None
+            if result == True:
+                return result
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.save_jwt() Error: ", e)
+            raise RedisError(f"Error durning saving jwt to database occured")
     
