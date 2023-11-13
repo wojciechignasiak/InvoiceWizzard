@@ -40,6 +40,15 @@ class UserPostgresRepository:
         except Exception as e:
             print(e)
 
+    async def get_user_by_id(self, id: str) -> User:
+        try:
+            stmt = select(User).where(User.id == id)
+            result = await self.session.scalar(stmt)
+        
+            return result
+        except Exception as e:
+            print(e)
+
     async def update_last_login(self, id: str) -> list|None:
         try:
             stmt = (

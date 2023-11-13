@@ -188,8 +188,10 @@ async def update_personal_info(user_personal_info: UserPersonalInformation,
 @router.patch("/user-module/change-email/")
 async def change_email(new_email: UpdateUserEmail,
                         token = Depends(http_bearer), 
-                        redis_client: redis.Redis = Depends(get_redis_client)):
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
     try:
+        
         user_redis_repository = UserRedisRepository(redis_client)
         
         jwt_payload = await user_redis_repository.retrieve_jwt(token.credentials)
@@ -204,12 +206,66 @@ async def change_email(new_email: UpdateUserEmail,
         if new_email.new_email != new_email.new_repeated_email:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adresses don't match.")
 
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+
+        result = user_postgres_repository.find_user_by_email(new_email.new_email)
+        if result:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email address arleady in use.")
+        
         result = await user_redis_repository.save_new_email(jwt_payload.id, new_email.new_email)
 
         if result == None:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new email to database.")
 
         return JSONResponse(content={"message": "New email has been saved. Email message with confirmation link has been send to old email address."})
+
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+
+@router.patch("/user-module/change-password/")
+async def change_password(new_password: UpdateUserPassword,
+                        token = Depends(http_bearer), 
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
+    try:
+        user_redis_repository = UserRedisRepository(redis_client)
+        
+        jwt_payload = await user_redis_repository.retrieve_jwt(token.credentials)
+        
+        if jwt_payload == None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized access")
+        
+        jwt_payload = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+
+        user: User = await user_postgres_repository.get_user_by_id(jwt_payload.id)
+
+        user_utils = UserUtils()
+
+        password_match = await user_utils.verify_password(user.salt, new_password.current_password, user.password)
+
+        if password_match == False:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Wrong current password.")
+        if new_password.new_password != new_password.new_repeated_password:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided new passwords don't match")
+        if len(new_password.new_password) < 8:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided new password is too short")
+        if not re.search(r'\d', new_password.new_password):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password needs to contatain at least 1 digit")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_password.new_password):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password needs to contatain at least 1 special character")
+        
+        hashed_new_password = await user_utils.hash_password(user.salt, new_password.new_password)
+        result = await user_redis_repository.save_new_password(jwt_payload.id, hashed_new_password)
+
+        if result == None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new password to database.")
+
+        return JSONResponse(content={"message": "New password has been saved. Email message with confirmation link has been send to email address."})
 
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
