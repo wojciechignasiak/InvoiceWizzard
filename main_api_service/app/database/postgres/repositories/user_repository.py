@@ -102,4 +102,23 @@ class UserPostgresRepository:
             await self.session.rollback()
             print(e)
 
+    async def update_password(self, user_id: str, new_password: str) -> list|None:
+        try:
+            stmt = (
+                update(User).
+                where(User.id == user_id).
+                values(email = new_password).
+                returning(User.id)
+            )
+            result = await self.session.execute(stmt)
+            await self.session.commit()
+            
+            if result:
+                return result.all()
+            else:
+                return None
+        except Exception as e:
+            await self.session.rollback()
+            print(e)
+
 
