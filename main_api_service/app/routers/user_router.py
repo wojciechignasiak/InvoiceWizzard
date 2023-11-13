@@ -4,7 +4,7 @@ from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.kafka.producer.kafka_producer import KafkaProducer
 from app.utils.user_utils import UserUtils
-from app.models.user_model import RegisterUserModel, NewUserTemporaryModel, UserPersonalInformation
+from app.models.user_model import RegisterUserModel, NewUserTemporaryModel, UserPersonalInformation, UpdateUserEmail, UpdateUserPassword
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.postgres.session.get_session import get_session
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
@@ -179,6 +179,37 @@ async def update_personal_info(user_personal_info: UserPersonalInformation,
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning updating personal information.")
 
         return JSONResponse(content={"message": "Personal information has been updated."})
+
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+@router.patch("/user-module/change-email/")
+async def change_email(new_email: UpdateUserEmail,
+                        token = Depends(http_bearer), 
+                        redis_client: redis.Redis = Depends(get_redis_client)):
+    try:
+        user_redis_repository = UserRedisRepository(redis_client)
+        
+        jwt_payload = await user_redis_repository.retrieve_jwt(token.credentials)
+        
+        if jwt_payload == None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized access")
+        
+        jwt_payload = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        if new_email.current_email != jwt_payload.email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adress don't match with current email.")
+        if new_email.new_email != new_email.new_repeated_email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adresses don't match.")
+
+        result = await user_redis_repository.save_new_email(jwt_payload.id, new_email.new_email)
+
+        if result == None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new email to database.")
+
+        return JSONResponse(content={"message": "New email has been saved. Email message with confirmation link has been send to old email address."})
 
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

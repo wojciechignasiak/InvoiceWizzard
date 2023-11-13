@@ -4,6 +4,7 @@ from app.models.jwt_model import JWTPayloadModel
 from redis.exceptions import RedisError
 import datetime
 from uuid import uuid4
+import json
 
 class UserRedisRepository:
     def __init__(self, redis_client: Redis):
@@ -86,7 +87,7 @@ class UserRedisRepository:
     async def save_new_email(self, user_id: str, new_email: str) -> str|None:
         try:
             id = uuid4()
-            result = self.redis_client.setex(f"new_email:{id}", 60*60*48, {"id": f"{user_id}", "new_email": f"{new_email}"})
+            result = self.redis_client.setex(f"new_email:{id}", 60*60*48, json.dumps({"id": f"{user_id}", "new_email": f"{new_email}"}))
             if result == True:
                 return str(id)
             else:
@@ -109,7 +110,7 @@ class UserRedisRepository:
     async def save_new_password(self, user_id: str, new_password: str) -> str|None:
         try:
             id = uuid4()
-            result = self.redis_client.setex(f"new_password:{id}", 60*60*48, {"id": f"{user_id}", "new_email": f"{new_password}"})
+            result = self.redis_client.setex(f"new_password:{id}", 60*60*48, json.dumps({"id": f"{user_id}", "new_password": f"{new_password}"}))
             if result == True:
                 return str(id)
             else:
