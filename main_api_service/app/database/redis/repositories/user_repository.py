@@ -106,4 +106,14 @@ class UserRedisRepository:
             print("UserRedisRepository.retrieve_new_email() Error: ", e)
             raise RedisError(f"Error durning retrieving new_email from database occured")
         
-    
+    async def save_new_password(self, user_id: str, new_password: str) -> str|None:
+        try:
+            id = uuid4()
+            result = self.redis_client.setex(f"new_password:{id}", 60*60*48, {"id": f"{user_id}", "new_email": f"{new_password}"})
+            if result == True:
+                return str(id)
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.save_new_password() Error: ", e)
+            raise RedisError(f"Error durning saving new password to database occured")
