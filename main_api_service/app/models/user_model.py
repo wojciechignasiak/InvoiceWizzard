@@ -35,10 +35,11 @@ class RegisterUserModel(BaseModel):
 class UserPersonalInformation(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
-                "email": "email@example.com",
-                "repeated_email": "email@example.com",
-                "password": "passw0rd!",
-                "repeated_password": "passw0rd!"
+                "first_name": "Jan",
+                "last_name": "Kowalski",
+                "phone_number": "123456789",
+                "city": "Warszawa",
+                "street": "Ul. Nowa 6/13"
                 }
             }
         )

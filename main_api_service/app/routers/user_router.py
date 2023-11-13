@@ -156,19 +156,20 @@ async def log_in(email: str, password: str, remember_me: bool,
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
     
 
-@router.get("/user-module/update-personal-info/")
+@router.patch("/user-module/update-personal-info/")
 async def update_personal_info(user_personal_info: UserPersonalInformation,
-                        token: str = Depends(http_bearer), 
+                        token = Depends(http_bearer), 
                         redis_client: redis.Redis = Depends(get_redis_client),
                         postgres_session: AsyncSession = Depends(get_session)):
     try:
         user_redis_repository = UserRedisRepository(redis_client)
         
-        jwt_payload = await user_redis_repository.retrieve_jwt(token)
-        if not jwt_payload:
+        jwt_payload = await user_redis_repository.retrieve_jwt(token.credentials)
+        
+        if jwt_payload == None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized access")
         
-        jwt_payload = JWTPayloadModel.model_validate(jwt_payload)
+        jwt_payload = JWTPayloadModel.model_validate_json(jwt_payload)
 
         user_postgres_repository = UserPostgresRepository(postgres_session)
 
@@ -177,7 +178,7 @@ async def update_personal_info(user_personal_info: UserPersonalInformation,
         if result == None:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning updating personal information.")
 
-        
+        return JSONResponse(content={"message": "Personal information has been updated."})
 
 
     except HTTPException as e:

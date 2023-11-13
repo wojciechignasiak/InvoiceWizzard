@@ -61,7 +61,7 @@ class UserRedisRepository:
     async def save_jwt(self, jwt_token: str, jwt_payload: JWTPayloadModel) -> bool:
         try:
             exp_time = jwt_payload.exp - datetime.datetime.utcnow()
-            result = self.redis_client.setex(f"JWT:{jwt_token}:{jwt_payload.email}", exp_time, jwt_payload.model_dump_json())
+            result = self.redis_client.setex(f"JWT:{jwt_token}:{jwt_payload.id}", exp_time, jwt_payload.model_dump_json())
             return result
         except RedisError as e:
             print("UserRedisRepository.save_jwt() Error: ", e)
@@ -74,7 +74,7 @@ class UserRedisRepository:
                 result = self.redis_client.get(key[0])
             else:
                 return None
-            if result == True:
+            if result:
                 return result
             else:
                 return None
