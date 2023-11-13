@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert, select, update
 from app.schema.schema import User
-from app.models.user_model import NewUserTemporaryModel
+from app.models.user_model import NewUserTemporaryModel, UserPersonalInformation
 from datetime import datetime, date
 from uuid import uuid4
 
@@ -59,4 +59,28 @@ class UserPostgresRepository:
         except Exception as e:
             await self.session.rollback()
             print(e)
+
+    async def update_personal_info(self, id: str, personal_info: UserPersonalInformation) -> list|None:
+        try:
+            stmt = (
+                update(User).
+                where(User.id == id).
+                values(first_name = personal_info.first_name,
+                    last_name = personal_info.last_name,
+                    phone_number = personal_info.phone_number,
+                    city = personal_info.city,
+                    street = personal_info.street).
+                    returning(User.id)
+            )
+            result = await self.session.execute(stmt)
+            await self.session.commit()
+            
+            if result:
+                return result.all()
+            else:
+                return None
+        except Exception as e:
+            await self.session.rollback()
+            print(e)
+
 

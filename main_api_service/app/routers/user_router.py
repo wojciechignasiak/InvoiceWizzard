@@ -4,7 +4,7 @@ from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.kafka.producer.kafka_producer import KafkaProducer
 from app.utils.user_utils import UserUtils
-from app.models.user_model import RegisterUserModel, NewUserTemporaryModel
+from app.models.user_model import RegisterUserModel, NewUserTemporaryModel, UserPersonalInformation
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.postgres.session.get_session import get_session
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
@@ -12,11 +12,13 @@ from datetime import date
 from app.models.kafka_topics_enum import KafkaTopicsEnum
 from app.schema.schema import User
 from app.models.jwt_model import JWTDataModel, JWTPayloadModel
+from fastapi.security import HTTPBearer
 import datetime
 import redis
 import re
 
 router = APIRouter()
+http_bearer = HTTPBearer()
 
 @router.post("/user-module/register-account/")
 async def register_account(new_user: RegisterUserModel, 
@@ -147,6 +149,37 @@ async def log_in(email: str, password: str, remember_me: bool,
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving JWT token to database")
         
         return JSONResponse(content={"jwt_token": f"{jwt_token}"})
+
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+
+@router.patch("/user-module/update-personal-info/")
+async def update_personal_info(user_personal_info: UserPersonalInformation,
+                        token = Depends(http_bearer), 
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
+    try:
+        user_redis_repository = UserRedisRepository(redis_client)
+        
+        jwt_payload = await user_redis_repository.retrieve_jwt(token.credentials)
+        
+        if jwt_payload == None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized access")
+        
+        jwt_payload = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+
+        result = await user_postgres_repository.update_personal_info(jwt_payload.id, user_personal_info)
+
+        if result == None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning updating personal information.")
+
+        return JSONResponse(content={"message": "Personal information has been updated."})
+
 
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
