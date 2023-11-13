@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert, select, update
 from app.schema.schema import User
-from app.models.user_model import NewUserTemporaryModel, UserPersonalInformation, UpdateUserEmail
+from app.models.user_model import NewUserTemporaryModel, UserPersonalInformation
 from datetime import datetime, date
 from uuid import uuid4
 
@@ -83,12 +83,12 @@ class UserPostgresRepository:
             await self.session.rollback()
             print(e)
 
-    async def update_email_address(self, email_data: UpdateUserEmail) -> list|None:
+    async def update_email_address(self, user_id: str, new_email: str) -> list|None:
         try:
             stmt = (
                 update(User).
-                where(User.email == email_data.current_email).
-                values(email = email_data.new_email).
+                where(User.id == user_id).
+                values(email = new_email).
                 returning(User.id)
             )
             result = await self.session.execute(stmt)

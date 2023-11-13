@@ -79,6 +79,20 @@ class UserRedisRepository:
             else:
                 return None
         except RedisError as e:
-            print("UserRedisRepository.save_jwt() Error: ", e)
-            raise RedisError(f"Error durning saving jwt to database occured")
+            print("UserRedisRepository.retrieve_jwt() Error: ", e)
+            raise RedisError(f"Error durning retrieving jwt from database occured")
+        
+
+    async def save_new_email(self, user_id: str, new_email: str) -> str|None:
+        try:
+            id = uuid4()
+            result = self.redis_client.setex(f"new_email:{id}", 60*60*48, {"id": f"{user_id}", "new_email": f"{new_email}"})
+            if result == True:
+                return str(id)
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.save_new_email() Error: ", e)
+            raise RedisError(f"Error durning saving new email to database occured")
+        
     
