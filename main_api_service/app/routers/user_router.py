@@ -212,13 +212,13 @@ async def change_email(new_email: UpdateUserEmail,
         if result:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email address arleady in use.")
         
-        result = await user_redis_repository.save_new_email(jwt_payload.id, new_email.new_email)
+        id = await user_redis_repository.save_new_email(jwt_payload.id, new_email.new_email)
 
-        if result == None:
+        if id == None:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new email to database.")
         
         kafka_producer = KafkaProducer()
-        await kafka_producer.produce_event(KafkaTopicsEnum.change_email.value, {"email": f"{jwt_payload.email}"})
+        await kafka_producer.produce_event(KafkaTopicsEnum.change_email.value, {"id": id,"email": jwt_payload.email})
 
         return JSONResponse(content={"message": "New email has been saved. Email message with confirmation link has been send to old email address."})
 
@@ -263,11 +263,14 @@ async def change_password(new_password: UpdateUserPassword,
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password needs to contatain at least 1 special character")
         
         hashed_new_password = await user_utils.hash_password(user.salt, new_password.new_password)
-        result = await user_redis_repository.save_new_password(jwt_payload.id, hashed_new_password)
+        id = await user_redis_repository.save_new_password(jwt_payload.id, hashed_new_password)
 
-        if result == None:
+        if id == None:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new password to database.")
         
+        kafka_producer = KafkaProducer()
+        await kafka_producer.produce_event(KafkaTopicsEnum.change_password.value, {"id": id, "email": jwt_payload.email})
+
         return JSONResponse(content={"message": "New password has been saved. Email message with confirmation link has been send to email address."})
 
     except HTTPException as e:
