@@ -95,4 +95,15 @@ class UserRedisRepository:
             print("UserRedisRepository.save_new_email() Error: ", e)
             raise RedisError(f"Error durning saving new email to database occured")
         
+    async def retrieve_new_email(self, id: str) -> bytes|None:
+        try:
+            result = self.redis_client.get(f"new_email:{id}")
+            if result:
+                return result
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.retrieve_new_email() Error: ", e)
+            raise RedisError(f"Error durning retrieving new_email from database occured")
+        
     
