@@ -39,6 +39,7 @@ class UserPersonalInformation(BaseModel):
                 "last_name": "Kowalski",
                 "phone_number": "123456789",
                 "city": "Warszawa",
+                "postal_code": "00-000",
                 "street": "Ul. Nowa 6/13"
                 }
             }
@@ -47,4 +48,34 @@ class UserPersonalInformation(BaseModel):
     last_name: str = None
     phone_number: str = None
     city: str = None
+    postal_code: str = None
     street: str = None
+
+
+class UpdateUserPassword(BaseModel):
+    model_config = ConfigDict(json_schema_extra={
+        "example":{
+                "current_password": "passw0rd!",
+                "new_password": "passw0rd!1",
+                "new_repeated_password": "passw0rd!1"
+                }
+            }
+        )
+    
+    current_password: str
+    new_password: str
+    new_repeated_password: str
+
+class UpdateUserEmail(BaseModel):
+    model_config = ConfigDict(json_schema_extra={
+        "example":{
+                "current_email": "email@example.com",
+                "new_email": "email1@example.com",
+                "new_repeated_email": "email1@example.com"
+                }
+            }
+        )
+    
+    current_email: EmailStr
+    new_email: EmailStr
+    new_repeated_email: EmailStr

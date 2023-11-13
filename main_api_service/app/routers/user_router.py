@@ -180,7 +180,6 @@ async def update_personal_info(user_personal_info: UserPersonalInformation,
 
         return JSONResponse(content={"message": "Personal information has been updated."})
 
-
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
