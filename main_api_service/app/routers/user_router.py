@@ -216,6 +216,9 @@ async def change_email(new_email: UpdateUserEmail,
 
         if result == None:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new email to database.")
+        
+        kafka_producer = KafkaProducer()
+        await kafka_producer.produce_event(KafkaTopicsEnum.change_email.value, {"email": f"{jwt_payload.email}"})
 
         return JSONResponse(content={"message": "New email has been saved. Email message with confirmation link has been send to old email address."})
 
@@ -264,7 +267,7 @@ async def change_password(new_password: UpdateUserPassword,
 
         if result == None:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new password to database.")
-
+        
         return JSONResponse(content={"message": "New password has been saved. Email message with confirmation link has been send to email address."})
 
     except HTTPException as e:

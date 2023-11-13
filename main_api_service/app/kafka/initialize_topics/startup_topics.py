@@ -10,7 +10,8 @@ async def startup_topics(kafka_url: str):
         existing_topics = topics
         topic_name_list = [
             KafkaTopicsEnum.account_registered.value,
-            KafkaTopicsEnum.account_confirmed.value
+            KafkaTopicsEnum.account_confirmed.value,
+            KafkaTopicsEnum.change_email.value
         ]
         topic_list = []
         for topic_name in topic_name_list:
