@@ -12,6 +12,7 @@ async def startup_topics(kafka_url: str):
             KafkaTopicsEnum.account_registered.value,
             KafkaTopicsEnum.account_confirmed.value,
             KafkaTopicsEnum.change_email.value,
+            KafkaTopicsEnum.email_changed.value,
             KafkaTopicsEnum.change_password.value
         ]
         topic_list = []

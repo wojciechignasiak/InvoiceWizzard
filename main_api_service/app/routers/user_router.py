@@ -260,6 +260,9 @@ async def confirm_email_change(id: str,
         await user_redis_repository.delete_all_jwt_of_user(str(updated_user_id[0][0]))
         await user_redis_repository.delete_new_email(id)
 
+        kafka_producer = KafkaProducer()
+        await kafka_producer.produce_event(KafkaTopicsEnum.email_changed.value, {"id": str(updated_user_id[0][0]),"email": new_email_data.new_email})
+
         return JSONResponse(content={"message": "New email has been set. You have been logged off from all devices."})
 
     except HTTPException as e:
