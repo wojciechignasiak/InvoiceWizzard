@@ -4,7 +4,7 @@ from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.kafka.producer.kafka_producer import KafkaProducer
 from app.utils.user_utils import UserUtils
-from app.models.user_model import RegisterUserModel, NewUserTemporaryModel, UserPersonalInformation, UpdateUserEmail, UpdateUserPassword
+from app.models.user_model import RegisterUserModel, NewUserTemporaryModel, UserPersonalInformation, UpdateUserEmail, UpdateUserPassword, ConfirmUserPasswordChange, ConfirmUserEmailChange
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.postgres.session.get_session import get_session
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
@@ -193,7 +193,8 @@ async def change_email(new_email: UpdateUserEmail,
     try:
         
         user_redis_repository = UserRedisRepository(redis_client)
-        
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+
         jwt_payload = await user_redis_repository.retrieve_jwt(token.credentials)
         
         if jwt_payload == None:
@@ -201,18 +202,22 @@ async def change_email(new_email: UpdateUserEmail,
         
         jwt_payload = JWTPayloadModel.model_validate_json(jwt_payload)
 
-        if new_email.current_email != jwt_payload.email:
+        user: User = await user_postgres_repository.get_user_by_id(jwt_payload.id)
+
+        if new_email.current_email != user.email:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adress don't match with current email.")
         if new_email.new_email != new_email.new_repeated_email:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adresses don't match.")
 
-        user_postgres_repository = UserPostgresRepository(postgres_session)
+        
 
-        result = user_postgres_repository.find_user_by_email(new_email.new_email)
+        result = await user_postgres_repository.find_user_by_email(new_email.new_email)
         if result:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email address arleady in use.")
         
-        id = await user_redis_repository.save_new_email(jwt_payload.id, new_email.new_email)
+        new_email_data = ConfirmUserEmailChange(id=jwt_payload.id, new_email=new_email.new_email)
+
+        id = await user_redis_repository.save_new_email(new_email_data)
 
         if id == None:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new email to database.")
@@ -227,6 +232,40 @@ async def change_email(new_email: UpdateUserEmail,
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
     
+@router.patch("/user-module/confirm-email-change/")
+async def confirm_email_change(id: str,
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
+    try:
+        user_redis_repository = UserRedisRepository(redis_client)
+
+        new_email_data = await user_redis_repository.retrieve_new_email(id)
+
+        if new_email_data == None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found new email to confirm with provided id.")
+
+        new_email_data = ConfirmUserEmailChange.model_validate_json(new_email_data)
+        
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+
+        already_used_email_by_user_id: list = await user_postgres_repository.find_user_by_email(new_email_data.new_email)
+        if already_used_email_by_user_id:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email address arleady in use.")
+        
+        updated_user_id: list = await user_postgres_repository.update_email_address(new_email_data)
+
+        if not updated_user_id:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning updating email in database.")
+        
+        await user_redis_repository.delete_all_jwt_of_user(str(updated_user_id[0][0]))
+        await user_redis_repository.delete_new_email(id)
+
+        return JSONResponse(content={"message": "New email has been set. You have been logged off from all devices."})
+
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
 
 @router.patch("/user-module/change-password/")
 async def change_password(new_password: UpdateUserPassword,
@@ -263,7 +302,10 @@ async def change_password(new_password: UpdateUserPassword,
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password needs to contatain at least 1 special character")
         
         hashed_new_password = await user_utils.hash_password(user.salt, new_password.new_password)
-        id = await user_redis_repository.save_new_password(jwt_payload.id, hashed_new_password)
+
+        new_password_data = ConfirmUserPasswordChange(jwt_payload.id, hashed_new_password)
+
+        id = await user_redis_repository.save_new_password(new_password_data)
 
         if id == None:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new password to database.")
@@ -277,3 +319,4 @@ async def change_password(new_password: UpdateUserPassword,
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    

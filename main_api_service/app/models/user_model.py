@@ -79,3 +79,28 @@ class UpdateUserEmail(BaseModel):
     current_email: EmailStr
     new_email: EmailStr
     new_repeated_email: EmailStr
+
+
+class ConfirmUserEmailChange(BaseModel):
+    model_config = ConfigDict(json_schema_extra={
+        "example":{
+                "id": "123456789",
+                "new_email": "email1@example.com",
+                }
+            }
+        )
+    
+    id: str
+    new_email: EmailStr
+
+class ConfirmUserPasswordChange(BaseModel):
+    model_config = ConfigDict(json_schema_extra={
+        "example":{
+                "id": "123456789",
+                "new_password": "passw0rd!",
+                }
+            }
+        )
+    
+    id: str
+    new_password: str
