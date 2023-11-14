@@ -4,7 +4,7 @@ from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.kafka.producer.kafka_producer import KafkaProducer
 from app.utils.user_utils import UserUtils
-from app.models.user_model import RegisterUserModel, NewUserTemporaryModel, UserPersonalInformation, UpdateUserEmail, UpdateUserPassword, ConfirmUserPasswordChange, ConfirmUserEmailChange
+from app.models.user_model import RegisterUserModel, NewUserTemporaryModel, UserPersonalInformation, UpdateUserEmail, UpdateUserPassword, ConfirmUserPasswordChange, ConfirmUserEmailChange, ResetPasswordModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.postgres.session.get_session import get_session
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
@@ -353,6 +353,52 @@ async def confirm_password_change(id: str,
         await kafka_producer.produce_event(KafkaTopicsEnum.password_changed.value, {"id": str(updated_user_id[0][0]),"email": user.email})
 
         return JSONResponse(content={"message": "New password has been set. You have been logged off from all devices."})
+
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+
+@router.patch("/user-module/reset-password/")
+async def reset_password(reset_password: ResetPasswordModel,
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
+    try:
+        user_redis_repository = UserRedisRepository(redis_client)
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+
+
+
+        user_utils = UserUtils()
+
+        if reset_password.new_password != reset_password.new_repeated_password:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided passwords don't match")
+        if len(reset_password.new_password) < 8:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided password is too short")
+        if not re.search(r'\d', reset_password.new_password):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password needs to contatain at least 1 digit")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', reset_password.new_password):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password needs to contatain at least 1 special character")
+        
+        user: User = await user_postgres_repository.find_user_by_email(reset_password.email)
+
+        if not user:
+            return JSONResponse(content={"message": "If provided email address is correct you will get email message with url to confirm your new password."})
+        
+
+        hashed_new_password = await user_utils.hash_password(user.salt, reset_password.new_password)
+
+        new_password_data = ConfirmUserPasswordChange(id=user.id, new_password=hashed_new_password)
+
+        id = await user_redis_repository.save_reset_password(new_password_data)
+
+        if id == None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new password to database.")
+        
+        kafka_producer = KafkaProducer()
+
+        return JSONResponse(content={"message": "If provided email address is correct you will get email message with url to confirm your new password."})
 
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

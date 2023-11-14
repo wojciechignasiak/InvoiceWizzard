@@ -104,3 +104,17 @@ class ConfirmUserPasswordChange(BaseModel):
     
     id: str
     new_password: str
+
+class ResetPasswordModel(BaseModel):
+    model_config = ConfigDict(json_schema_extra={
+        "example":{
+                "email": "email1@example.com",
+                "new_password": "passw0rd!",
+                "new_repeated_password": "passw0rd!"
+                }
+            }
+        )
+    
+    email: EmailStr
+    new_password: str
+    new_repeated_password: str
