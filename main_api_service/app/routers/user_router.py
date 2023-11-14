@@ -404,3 +404,39 @@ async def reset_password(reset_password: ResetPasswordModel,
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+@router.patch("/user-module/confirm-password-reset/")
+async def confirm_password_reset(id: str,
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
+    try:
+        user_redis_repository = UserRedisRepository(redis_client)
+
+        new_password_data = await user_redis_repository.retrieve_reset_password(id)
+
+        if new_password_data == None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found reset password to confirm with provided id.")
+
+        new_password_data = ConfirmUserPasswordChange.model_validate_json(new_password_data)
+        
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+        
+        updated_user_id: list = await user_postgres_repository.update_password(new_password_data)
+
+        if not updated_user_id:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning updating password in database.")
+        
+        user: User = await user_postgres_repository.get_user_by_id(str(updated_user_id[0][0])) 
+
+        await user_redis_repository.delete_all_jwt_of_user(str(updated_user_id[0][0]))
+        await user_redis_repository.delete_new_password(id)
+
+        kafka_producer = KafkaProducer()
+        
+
+        return JSONResponse(content={"message": "New password has been set. You have been logged off from all devices."})
+
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
