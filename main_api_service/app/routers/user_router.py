@@ -4,7 +4,7 @@ from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.kafka.producer.kafka_producer import KafkaProducer
 from app.utils.user_utils import UserUtils
-from app.models.user_model import RegisterUserModel, NewUserTemporaryModel, UserPersonalInformation
+from app.models.user_model import RegisterUserModel, NewUserTemporaryModel, UserPersonalInformation, UpdateUserEmail, UpdateUserPassword, ConfirmUserPasswordChange, ConfirmUserEmailChange
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.postgres.session.get_session import get_session
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
@@ -180,6 +180,179 @@ async def update_personal_info(user_personal_info: UserPersonalInformation,
 
         return JSONResponse(content={"message": "Personal information has been updated."})
 
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+@router.patch("/user-module/change-email/")
+async def change_email(new_email: UpdateUserEmail,
+                        token = Depends(http_bearer), 
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
+    try:
+        
+        user_redis_repository = UserRedisRepository(redis_client)
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+
+        jwt_payload = await user_redis_repository.retrieve_jwt(token.credentials)
+        
+        if jwt_payload == None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized access")
+        
+        jwt_payload = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        user: User = await user_postgres_repository.get_user_by_id(jwt_payload.id)
+
+        if new_email.current_email != user.email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adress don't match with current email.")
+        if new_email.new_email != new_email.new_repeated_email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adresses don't match.")
+
+        
+
+        result = await user_postgres_repository.find_user_by_email(new_email.new_email)
+        if result:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email address arleady in use.")
+        
+        new_email_data = ConfirmUserEmailChange(id=jwt_payload.id, new_email=new_email.new_email)
+
+        id = await user_redis_repository.save_new_email(new_email_data)
+
+        if id == None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new email to database.")
+        
+        kafka_producer = KafkaProducer()
+        await kafka_producer.produce_event(KafkaTopicsEnum.change_email.value, {"id": id,"email": jwt_payload.email})
+
+        return JSONResponse(content={"message": "New email has been saved. Email message with confirmation link has been send to old email address."})
+
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+@router.patch("/user-module/confirm-email-change/")
+async def confirm_email_change(id: str,
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
+    try:
+        user_redis_repository = UserRedisRepository(redis_client)
+
+        new_email_data = await user_redis_repository.retrieve_new_email(id)
+
+        if new_email_data == None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found new email to confirm with provided id.")
+
+        new_email_data = ConfirmUserEmailChange.model_validate_json(new_email_data)
+        
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+
+        already_used_email_by_user_id: list = await user_postgres_repository.find_user_by_email(new_email_data.new_email)
+        if already_used_email_by_user_id:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email address arleady in use.")
+        
+        updated_user_id: list = await user_postgres_repository.update_email_address(new_email_data)
+
+        if not updated_user_id:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning updating email in database.")
+        
+        await user_redis_repository.delete_all_jwt_of_user(str(updated_user_id[0][0]))
+        await user_redis_repository.delete_new_email(id)
+
+        kafka_producer = KafkaProducer()
+        await kafka_producer.produce_event(KafkaTopicsEnum.email_changed.value, {"id": str(updated_user_id[0][0]),"email": new_email_data.new_email})
+
+        return JSONResponse(content={"message": "New email has been set. You have been logged off from all devices."})
+
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+
+@router.patch("/user-module/change-password/")
+async def change_password(new_password: UpdateUserPassword,
+                        token = Depends(http_bearer), 
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
+    try:
+        user_redis_repository = UserRedisRepository(redis_client)
+        
+        jwt_payload = await user_redis_repository.retrieve_jwt(token.credentials)
+        
+        if jwt_payload == None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized access")
+        
+        jwt_payload = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+
+        user: User = await user_postgres_repository.get_user_by_id(jwt_payload.id)
+
+        user_utils = UserUtils()
+
+        password_match = await user_utils.verify_password(user.salt, new_password.current_password, user.password)
+
+        if password_match == False:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Wrong current password.")
+        if new_password.new_password != new_password.new_repeated_password:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided new passwords don't match")
+        if len(new_password.new_password) < 8:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided new password is too short")
+        if not re.search(r'\d', new_password.new_password):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password needs to contatain at least 1 digit")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_password.new_password):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password needs to contatain at least 1 special character")
+        
+        hashed_new_password = await user_utils.hash_password(user.salt, new_password.new_password)
+
+        new_password_data = ConfirmUserPasswordChange(id=jwt_payload.id, new_password=hashed_new_password)
+
+        id = await user_redis_repository.save_new_password(new_password_data)
+
+        if id == None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new password to database.")
+        
+        kafka_producer = KafkaProducer()
+        await kafka_producer.produce_event(KafkaTopicsEnum.change_password.value, {"id": id, "email": jwt_payload.email})
+
+        return JSONResponse(content={"message": "New password has been saved. Email message with confirmation link has been send to email address."})
+
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+    
+@router.patch("/user-module/confirm-password-change/")
+async def confirm_password_change(id: str,
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
+    try:
+        user_redis_repository = UserRedisRepository(redis_client)
+
+        new_password_data = await user_redis_repository.retrieve_new_password(id)
+
+        if new_password_data == None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found new password to confirm with provided id.")
+
+        new_password_data = ConfirmUserPasswordChange.model_validate_json(new_password_data)
+        
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+        
+        updated_user_id: list = await user_postgres_repository.update_password(new_password_data)
+
+        if not updated_user_id:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning updating password in database.")
+        
+        user: User = await user_postgres_repository.get_user_by_id(str(updated_user_id[0][0])) 
+
+        await user_redis_repository.delete_all_jwt_of_user(str(updated_user_id[0][0]))
+        await user_redis_repository.delete_new_password(id)
+
+        kafka_producer = KafkaProducer()
+        await kafka_producer.produce_event(KafkaTopicsEnum.password_changed.value, {"id": str(updated_user_id[0][0]),"email": user.email})
+
+        return JSONResponse(content={"message": "New password has been set. You have been logged off from all devices."})
 
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

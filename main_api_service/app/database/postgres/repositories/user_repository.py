@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert, select, update
 from app.schema.schema import User
-from app.models.user_model import NewUserTemporaryModel, UserPersonalInformation
+from app.models.user_model import NewUserTemporaryModel, UserPersonalInformation, ConfirmUserEmailChange, ConfirmUserPasswordChange
 from datetime import datetime, date
 from uuid import uuid4
 
@@ -40,6 +40,15 @@ class UserPostgresRepository:
         except Exception as e:
             print(e)
 
+    async def get_user_by_id(self, id: str) -> User:
+        try:
+            stmt = select(User).where(User.id == id)
+            result = await self.session.scalar(stmt)
+        
+            return result
+        except Exception as e:
+            print(e)
+
     async def update_last_login(self, id: str) -> list|None:
         try:
             stmt = (
@@ -71,6 +80,44 @@ class UserPostgresRepository:
                     city = personal_info.city,
                     street = personal_info.street).
                     returning(User.id)
+            )
+            result = await self.session.execute(stmt)
+            await self.session.commit()
+            
+            if result:
+                return result.all()
+            else:
+                return None
+        except Exception as e:
+            await self.session.rollback()
+            print(e)
+
+    async def update_email_address(self, new_email: ConfirmUserEmailChange) -> list|None:
+        try:
+            stmt = (
+                update(User).
+                where(User.id == new_email.id).
+                values(email = new_email.new_email).
+                returning(User.id)
+            )
+            result = await self.session.execute(stmt)
+            await self.session.commit()
+            
+            if result:
+                return result.all()
+            else:
+                return None
+        except Exception as e:
+            await self.session.rollback()
+            print(e)
+
+    async def update_password(self, new_password: ConfirmUserPasswordChange) -> list|None:
+        try:
+            stmt = (
+                update(User).
+                where(User.id == new_password.id).
+                values(email = new_password.new_password).
+                returning(User.id)
             )
             result = await self.session.execute(stmt)
             await self.session.commit()

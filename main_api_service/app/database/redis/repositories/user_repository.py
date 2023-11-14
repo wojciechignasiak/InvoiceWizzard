@@ -1,9 +1,10 @@
 from redis import Redis
-from app.models.user_model import NewUserTemporaryModel
+from app.models.user_model import NewUserTemporaryModel, ConfirmUserEmailChange, ConfirmUserPasswordChange
 from app.models.jwt_model import JWTPayloadModel
 from redis.exceptions import RedisError
 import datetime
 from uuid import uuid4
+import json
 
 class UserRedisRepository:
     def __init__(self, redis_client: Redis):
@@ -79,6 +80,83 @@ class UserRedisRepository:
             else:
                 return None
         except RedisError as e:
-            print("UserRedisRepository.save_jwt() Error: ", e)
-            raise RedisError(f"Error durning saving jwt to database occured")
-    
+            print("UserRedisRepository.retrieve_jwt() Error: ", e)
+            raise RedisError(f"Error durning retrieving jwt from database occured")
+        
+    async def delete_all_jwt_of_user(self, user_id: str):
+        try:
+            key: list = self.redis_client.keys(f"JWT:*:{user_id}")
+            if key:
+                for item in key:
+                    self.redis_client.delete(item)
+        except RedisError as e:
+            print("UserRedisRepository.delete_all_jwt_of_user() Error: ", e)
+            raise RedisError(f"Error durning deleting jwts from database occured")
+        
+    async def save_new_email(self, new_email: ConfirmUserEmailChange) -> str|None:
+        try:
+            id = uuid4()
+            result = self.redis_client.setex(f"new_email:{id}", 60*60*48, new_email.model_dump_json())
+            if result == True:
+                return str(id)
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.save_new_email() Error: ", e)
+            raise RedisError(f"Error durning saving new email to database occured")
+        
+    async def retrieve_new_email(self, id: str) -> bytes|None:
+        try:
+            result = self.redis_client.get(f"new_email:{id}")
+            if result:
+                return result
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.retrieve_new_email() Error: ", e)
+            raise RedisError(f"Error durning retrieving new_email from database occured")
+        
+    async def delete_new_email(self, id):
+        try:
+            result = self.redis_client.delete(f"new_email:{id}")
+            if result:
+                return result
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.delete_new_email() Error: ", e)
+            raise RedisError(f"Error durning retrieving new_email from database occured")
+        
+    async def save_new_password(self, new_password: ConfirmUserPasswordChange) -> str|None:
+        try:
+            id = uuid4()
+            result = self.redis_client.setex(f"new_password:{id}", 60*60*48, new_password.model_dump_json())
+            if result == True:
+                return str(id)
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.save_new_password() Error: ", e)
+            raise RedisError(f"Error durning saving new password to database occured")
+        
+    async def retrieve_new_password(self, id: str) -> bytes|None:
+        try:
+            result = self.redis_client.get(f"new_password:{id}")
+            if result:
+                return result
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.retrieve_new_password() Error: ", e)
+            raise RedisError(f"Error durning retrieving new_password from database occured")
+        
+    async def delete_new_password(self, id):
+        try:
+            result = self.redis_client.delete(f"new_password:{id}")
+            if result:
+                return result
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.delete_new_password() Error: ", e)
+            raise RedisError(f"Error durning retrieving new_password from database occured")
