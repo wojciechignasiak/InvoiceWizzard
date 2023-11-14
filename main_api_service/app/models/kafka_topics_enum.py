@@ -6,3 +6,4 @@ class KafkaTopicsEnum(str, Enum):
     change_email = "change_email"
     email_changed = "email_changed"
     change_password = "change_password"
+    password_changed = "password_changed"

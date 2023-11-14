@@ -344,8 +344,13 @@ async def confirm_password_change(id: str,
         if not updated_user_id:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning updating password in database.")
         
+        user: User = await user_postgres_repository.get_user_by_id(str(updated_user_id[0][0])) 
+
         await user_redis_repository.delete_all_jwt_of_user(str(updated_user_id[0][0]))
         await user_redis_repository.delete_new_password(id)
+
+        kafka_producer = KafkaProducer()
+        await kafka_producer.produce_event(KafkaTopicsEnum.password_changed.value, {"id": str(updated_user_id[0][0]),"email": user.email})
 
         return JSONResponse(content={"message": "New password has been set. You have been logged off from all devices."})
 
