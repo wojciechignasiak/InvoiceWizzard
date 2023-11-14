@@ -397,7 +397,8 @@ async def reset_password(reset_password: ResetPasswordModel,
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning saving new password to database.")
         
         kafka_producer = KafkaProducer()
-
+        await kafka_producer.produce_event(KafkaTopicsEnum.reset_password.value, {"id": id,"email": user.email})
+        
         return JSONResponse(content={"message": "If provided email address is correct you will get email message with url to confirm your new password."})
 
     except HTTPException as e:
@@ -433,6 +434,7 @@ async def confirm_password_reset(id: str,
 
         kafka_producer = KafkaProducer()
         
+
 
         return JSONResponse(content={"message": "New password has been set. You have been logged off from all devices."})
 
