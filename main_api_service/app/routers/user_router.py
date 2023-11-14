@@ -303,7 +303,7 @@ async def change_password(new_password: UpdateUserPassword,
         
         hashed_new_password = await user_utils.hash_password(user.salt, new_password.new_password)
 
-        new_password_data = ConfirmUserPasswordChange(jwt_payload.id, hashed_new_password)
+        new_password_data = ConfirmUserPasswordChange(id=jwt_payload.id, new_password=hashed_new_password)
 
         id = await user_redis_repository.save_new_password(new_password_data)
 
@@ -320,3 +320,33 @@ async def change_password(new_password: UpdateUserPassword,
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
     
+@router.patch("/user-module/confirm-password-change/")
+async def confirm_password_change(id: str,
+                        redis_client: redis.Redis = Depends(get_redis_client),
+                        postgres_session: AsyncSession = Depends(get_session)):
+    try:
+        user_redis_repository = UserRedisRepository(redis_client)
+
+        new_password_data = await user_redis_repository.retrieve_new_password(id)
+
+        if new_password_data == None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found new password to confirm with provided id.")
+
+        new_password_data = ConfirmUserPasswordChange.model_validate_json(new_password_data)
+        
+        user_postgres_repository = UserPostgresRepository(postgres_session)
+        
+        updated_user_id: list = await user_postgres_repository.update_password(new_password_data)
+
+        if not updated_user_id:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error occured durning updating password in database.")
+        
+        await user_redis_repository.delete_all_jwt_of_user(str(updated_user_id[0][0]))
+        await user_redis_repository.delete_new_password(id)
+
+        return JSONResponse(content={"message": "New password has been set. You have been logged off from all devices."})
+
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)

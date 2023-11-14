@@ -149,3 +149,14 @@ class UserRedisRepository:
         except RedisError as e:
             print("UserRedisRepository.retrieve_new_password() Error: ", e)
             raise RedisError(f"Error durning retrieving new_password from database occured")
+        
+    async def delete_new_password(self, id):
+        try:
+            result = self.redis_client.delete(f"new_password:{id}")
+            if result:
+                return result
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.delete_new_password() Error: ", e)
+            raise RedisError(f"Error durning retrieving new_password from database occured")
