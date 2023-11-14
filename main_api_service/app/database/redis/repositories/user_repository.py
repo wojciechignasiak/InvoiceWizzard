@@ -172,3 +172,14 @@ class UserRedisRepository:
         except RedisError as e:
             print("UserRedisRepository.save_reset_password() Error: ", e)
             raise RedisError(f"Error durning saving reset password to database occured")
+        
+    async def retrieve_reset_password(self, id: str) -> bytes|None:
+        try:
+            result = self.redis_client.get(f"reset_password:{id}")
+            if result:
+                return result
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.retrieve_reset_password() Error: ", e)
+            raise RedisError(f"Error durning retrieving reset_password from database occured")
