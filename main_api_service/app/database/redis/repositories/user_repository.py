@@ -160,3 +160,15 @@ class UserRedisRepository:
         except RedisError as e:
             print("UserRedisRepository.delete_new_password() Error: ", e)
             raise RedisError(f"Error durning retrieving new_password from database occured")
+        
+    async def save_reset_password(self, new_password: ConfirmUserPasswordChange) -> str|None:
+        try:
+            id = uuid4()
+            result = self.redis_client.setex(f"reset_password:{id}", 60*60*48, new_password.model_dump_json())
+            if result == True:
+                return str(id)
+            else:
+                return None
+        except RedisError as e:
+            print("UserRedisRepository.save_reset_password() Error: ", e)
+            raise RedisError(f"Error durning saving reset password to database occured")
