@@ -45,7 +45,6 @@ class UserPostgresRepository:
             user = await self.session.scalar(stmt)
             await self.session.commit()
             return user
-        
         except IntegrityError as e:
             await self.session.rollback()
             logging.exception(f"UserPostgresRepository.create_user() Error: {e}")
@@ -77,6 +76,21 @@ class UserPostgresRepository:
         
         except NoResultFound:
             raise PostgreSQLNotFoundError("User with provided email address not found in database.")
+        except (DataError, StatementError, DatabaseError) as e:
+            logging.exception(f"UserPostgresRepository.get_user_by_email_address() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+
+
+    async def is_email_addres_arleady_taken(self, user_email_adress: str) -> bool:
+        try:
+            stmt = select(User).where(User.email == user_email_adress)
+            user = await self.session.scalar(stmt)
+
+            if user is not None:
+                return True
+            else:
+                return False
+        
         except (DataError, StatementError, DatabaseError) as e:
             logging.exception(f"UserPostgresRepository.get_user_by_email_address() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
