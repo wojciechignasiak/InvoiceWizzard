@@ -1,133 +1,178 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import (
+    IntegrityError, 
+    DataError, 
+    StatementError,
+    DatabaseError,
+    NoResultFound
+    )
+from app.database.postgres.exceptions.custom_postgres_exceptions import (
+    PostgreSQLDatabaseError,
+    PostgreSQLIntegrityError,
+    PostgreSQLNotFoundError
+)
 from sqlalchemy import insert, select, update
 from app.schema.schema import User
-from app.models.user_model import NewUserTemporaryModel, UserPersonalInformation, ConfirmUserEmailChange, ConfirmUserPasswordChange
+from app.models.user_model import (
+    CreateUserModel,
+    UserPersonalInformationModel,
+    ConfirmedUserEmailChangeModel, 
+    ConfirmedUserPasswordChangeModel
+    )
 from datetime import datetime, date
 from uuid import uuid4
+import logging
 
 
 class UserPostgresRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session: AsyncSession = session
 
-    async def create_new_user(self, user: NewUserTemporaryModel):
+    async def create_user(self, new_user: CreateUserModel) -> User:
         try:
             stmt = (
                 insert(User).
                 values(
                     id=uuid4(),
-                    email=user.email, 
-                    password=user.password,
-                    salt=user.salt, 
-                    registration_date=datetime.strptime(user.registration_date, '%Y-%m-%d').date(),
+                    email=new_user.email, 
+                    password=new_user.password,
+                    salt=new_user.salt, 
+                    registration_date=datetime.strptime(new_user.registration_date, '%Y-%m-%d').date(),
                     last_login=date.today()
                     ).
-                    returning(User.id)
+                    returning(User)
                 )
-            result = await self.session.execute(stmt)
+            user = await self.session.scalar(stmt)
             await self.session.commit()
-            return result.all()
-        except Exception as e:
+            return user
+        
+        except IntegrityError as e:
             await self.session.rollback()
-            print(e)
+            logging.exception(f"UserPostgresRepository.create_user() Error: {e}")
+            raise PostgreSQLIntegrityError("Cannot create new user in database. Integrity error occured.")
+        except DatabaseError as e:
+            await self.session.rollback()
+            logging.exception(f"UserPostgresRepository.create_user() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def find_user_by_email(self, email: str) -> User:
+
+    async def get_user_by_id(self, user_id: str) -> User:
         try:
-            stmt = select(User).where(User.email == email)
-            result = await self.session.scalar(stmt)
+            stmt = select(User).where(User.id == user_id)
+            user = await self.session.scalar(stmt)
+            return user
         
-            return result
-        except Exception as e:
-            print(e)
+        except NoResultFound:
+            raise PostgreSQLNotFoundError("User with provided id not found in database.")
+        except (DataError, StatementError, DatabaseError) as e:
+            logging.exception(f"UserPostgresRepository.get_user_by_id() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def get_user_by_id(self, id: str) -> User:
+
+    async def get_user_by_email_address(self, user_email_adress: str) -> User:
         try:
-            stmt = select(User).where(User.id == id)
-            result = await self.session.scalar(stmt)
+            stmt = select(User).where(User.email == user_email_adress)
+            user = await self.session.scalar(stmt)
+            return user
         
-            return result
-        except Exception as e:
-            print(e)
+        except NoResultFound:
+            raise PostgreSQLNotFoundError("User with provided email address not found in database.")
+        except (DataError, StatementError, DatabaseError) as e:
+            logging.exception(f"UserPostgresRepository.get_user_by_email_address() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def update_last_login(self, id: str) -> list|None:
+
+    async def update_user_last_login(self, user_id: str) -> User:
         try:
             stmt = (
                 update(User).
-                where(User.id == id).
+                where(User.id == user_id).
                 values(last_login = date.today()).
-                returning(User.last_login)
+                returning(User.id, User.last_login)
             )
-            result = await self.session.execute(stmt)
+            user = await self.session.scalar(stmt)
             await self.session.commit()
-
-            if result:
-                return result.all()
-            else:
-                return None
-
-        except Exception as e:
+            return user
+        
+        except NoResultFound:
+            raise PostgreSQLNotFoundError("User with provided id not found in database.")
+        except (DataError, StatementError, DatabaseError) as e:
             await self.session.rollback()
-            print(e)
+            logging.exception(f"UserPostgresRepository.update_user_last_login() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def update_personal_info(self, id: str, personal_info: UserPersonalInformation) -> list|None:
+
+    async def update_user_personal_information(self, user_id: str, personal_information: UserPersonalInformationModel) -> User:
         try:
             stmt = (
                 update(User).
-                where(User.id == id).
-                values(first_name = personal_info.first_name,
-                    last_name = personal_info.last_name,
-                    phone_number = personal_info.phone_number,
-                    city = personal_info.city,
-                    street = personal_info.street).
-                    returning(User.id)
+                where(User.id == user_id).
+                values(
+                    first_name = personal_information.first_name,
+                    last_name = personal_information.last_name,
+                    phone_number = personal_information.phone_number,
+                    postal_code = personal_information.postal_code,
+                    city = personal_information.city,
+                    street = personal_information.street).
+                    returning(
+                        User.id, 
+                        User.first_name, 
+                        User.last_name, 
+                        User.phone_number, 
+                        User.postal_code, 
+                        User.city, 
+                        User.street
+                        )
             )
-            result = await self.session.execute(stmt)
+            user = await self.session.scalar(stmt)
             await self.session.commit()
-            
-            if result:
-                return result.all()
-            else:
-                return None
-        except Exception as e:
+            return user
+        except NoResultFound:
+            raise PostgreSQLNotFoundError("User with provided id not found in database.")
+        except (DataError, StatementError, DatabaseError) as e:
             await self.session.rollback()
-            print(e)
+            logging.exception(f"UserPostgresRepository.update_user_personal_information() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def update_email_address(self, new_email: ConfirmUserEmailChange) -> list|None:
+
+    async def update_user_email_address(self, new_email: ConfirmedUserEmailChangeModel) -> User:
         try:
             stmt = (
                 update(User).
                 where(User.id == new_email.id).
                 values(email = new_email.new_email).
-                returning(User.id)
+                returning(User.id, User.email)
             )
-            result = await self.session.execute(stmt)
+            user = await self.session.scalar(stmt)
             await self.session.commit()
-            
-            if result:
-                return result.all()
-            else:
-                return None
-        except Exception as e:
+            return user
+        except NoResultFound:
+            raise PostgreSQLNotFoundError("User with provided id not found in database.")
+        except IntegrityError as e:
             await self.session.rollback()
-            print(e)
+            logging.exception(f"UserPostgresRepository.update_user_email_address() Error: {e}")
+            raise PostgreSQLIntegrityError("Cannot update user email address. Integrity error occured.")
+        except (DataError, StatementError, DatabaseError) as e:
+            await self.session.rollback()
+            logging.exception(f"UserPostgresRepository.update_user_email_address() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def update_password(self, new_password: ConfirmUserPasswordChange) -> list|None:
+
+    async def update_user_password(self, new_password: ConfirmedUserPasswordChangeModel) -> User:
         try:
             stmt = (
                 update(User).
                 where(User.id == new_password.id).
                 values(email = new_password.new_password).
-                returning(User.id)
+                returning(User.id, User.password)
             )
-            result = await self.session.execute(stmt)
+            user = await self.session.scalar(stmt)
             await self.session.commit()
-            
-            if result:
-                return result.all()
-            else:
-                return None
-        except Exception as e:
+            return user
+        
+        except NoResultFound:
+            raise PostgreSQLNotFoundError("User with provided id not found in database.")
+        except (DataError, StatementError, DatabaseError) as e:
             await self.session.rollback()
-            print(e)
-
-
+            logging.exception(f"UserPostgresRepository.update_user_password() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
