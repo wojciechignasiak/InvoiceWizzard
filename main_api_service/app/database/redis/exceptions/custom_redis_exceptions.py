@@ -6,3 +6,6 @@ class RedisNotFoundError(RedisDatabaseError):
 
 class RedisSetError(RedisDatabaseError):
     """Exception thrown when the record is not found."""
+
+class RedisJWTNotFoundError(RedisDatabaseError):
+    """Exception thrown when the record is not found."""

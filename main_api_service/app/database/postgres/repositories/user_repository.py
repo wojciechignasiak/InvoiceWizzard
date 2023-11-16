@@ -155,7 +155,7 @@ class UserPostgresRepository:
                 update(User).
                 where(User.id == new_email.id).
                 values(email = new_email.new_email).
-                returning(User.id, User.email)
+                returning(User)
             )
             user = await self.session.scalar(stmt)
             await self.session.commit()
