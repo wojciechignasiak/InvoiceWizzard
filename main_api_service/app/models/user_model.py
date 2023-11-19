@@ -1,21 +1,5 @@
 from pydantic import BaseModel, ConfigDict, EmailStr
 
-class NewUserTemporaryModel(BaseModel):
-    model_config = ConfigDict(json_schema_extra={
-        "example":{
-                "email": "email@example.com",
-                "password": "hashedPassword",
-                "salt": "asksmdadkwdaskdawdakjfja===1asa!",
-                "registration_date": "2023-10-25"
-                }
-            }
-        )
-    
-    email: EmailStr
-    password: str
-    salt: str
-    registration_date: str
-
 class RegisterUserModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
@@ -31,8 +15,24 @@ class RegisterUserModel(BaseModel):
     password: str
     repeated_password: str
 
+class CreateUserModel(BaseModel):
+    model_config = ConfigDict(json_schema_extra={
+        "example":{
+                "email": "email@example.com",
+                "password": "hashedPassword",
+                "salt": "asksmdadkwdaskdawdakjfja===1asa!",
+                "registration_date": "2023-10-25"
+                }
+            }
+        )
+    
+    email: EmailStr
+    password: str
+    salt: str
+    registration_date: str
 
-class UserPersonalInformation(BaseModel):
+
+class UserPersonalInformationModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
                 "first_name": "Jan",
@@ -52,7 +52,7 @@ class UserPersonalInformation(BaseModel):
     street: str = None
 
 
-class UpdateUserPassword(BaseModel):
+class UpdateUserPasswordModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
                 "current_password": "passw0rd!",
@@ -66,7 +66,7 @@ class UpdateUserPassword(BaseModel):
     new_password: str
     new_repeated_password: str
 
-class UpdateUserEmail(BaseModel):
+class UpdateUserEmailModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
                 "current_email": "email@example.com",
@@ -81,7 +81,7 @@ class UpdateUserEmail(BaseModel):
     new_repeated_email: EmailStr
 
 
-class ConfirmUserEmailChange(BaseModel):
+class ConfirmedUserEmailChangeModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
                 "id": "123456789",
@@ -93,7 +93,7 @@ class ConfirmUserEmailChange(BaseModel):
     id: str
     new_email: EmailStr
 
-class ConfirmUserPasswordChange(BaseModel):
+class ConfirmedUserPasswordChangeModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
                 "id": "123456789",
@@ -105,7 +105,7 @@ class ConfirmUserPasswordChange(BaseModel):
     id: str
     new_password: str
 
-class ResetPasswordModel(BaseModel):
+class ResetUserPasswordModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
                 "email": "email1@example.com",

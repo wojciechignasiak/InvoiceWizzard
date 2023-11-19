@@ -2,7 +2,7 @@ import os
 import argon2
 import jwt
 from app.models.jwt_model import JWTDataModel
-
+from app.logging import logger
 
 class UserUtils:
     
@@ -11,7 +11,7 @@ class UserUtils:
             salt = os.urandom(16)
             return str(salt)
         except Exception as e:
-            print("UserUtils.salt_generator() Error:", e)
+            logger.error(f"UserUtils.salt_generator() Error: {e}")
             raise Exception("Error durning salt generation occured.")
 
     async def hash_password(self, salt: str, password: str) -> str:
@@ -20,7 +20,7 @@ class UserUtils:
             hashed_password = ph.hash(password + salt)
             return hashed_password
         except Exception as e:
-            print("UserUtils.hash_password() Error:", e)
+            logger.error(f"UserUtils.hash_password() Error: {e}")
             raise Exception("Error durning hashing password occured.")
     
     async def verify_password(self, salt: str, password: str, hash: str) -> bool:
@@ -29,7 +29,7 @@ class UserUtils:
             is_the_same = ph.verify(hash, password+salt)
             return is_the_same
         except Exception as e:
-            print("UserUtils.verify_password() Error:", e)
+            logger.error(f"UserUtils.verify_password() Error: {e}")
             raise Exception("Error durning verifying password.")
 
     async def jwt_encoder(self, jwt_data: JWTDataModel) -> str:
@@ -41,5 +41,5 @@ class UserUtils:
             )
             return jwt_token
         except Exception as e:
-            print("UserUtils.jwt_encoder() Error:", e)
+            logger.error(f"UserUtils.jwt_encoder() Error: {e}")
             raise Exception("Error durning encoding jwt occured.")
