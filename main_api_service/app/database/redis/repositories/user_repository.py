@@ -1,4 +1,3 @@
-import logging
 import datetime
 from app.database.redis.repositories.base_redis_repository import BaseRedisRepository
 from app.models.user_model import (
@@ -6,6 +5,7 @@ from app.models.user_model import (
     ConfirmedUserEmailChangeModel, 
     ConfirmedUserPasswordChangeModel
     )
+from app.logging import logger
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError,
     RedisNotFoundError,
@@ -34,7 +34,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 raise RedisSetError("Cannot register new user in database.")
             return is_user_created
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.create_user() Error: {e}")
+            logger.error(f"UserRedisRepository.create_user() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
         
     async def search_user_by_id(self, key_id: str) -> bytes:
@@ -48,7 +48,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 raise RedisNotFoundError("User with provided id not found in database.")
             return user
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.search_user_by_id() Error: {e}")
+            logger.error(f"UserRedisRepository.search_user_by_id() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
     
     async def is_user_arleady_registered(self, email_address: str) -> bool:
@@ -59,7 +59,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
             else:
                 return False
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.is_user_arleady_registered() Error: {e}")
+            logger.error(f"UserRedisRepository.is_user_arleady_registered() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
         
     async def delete_user_by_id(self, key_id: str) -> bool:
@@ -72,7 +72,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
             else:
                 return False
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.delete_user_by_id() Error: {e}")
+            logger.error(f"UserRedisRepository.delete_user_by_id() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
         
     async def save_jwt(self, jwt_token: str, jwt_payload: JWTPayloadModel) -> bool:
@@ -83,7 +83,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 raise RedisSetError("Error occured durning saving JWT token to database.")
             return is_jwt_saved
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.save_jwt() Error: {e}")
+            logger.error(f"UserRedisRepository.save_jwt() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
     
     async def retrieve_jwt(self, jwt_token: str) -> bytes:
@@ -95,7 +95,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
             else:
                 raise RedisJWTNotFoundError("Unauthorized access or JWT token expired.")
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.retrieve_jwt() Error: {e}")
+            logger.error(f"UserRedisRepository.retrieve_jwt() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
         
     async def delete_all_jwt_tokens_of_user(self, user_id: str):
@@ -105,7 +105,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 for token_key in jwt_token_keys:
                     self.redis_client.delete(token_key)
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.delete_all_jwt_of_user() Error: {e}")
+            logger.error(f"UserRedisRepository.delete_all_jwt_of_user() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
         
     async def save_new_email(self, key_id: str, new_email: ConfirmedUserEmailChangeModel) -> bool:
@@ -115,7 +115,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 raise RedisSetError("Error durning saving new email to database occured")
             return is_new_email_saved
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.save_new_email() Error: {e}")
+            logger.error(f"UserRedisRepository.save_new_email() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
         
     async def retrieve_new_email(self, key_id: str) -> bytes:
@@ -125,14 +125,14 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 raise RedisNotFoundError("New email not found in database.")
             return new_email
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.retrieve_new_email() Error: {e}")
+            logger.error(f"UserRedisRepository.retrieve_new_email() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
         
     async def delete_new_email(self, key_id):
         try:
             self.redis_client.delete(f"new_email:{key_id}")
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.delete_new_email() Error: {e}")
+            logger.error(f"UserRedisRepository.delete_new_email() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
         
     async def save_new_password(self, key_id: str, new_password: ConfirmedUserPasswordChangeModel) -> bool:
@@ -143,7 +143,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 raise RedisSetError("Error durning saving new password to database occured.")
             return is_new_password_saved
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.save_new_password() Error: {e}")
+            logger.error(f"UserRedisRepository.save_new_password() Error: {e}")
             raise RedisDatabaseError("Error durning saving new password to database occured.")
         
     async def retrieve_new_password(self, key_id: str) -> bytes:
@@ -153,12 +153,12 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 raise RedisNotFoundError("New password not found in database.")
             return new_password
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.retrieve_new_password() Error: {e}")
+            logger.error(f"UserRedisRepository.retrieve_new_password() Error: {e}")
             raise RedisDatabaseError("Error durning retrieving new password from database occured.")
         
     async def delete_new_password(self, key_id: str):
         try:
             self.redis_client.delete(f"new_password:{key_id}")
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logging.exception(f"UserRedisRepository.delete_new_password() Error: {e}")
+            logger.error(f"UserRedisRepository.delete_new_password() Error: {e}")
             raise RedisDatabaseError("Error durning deleting new password from database occured.")

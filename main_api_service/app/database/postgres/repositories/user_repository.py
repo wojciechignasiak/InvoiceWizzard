@@ -11,6 +11,7 @@ from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLIntegrityError,
     PostgreSQLNotFoundError
 )
+from app.logging import logger
 from sqlalchemy import insert, select, update
 from app.schema.schema import User
 from app.models.user_model import (
@@ -21,7 +22,6 @@ from app.models.user_model import (
     )
 from datetime import datetime, date
 from uuid import uuid4
-import logging
 
 
 class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
@@ -44,11 +44,11 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             return user
         except IntegrityError as e:
             await self.session.rollback()
-            logging.exception(f"UserPostgresRepository.create_user() Error: {e}")
+            logger.error(f"UserPostgresRepository.create_user() Error: {e}")
             raise PostgreSQLIntegrityError("Cannot create new user in database. Integrity error occured.")
         except DatabaseError as e:
             await self.session.rollback()
-            logging.exception(f"UserPostgresRepository.create_user() Error: {e}")
+            logger.error(f"UserPostgresRepository.create_user() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
 
@@ -60,7 +60,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user
         except (DataError, StatementError, DatabaseError) as e:
-            logging.exception(f"UserPostgresRepository.get_user_by_id() Error: {e}")
+            logger.error(f"UserPostgresRepository.get_user_by_id() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
 
@@ -72,7 +72,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
                 raise PostgreSQLNotFoundError("User with provided email address not found in database.")
             return user
         except (DataError, StatementError, DatabaseError) as e:
-            logging.exception(f"UserPostgresRepository.get_user_by_email_address() Error: {e}")
+            logger.error(f"UserPostgresRepository.get_user_by_email_address() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
 
@@ -86,7 +86,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             else:
                 return False
         except (DataError, StatementError, DatabaseError) as e:
-            logging.exception(f"UserPostgresRepository.get_user_by_email_address() Error: {e}")
+            logger.error(f"UserPostgresRepository.get_user_by_email_address() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
 
@@ -104,7 +104,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user
         except (DataError, StatementError, DatabaseError) as e:
-            logging.exception(f"UserPostgresRepository.update_user_last_login() Error: {e}")
+            logger.error(f"UserPostgresRepository.update_user_last_login() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
 
@@ -135,7 +135,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user    
         except (DataError, StatementError, DatabaseError) as e:
-            logging.exception(f"UserPostgresRepository.update_user_personal_information() Error: {e}")
+            logger.error(f"UserPostgresRepository.update_user_personal_information() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
 
@@ -152,10 +152,10 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user
         except IntegrityError as e:
-            logging.exception(f"UserPostgresRepository.update_user_email_address() Error: {e}")
+            logger.error(f"UserPostgresRepository.update_user_email_address() Error: {e}")
             raise PostgreSQLIntegrityError("Cannot update user email address. Integrity error occured.")
         except (DataError, StatementError, DatabaseError) as e:
-            logging.exception(f"UserPostgresRepository.update_user_email_address() Error: {e}")
+            logger.error(f"UserPostgresRepository.update_user_email_address() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
 
@@ -172,5 +172,5 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user
         except (DataError, StatementError, DatabaseError) as e:
-            logging.exception(f"UserPostgresRepository.update_user_password() Error: {e}")
+            logger.error(f"UserPostgresRepository.update_user_password() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")

@@ -130,8 +130,7 @@ async def lifespan(app: FastAPI):
     await app.state.engine.dispose()
     print("Stopping Kafka producer...")
     await app.state.kafka_producer.stop()
-    print("Closing Kafka Producer event loop...")
-    loop.close()
+    
 
 def create_application() -> FastAPI:
     application = FastAPI(lifespan=lifespan, openapi_url="/openapi.json", docs_url="/docs", middleware=middleware)
