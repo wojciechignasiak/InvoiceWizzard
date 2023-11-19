@@ -1,6 +1,6 @@
 import logging
 import datetime
-from redis import Redis
+from app.database.redis.repositories.base_redis_repository import BaseRedisRepository
 from app.models.user_model import (
     CreateUserModel, 
     ConfirmedUserEmailChangeModel, 
@@ -19,13 +19,11 @@ from redis.exceptions import (
     TimeoutError, 
     ResponseError
 )
+from app.database.redis.repositories.user_repository_abc import UserRedisRepositoryABC
 
 
+class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
 
-class UserRedisRepository:
-    def __init__(self, redis_client: Redis):
-        self.redis_client: Redis = redis_client
-        
     async def create_user(self, key_id: str, new_user: CreateUserModel) -> bool:
         try:
             is_user_created = self.redis_client.setex(f"user:{key_id}:{str(new_user.email)}", 
@@ -74,7 +72,7 @@ class UserRedisRepository:
             else:
                 return False
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            print("UserRedisRepository.delete_user_by_id() Error: ", e)
+            logging.exception(f"UserRedisRepository.delete_user_by_id() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
         
     async def save_jwt(self, jwt_token: str, jwt_payload: JWTPayloadModel) -> bool:

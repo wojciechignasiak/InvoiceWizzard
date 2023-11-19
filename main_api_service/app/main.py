@@ -2,17 +2,21 @@ import os
 import redis
 import asyncio
 from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
+from starlette import middleware
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 from kafka.errors import KafkaTimeoutError, KafkaError
+from aiokafka import AIOKafkaProducer
 from app.kafka.initialize_topics.startup_topics import startup_topics
 from contextlib import asynccontextmanager
-from starlette.middleware.cors import CORSMiddleware
-from starlette import middleware
-from app.routers import (user_router)
 from app.schema.schema import Base
+from app.database.repositories_registry import RepositoriesRegistry
+from app.database.postgres.repositories.user_repository import UserPostgresRepository
+from app.database.redis.repositories.user_repository import UserRedisRepository
+from app.routers import (user_router)
 
 
 middleware = [
@@ -96,6 +100,27 @@ async def lifespan(app: FastAPI):
         except KafkaError as e:
             print(f'Kafka error durning topic initalization: {e}')
 
+    while True:
+        try:
+            print("Initializing repositories registry...")
+            repositories_registry: RepositoriesRegistry = RepositoriesRegistry(UserPostgresRepository, UserRedisRepository)
+            app.state.repositories_registry = repositories_registry
+            print("Repositories registry initialized!")
+            break
+        except Exception as e:
+            print(f'Error occured durning initializing repositories registry: {e}')
+
+    while True:
+        try:
+            print("Running Kafka Producer on separate event loop...")
+            loop = asyncio.get_event_loop()
+            app.state.kafka_producer: AIOKafkaProducer = AIOKafkaProducer(loop=loop, bootstrap_servers=KAFKA_URL)
+            await app.state.kafka_producer.start()
+            print("Kafka Producer started...")
+            break
+        except (KafkaError, KafkaTimeoutError) as e:
+            print(f'Error occured durning running Kafka Producer: {e}')
+
     yield
     ''' Run on shutdown
         Close the connection
@@ -103,6 +128,10 @@ async def lifespan(app: FastAPI):
     '''
     print("Disposing PostgreSQL engine...")
     await app.state.engine.dispose()
+    print("Stopping Kafka producer...")
+    await app.state.kafka_producer.stop()
+    print("Closing Kafka Producer event loop...")
+    loop.close()
 
 def create_application() -> FastAPI:
     application = FastAPI(lifespan=lifespan, openapi_url="/openapi.json", docs_url="/docs", middleware=middleware)
