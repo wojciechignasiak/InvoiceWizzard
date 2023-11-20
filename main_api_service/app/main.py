@@ -134,7 +134,7 @@ async def lifespan(app: FastAPI):
 
 def create_application() -> FastAPI:
     application = FastAPI(lifespan=lifespan, openapi_url="/openapi.json", docs_url="/docs", middleware=middleware)
-    application.include_router(user_router.router, tags=["cities"])
+    application.include_router(user_router.router, tags=["user"])
     return application
 
 app = create_application()

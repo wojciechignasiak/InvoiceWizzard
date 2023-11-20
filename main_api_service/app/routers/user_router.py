@@ -19,12 +19,12 @@ from app.database.postgres.exceptions.custom_postgres_exceptions import (
     )
 from app.schema.schema import User
 from app.kafka.producer.kafka_producer import EventProducer
-from app.models.kafka_topics_enum import KafkaTopicsEnum
 from app.models.jwt_model import (
     JWTDataModel, 
     JWTPayloadModel
 )
 from app.models.user_model import (
+    ReturnUserModel,
     RegisterUserModel, 
     CreateUserModel, 
     UserPersonalInformationModel, 
@@ -45,6 +45,56 @@ import re
 
 router = APIRouter()
 http_bearer = HTTPBearer()
+
+@router.get("/user-module/get-current-user/", response_model=ReturnUserModel)
+async def get_current_user(
+    request: Request,
+    token = Depends(http_bearer), 
+    redis_client: redis.Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    ):
+
+    try:
+        repositories_registry: RepositoriesRegistry = request.app.state.repositories_registry
+        user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
+        user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        user: User = await user_postgres_repository.get_user_by_id(
+            user_id=jwt_payload.id
+            )
+
+        
+        return_user_model: ReturnUserModel = ReturnUserModel(
+            id=str(user.id),
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            phone_number=user.phone_number,
+            city=user.city,
+            postal_code=user.postal_code,
+            street=user.street,
+            registration_date=str(user.registration_date),
+            last_login=str(user.last_login),
+            email_notification=user.email_notification,
+            push_notification=user.push_notification
+        )
+
+        return JSONResponse(return_user_model.model_dump())
+    
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except (Exception, RedisDatabaseError, PostgreSQLDatabaseError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.post("/user-module/register-account/")
 async def register_account(
