@@ -1,4 +1,20 @@
 from pydantic import BaseModel, ConfigDict, EmailStr
+from typing import Optional
+from datetime import datetime
+
+class ReturnUserModel(BaseModel):
+    id: str
+    email: EmailStr
+    first_name: Optional[str]
+    last_name: Optional[str]
+    phone_number: Optional[str]
+    city: Optional[str]
+    postal_code: Optional[str]
+    street: Optional[str]
+    registration_date: str
+    last_login: str
+    email_notification: bool
+    push_notification: bool
 
 class RegisterUserModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
