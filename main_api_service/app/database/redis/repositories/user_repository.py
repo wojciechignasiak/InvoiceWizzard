@@ -44,8 +44,6 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 user: bytes = self.redis_client.get(user_key[0])
             else:
                 raise RedisNotFoundError("User with provided id not found in database.")
-            if user == None:
-                raise RedisNotFoundError("User with provided id not found in database.")
             return user
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
             logger.error(f"UserRedisRepository.search_user_by_id() Error: {e}")
@@ -137,7 +135,6 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
         
     async def save_new_password(self, key_id: str, new_password: ConfirmedUserPasswordChangeModel) -> bool:
         try:
-            
             is_new_password_saved = self.redis_client.setex(f"new_password:{key_id}", 60*60*48, new_password.model_dump_json())
             if is_new_password_saved == False:
                 raise RedisSetError("Error durning saving new password to database occured.")
