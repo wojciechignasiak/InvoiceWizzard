@@ -1,0 +1,11 @@
+name: Docker-Compose and unit testing
+on: push
+jobs:
+  docker-compose-up-and-run-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build Docker containers
+        run: docker-compose up -d
+      - name: Run unit tests
+        run: docker-compose exec -T main_api_service python -m pytest
