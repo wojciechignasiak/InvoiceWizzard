@@ -1,4 +1,5 @@
 import os
+import base64
 import argon2
 import jwt
 from app.models.jwt_model import JWTDataModel
@@ -8,8 +9,8 @@ class UserUtils:
     
     async def salt_generator(self) -> str:
         try:
-            salt = os.urandom(16)
-            return str(salt)
+            salt: bytes = os.urandom(16)
+            return base64.b64encode(salt).decode('utf-8')
         except Exception as e:
             logger.error(f"UserUtils.salt_generator() Error: {e}")
             raise Exception("Error durning salt generation occured.")

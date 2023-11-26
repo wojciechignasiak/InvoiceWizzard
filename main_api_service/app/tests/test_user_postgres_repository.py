@@ -77,7 +77,6 @@ async def test_get_user_by_id_database_error(
     mock_user_schema_object):
 
     user_postgres_repository = UserPostgresRepository(mock_postgres_async_session)
-
     mock_postgres_async_session.scalar.side_effect = DatabaseError('Database error', {}, None)
 
     with pytest.raises(PostgreSQLDatabaseError):
@@ -90,17 +89,16 @@ async def test_get_user_by_email_address_success(
     mock_postgres_async_session, 
     mock_user_schema_object):
 
-    mock_postgres_async_session.scalar.return_value = mock_user_schema_object
-    
     user_postgres_repository = UserPostgresRepository(mock_postgres_async_session)
+    mock_postgres_async_session.scalar.return_value = mock_user_schema_object
     user = await user_postgres_repository.get_user_by_email_address(mock_user_schema_object.email)
     
     assert isinstance(user, User)
 
 @pytest.mark.asyncio
 async def test_get_user_by_email_address_not_found(mock_postgres_async_session):
-    user_postgres_repository = UserPostgresRepository(mock_postgres_async_session)
 
+    user_postgres_repository = UserPostgresRepository(mock_postgres_async_session)
     mock_postgres_async_session.scalar.return_value = None
 
     with pytest.raises(PostgreSQLNotFoundError):
@@ -118,11 +116,11 @@ async def test_get_user_by_email_address_database_error(mock_postgres_async_sess
 # UserPostgresRepository.is_email_address_arleady_taken()
 
 @pytest.mark.asyncio
-async def test_is_email_addres_arleady_taken_success(mock_postgres_async_session):
+async def test_is_email_address_arleady_taken_success(mock_postgres_async_session):
 
     user_postgres_repository = UserPostgresRepository(mock_postgres_async_session)
     mock_postgres_async_session.scalar.return_value = None
-    is_email_in_use = await user_postgres_repository.is_email_addres_arleady_taken("email@example.com")
+    is_email_in_use = await user_postgres_repository.is_email_address_arleady_taken("email@example.com")
     
     assert isinstance(is_email_in_use, bool)
     assert is_email_in_use == False
@@ -134,7 +132,7 @@ async def test_get_user_by_email_address_database_error(mock_postgres_async_sess
     mock_postgres_async_session.scalar.side_effect = DatabaseError('Database error', {}, None)
 
     with pytest.raises(PostgreSQLDatabaseError):
-        await user_postgres_repository.is_email_addres_arleady_taken("email@example.com")
+        await user_postgres_repository.is_email_address_arleady_taken("email@example.com")
 
 # UserPostgresRepository.update_user_last_login()
 

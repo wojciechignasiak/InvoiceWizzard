@@ -77,7 +77,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
 
-    async def is_email_addres_arleady_taken(self, user_email_adress: str) -> bool:
+    async def is_email_address_arleady_taken(self, user_email_adress: str) -> bool:
         try:
             stmt = select(User).where(User.email == user_email_adress)
             user = await self.session.scalar(stmt)
@@ -87,7 +87,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             else:
                 return False
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"UserPostgresRepository.get_user_by_email_address() Error: {e}")
+            logger.error(f"UserPostgresRepository.is_email_address_arleady_taken() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
 
@@ -166,7 +166,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
                 update(User).
                 where(User.id == new_password.id).
                 values(email = new_password.new_password).
-                returning(User.id, User.password)
+                returning(User)
             )
             user = await self.session.scalar(stmt)
             if user == None:

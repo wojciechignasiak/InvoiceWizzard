@@ -127,9 +127,9 @@ async def test_delete_user_by_id_redis_error(mock_redis_client):
 @pytest.mark.asyncio
 async def test_save_jwt_success(
     mock_redis_client,
-    mock_jwt_payload_model_object):
+    mock_jwt_payload_model_object,
+    mock_jwt_token):
 
-    mock_jwt_token = "1234567890"
     user_redis_repository = UserRedisRepository(mock_redis_client)
     mock_redis_client.setex.return_value = True
     is_jwt_saved = await user_redis_repository.save_jwt(mock_jwt_token, mock_jwt_payload_model_object)
@@ -140,9 +140,9 @@ async def test_save_jwt_success(
 @pytest.mark.asyncio
 async def test_save_jwt_redis_set_error(
     mock_redis_client,
-    mock_jwt_payload_model_object):
+    mock_jwt_payload_model_object,
+    mock_jwt_token):
 
-    mock_jwt_token = "1234567890"
     user_redis_repository = UserRedisRepository(mock_redis_client)
     mock_redis_client.setex.return_value = False
     
@@ -152,9 +152,10 @@ async def test_save_jwt_redis_set_error(
 @pytest.mark.asyncio
 async def test_save_jwt_redis_error(
     mock_redis_client,
-    mock_jwt_payload_model_object):
+    mock_jwt_payload_model_object,
+    mock_jwt_token):
 
-    mock_jwt_token = "1234567890"
+
     user_redis_repository = UserRedisRepository(mock_redis_client)
     mock_redis_client.setex.side_effect = RedisError("Redis error")
     
@@ -166,9 +167,9 @@ async def test_save_jwt_redis_error(
 @pytest.mark.asyncio
 async def test_retrieve_jwt_success(
     mock_redis_client,
-    mock_jwt_payload_model_object):
+    mock_jwt_payload_model_object,
+    mock_jwt_token):
 
-    mock_jwt_token = "1234567890"
     user_redis_repository = UserRedisRepository(mock_redis_client)
     mock_redis_client.get.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
     mock_redis_client.keys.return_value = [mock_jwt_token]
@@ -177,9 +178,10 @@ async def test_retrieve_jwt_success(
     assert isinstance(jwt, bytes)
 
 @pytest.mark.asyncio
-async def test_retrieve_jwt_redis_jwt_not_found_error(mock_redis_client):
+async def test_retrieve_jwt_redis_jwt_not_found_error(
+    mock_redis_client,
+    mock_jwt_token):
 
-    mock_jwt_token = "1234567890"
     user_redis_repository = UserRedisRepository(mock_redis_client)
     mock_redis_client.keys.return_value = []
 
@@ -187,9 +189,10 @@ async def test_retrieve_jwt_redis_jwt_not_found_error(mock_redis_client):
         await user_redis_repository.retrieve_jwt(mock_jwt_token)
 
 @pytest.mark.asyncio
-async def test_retrieve_jwt_redis_error(mock_redis_client):
+async def test_retrieve_jwt_redis_error(
+    mock_redis_client,
+    mock_jwt_token):
 
-    mock_jwt_token = "1234567890"
     user_redis_repository = UserRedisRepository(mock_redis_client)
     mock_redis_client.keys.side_effect = RedisError("Redis error")
     
