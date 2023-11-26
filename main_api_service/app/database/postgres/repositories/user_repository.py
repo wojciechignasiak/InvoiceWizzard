@@ -2,7 +2,10 @@ from sqlalchemy.exc import (
     IntegrityError, 
     DataError, 
     StatementError,
-    DatabaseError
+    DatabaseError,
+    InterfaceError,
+    OperationalError,
+    ProgrammingError
     )
 from app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
 from app.database.postgres.repositories.user_repository_abc import UserPostgresRepositoryABC
@@ -43,11 +46,9 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             user = await self.session.scalar(stmt)
             return user
         except IntegrityError as e:
-            await self.session.rollback()
             logger.error(f"UserPostgresRepository.create_user() Error: {e}")
             raise PostgreSQLIntegrityError("Cannot create new user in database. Integrity error occured.")
-        except DatabaseError as e:
-            await self.session.rollback()
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserPostgresRepository.create_user() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
@@ -59,7 +60,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             if user == None:
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user
-        except (DataError, StatementError, DatabaseError) as e:
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserPostgresRepository.get_user_by_id() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
@@ -71,12 +72,12 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             if user == None:
                 raise PostgreSQLNotFoundError("User with provided email address not found in database.")
             return user
-        except (DataError, StatementError, DatabaseError) as e:
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserPostgresRepository.get_user_by_email_address() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
 
-    async def is_email_addres_arleady_taken(self, user_email_adress: str) -> bool:
+    async def is_email_address_arleady_taken(self, user_email_adress: str) -> bool:
         try:
             stmt = select(User).where(User.email == user_email_adress)
             user = await self.session.scalar(stmt)
@@ -85,8 +86,8 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
                 return True
             else:
                 return False
-        except (DataError, StatementError, DatabaseError) as e:
-            logger.error(f"UserPostgresRepository.get_user_by_email_address() Error: {e}")
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"UserPostgresRepository.is_email_address_arleady_taken() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
 
@@ -103,7 +104,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             if user == None:
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user
-        except (DataError, StatementError, DatabaseError) as e:
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserPostgresRepository.update_user_last_login() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
@@ -134,7 +135,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             if user == None:
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user    
-        except (DataError, StatementError, DatabaseError) as e:
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserPostgresRepository.update_user_personal_information() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
@@ -154,7 +155,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
         except IntegrityError as e:
             logger.error(f"UserPostgresRepository.update_user_email_address() Error: {e}")
             raise PostgreSQLIntegrityError("Cannot update user email address. Integrity error occured.")
-        except (DataError, StatementError, DatabaseError) as e:
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserPostgresRepository.update_user_email_address() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
@@ -165,12 +166,12 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
                 update(User).
                 where(User.id == new_password.id).
                 values(email = new_password.new_password).
-                returning(User.id, User.password)
+                returning(User)
             )
             user = await self.session.scalar(stmt)
             if user == None:
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user
-        except (DataError, StatementError, DatabaseError) as e:
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserPostgresRepository.update_user_password() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")

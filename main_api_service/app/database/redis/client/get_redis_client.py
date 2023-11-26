@@ -1,7 +1,8 @@
 from starlette.requests import Request
+from app.logging import logger
 
 async def get_redis_client(request: Request):
     try:
-        return request.app.state.redis_client
+        yield request.app.state.redis_client
     except Exception as e:
-        print({"get_redis_client": f"Error: {e}"})
+        logger.exception({"get_redis_client": f"Error: {e}"})

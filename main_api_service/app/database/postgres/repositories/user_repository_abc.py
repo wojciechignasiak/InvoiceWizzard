@@ -21,7 +21,7 @@ class UserPostgresRepositoryABC(ABC):
         pass
 
     @abstractmethod
-    async def is_email_addres_arleady_taken(self, user_email_adress: str) -> bool:
+    async def is_email_address_arleady_taken(self, user_email_adress: str) -> bool:
         pass
     
     @abstractmethod
