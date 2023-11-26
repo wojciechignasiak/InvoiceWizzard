@@ -20,6 +20,11 @@ from datetime import datetime, date
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
 from app.database.repositories_registry import RepositoriesRegistry
+import docker
+from docker import DockerClient
+from docker.models.containers import Container
+from docker.models.networks import Network
+from kafka.admin import KafkaAdminClient, NewTopic
 
 @pytest.fixture
 def mock_postgres_async_session():
@@ -53,6 +58,34 @@ def mock_user_schema_object():
     )
 
     return user_schema_object
+
+
+@pytest.fixture
+def mock_jwt_token():
+    jwt_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjcwMjQzNTNiLWFhODktNDA5Ny04OTI1LWYyODU1NTE5YzBhZSIsImVtYWlsIjoiZW1haWxAZXhhbXBsZS5jb20iLCJleHAiOjE1MTYyMzkwMjJ9.bpoXUQdibTb0nltDSQF7ujjSHv-v0nb7qdvhnkXdv4c"
+
+    return jwt_token
+
+@pytest.fixture
+def mock_user_redis_repository_object():
+    user_redis_repository_mock_object = Mock(spec=UserRedisRepository)
+
+    return user_redis_repository_mock_object
+
+@pytest.fixture
+def mock_user_postgres_repository_object():
+    user_postgres_repository_mock_object = Mock(spec=UserPostgresRepository)
+
+    return user_postgres_repository_mock_object
+
+@pytest.fixture
+def mock_registry_repository_object():
+    repositories_registry_mock_object = Mock(spec=RepositoriesRegistry)
+
+    return repositories_registry_mock_object
+
+
+#MOCKED MODELS
 
 @pytest.fixture
 def mock_create_user_model_object():
@@ -105,30 +138,6 @@ def mock_jwt_payload_model_object():
     )
 
     return jwt_payload_model_object
-
-@pytest.fixture
-def mock_jwt_token():
-    jwt_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjcwMjQzNTNiLWFhODktNDA5Ny04OTI1LWYyODU1NTE5YzBhZSIsImVtYWlsIjoiZW1haWxAZXhhbXBsZS5jb20iLCJleHAiOjE1MTYyMzkwMjJ9.bpoXUQdibTb0nltDSQF7ujjSHv-v0nb7qdvhnkXdv4c"
-
-    return jwt_token
-
-@pytest.fixture
-def mock_user_redis_repository_object():
-    user_redis_repository_mock_object = Mock(spec=UserRedisRepository)
-
-    return user_redis_repository_mock_object
-
-@pytest.fixture
-def mock_user_postgres_repository_object():
-    user_postgres_repository_mock_object = Mock(spec=UserPostgresRepository)
-
-    return user_postgres_repository_mock_object
-
-@pytest.fixture
-def mock_registry_repository_object():
-    repositories_registry_mock_object = Mock(spec=RepositoriesRegistry)
-
-    return repositories_registry_mock_object
 
 @pytest.fixture
 def mock_register_user_model_object():

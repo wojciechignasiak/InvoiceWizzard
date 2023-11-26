@@ -3,7 +3,7 @@ from app.main import app
 from app.database.postgres.session.get_session import get_session
 from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.get_repositories_registry import get_repositories_registry
-from app.kafka.producer.get_kafka_producer_client import get_kafka_producer_client
+from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
 from fastapi.testclient import TestClient
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisSetError, 

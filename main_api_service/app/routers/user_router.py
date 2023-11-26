@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 import redis
@@ -19,7 +19,8 @@ from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLNotFoundError
     )
 from app.schema.schema import User
-from app.kafka.producer.kafka_producer import EventProducer
+from app.kafka.events.user_events import UserEvents
+from app.kafka.exceptions.custom_kafka_exceptions import KafkaBaseError
 from app.models.jwt_model import (
     JWTDataModel, 
     JWTPayloadModel
@@ -37,7 +38,7 @@ from app.models.user_model import (
     )
 from app.utils.user_utils import UserUtils
 from aiokafka import AIOKafkaProducer
-from app.kafka.producer.get_kafka_producer_client import get_kafka_producer_client
+from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
 from datetime import date
 from uuid import uuid4
 import datetime
@@ -87,12 +88,12 @@ async def get_current_user(
 
         return JSONResponse(return_user_model.model_dump())
     
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     except PostgreSQLNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except HTTPException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
     except (Exception, RedisDatabaseError, PostgreSQLDatabaseError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -108,7 +109,7 @@ async def register_account(
     try:
         user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
-        event_producer = EventProducer(kafka_producer_client)
+        event_producer: UserEvents = UserEvents(kafka_producer_client)
         user_utils: UserUtils = UserUtils()
 
         if new_user.email != new_user.repeated_email:
@@ -165,7 +166,7 @@ async def register_account(
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "Account has been registered. Now confirm your email address."})
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except (Exception, PostgreSQLDatabaseError, RedisSetError, RedisDatabaseError) as e:
+    except (Exception, PostgreSQLDatabaseError, RedisSetError, RedisDatabaseError, KafkaBaseError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
     
@@ -182,7 +183,7 @@ async def confirm_account(
     try:
         user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
-        event_producer = EventProducer(kafka_producer_client)
+        event_producer: UserEvents = UserEvents(kafka_producer_client)
 
         user_to_confirm_data: bytes = await user_redis_repository.search_user_by_id(
             key_id=id
@@ -210,7 +211,7 @@ async def confirm_account(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except RedisNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except (Exception, RedisDatabaseError, PostgreSQLDatabaseError) as e:
+    except (Exception, RedisDatabaseError, PostgreSQLDatabaseError, KafkaBaseError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
@@ -324,7 +325,7 @@ async def change_email_address(
     try:
         user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: EventProducer = EventProducer(kafka_producer_client)
+        event_producer: UserEvents = UserEvents(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -365,15 +366,15 @@ async def change_email_address(
 
         return JSONResponse(content={"message": "New email has been saved. Email message with confirmation link has been send to old email address."})
     
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     except RedisSetError as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     except PostgreSQLNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except HTTPException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except (Exception, RedisDatabaseError, PostgreSQLDatabaseError) as e:
+    except (Exception, RedisDatabaseError, PostgreSQLDatabaseError, KafkaBaseError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
 @router.patch("/user-module/confirm-email-address-change/")
@@ -388,7 +389,7 @@ async def confirm_email_address_change(
     try:
         user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
-        event_producer = EventProducer(kafka_producer_client)
+        event_producer: UserEvents = UserEvents(kafka_producer_client)
 
         new_email_data: bytes = await user_redis_repository.retrieve_new_email(
             key_id=id
@@ -426,7 +427,7 @@ async def confirm_email_address_change(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except (RedisNotFoundError, PostgreSQLNotFoundError) as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError) as e:
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, KafkaBaseError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.put("/user-module/change-password/")
@@ -443,7 +444,7 @@ async def change_password(
     try:
         user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
-        event_producer = EventProducer(kafka_producer_client)
+        event_producer: UserEvents = UserEvents(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -502,7 +503,7 @@ async def change_password(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     except PostgreSQLNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, RedisSetError) as e:
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, RedisSetError, KafkaBaseError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.put("/user-module/reset-password/")
@@ -517,7 +518,7 @@ async def reset_password(
         user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
         user_utils: UserUtils = UserUtils()
-        event_producer = EventProducer(kafka_producer_client)
+        event_producer: UserEvents = UserEvents(kafka_producer_client)
 
         if reset_password.new_password != reset_password.new_repeated_password:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided passwords don't match")
@@ -557,7 +558,7 @@ async def reset_password(
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except (PostgreSQLNotFoundError, RedisNotFoundError) as e:
         return JSONResponse(content={"message": "If provided email address is correct you will get email message with url to confirm your new password."})
-    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, RedisSetError) as e:
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, RedisSetError, KafkaBaseError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.patch("/user-module/confirm-password-change/")
@@ -571,7 +572,7 @@ async def confirm_password_change(
     try:
         user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
-        event_producer = EventProducer(kafka_producer_client)
+        event_producer: UserEvents = UserEvents(kafka_producer_client)
 
         new_password_data: bytes = await user_redis_repository.retrieve_new_password(
             key_id=id
@@ -601,5 +602,5 @@ async def confirm_password_change(
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except (RedisNotFoundError, PostgreSQLNotFoundError) as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except (Exception, RedisDatabaseError, PostgreSQLDatabaseError) as e:
+    except (Exception, RedisDatabaseError, PostgreSQLDatabaseError, KafkaBaseError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
