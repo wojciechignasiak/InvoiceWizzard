@@ -1,5 +1,5 @@
 from app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
-from app.database.postgres.repositories.user_business_entites_repository_abc import UserBusinessEntityRepositoryABC
+from app.database.postgres.repositories.user_business_entites_repository_abc import UserBusinessEntityPostgresRepositoryABC
 from app.schema.schema import UserBusinessEntity
 from app.models.user_business_entity_model import (
     CreateUserBusinessEntityModel,
@@ -20,10 +20,10 @@ from sqlalchemy.exc import (
     ProgrammingError
     )
 from app.logging import logger
-from sqlalchemy import insert, update, delete
+from sqlalchemy import insert, update, delete, select
 from uuid import uuid4, UUID
 
-class UserBusinessEntityRepository(BasePostgresRepository, UserBusinessEntityRepositoryABC):
+class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessEntityPostgresRepositoryABC):
 
     async def create_user_business_entity(self, user_id: str, new_user_business_entity: CreateUserBusinessEntityModel) -> UserBusinessEntity:
         try:
@@ -93,4 +93,20 @@ class UserBusinessEntityRepository(BasePostgresRepository, UserBusinessEntityRep
                 return False
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserBusinessEntityRepository.remove_user_business_entity() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+        
+    async def get_user_business_entity(self, user_id: str, user_business_entity_id: str) -> UserBusinessEntity:
+        try:
+            stmt = (
+                select(UserBusinessEntity).
+                where(
+                    UserBusinessEntity.id == user_business_entity_id,
+                    UserBusinessEntity.user_id == user_id
+                )
+            )
+            user_business_entity = await self.session.scalar(stmt)
+            if user_business_entity == None:
+                raise PostgreSQLNotFoundError("User Business Entity with provided id not found in database.")
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"UserBusinessEntityRepository.get_user_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
