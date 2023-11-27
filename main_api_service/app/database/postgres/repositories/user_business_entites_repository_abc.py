@@ -5,7 +5,7 @@ from app.models.user_business_entity_model import (
     UpdateUserBusinessEntityModel
 )
 
-class UserBusinessEntityRepositoryABC(ABC):
+class UserBusinessEntityPostgresRepositoryABC(ABC):
     @abstractmethod
     async def create_user_business_entity(self, user_id: str, new_user_business_entity: CreateUserBusinessEntityModel) -> UserBusinessEntity:
         pass
@@ -16,4 +16,8 @@ class UserBusinessEntityRepositoryABC(ABC):
 
     @abstractmethod
     async def remove_user_business_entity(self, user_id: str, user_business_entity_id: str) -> bool:
+        pass
+
+    @abstractmethod
+    async def get_user_business_entity(self, user_id: str, user_business_entity_id: str) -> UserBusinessEntity:
         pass
