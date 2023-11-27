@@ -21,3 +21,7 @@ class UserBusinessEntityPostgresRepositoryABC(ABC):
     @abstractmethod
     async def get_user_business_entity(self, user_id: str, user_business_entity_id: str) -> UserBusinessEntity:
         pass
+
+    @abstractmethod
+    async def get_all_user_business_entities(self, user_id: str) -> list:
+        pass
