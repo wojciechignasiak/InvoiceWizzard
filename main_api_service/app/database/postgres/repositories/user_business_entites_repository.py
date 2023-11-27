@@ -111,3 +111,20 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserBusinessEntityRepository.get_user_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
+        
+    async def get_all_user_business_entities(self, user_id: str) -> list:
+        try:
+            stmt = (
+                select(UserBusinessEntity).
+                where(
+                    UserBusinessEntity.user_id == user_id
+                )
+            )
+            user_business_entities = await self.session.scalars(stmt)
+            user_business_entities = user_business_entities.all()
+            if not user_business_entities:
+                raise PostgreSQLNotFoundError("No User Business Entities found in database.")
+            return user_business_entities
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"UserBusinessEntityRepository.get_all_user_business_entities() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
