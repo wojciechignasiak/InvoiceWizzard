@@ -20,7 +20,7 @@ from sqlalchemy.exc import (
     ProgrammingError
     )
 from app.logging import logger
-from sqlalchemy import insert, update
+from sqlalchemy import insert, update, delete
 from uuid import uuid4, UUID
 
 class UserBusinessEntityRepository(BasePostgresRepository, UserBusinessEntityRepositoryABC):
@@ -50,11 +50,14 @@ class UserBusinessEntityRepository(BasePostgresRepository, UserBusinessEntityRep
             logger.error(f"UserBusinessEntityRepository.create_user_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
         
-    async def update_user_business_entity(self, update_user_business_entity: UpdateUserBusinessEntityModel) -> UserBusinessEntity:
+    async def update_user_business_entity(self, user_id: str, update_user_business_entity: UpdateUserBusinessEntityModel) -> UserBusinessEntity:
         try:
             stmt = (
                 update(UserBusinessEntity).
-                where(UserBusinessEntity.id == update_user_business_entity.id).
+                where(
+                    UserBusinessEntity.id == update_user_business_entity.id,
+                    UserBusinessEntity.user_id == user_id
+                    ).
                 values(
                     company_name=update_user_business_entity.company_name,
                     city=update_user_business_entity.city,
@@ -71,4 +74,23 @@ class UserBusinessEntityRepository(BasePostgresRepository, UserBusinessEntityRep
             return updated_user_business_entity
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserBusinessEntityRepository.update_user_business_entity() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+        
+    async def remove_user_business_entity(self, user_id: str, user_business_entity_id: str) -> bool:
+        try:
+            stmt = (
+                delete(UserBusinessEntity).
+                where(
+                    UserBusinessEntity.id == user_business_entity_id,
+                    UserBusinessEntity.user_id == user_id)
+            )
+            deleted_user_business_entity = await self.session.execute(stmt)
+            rows_after_delete = deleted_user_business_entity.fetchall()
+
+            if not rows_after_delete:
+                return True
+            else:
+                return False
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"UserBusinessEntityRepository.remove_user_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")

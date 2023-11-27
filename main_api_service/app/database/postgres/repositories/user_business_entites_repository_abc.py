@@ -11,5 +11,9 @@ class UserBusinessEntityRepositoryABC(ABC):
         pass
 
     @abstractmethod
-    async def update_user_business_entity(self, update_user_business_entity: UpdateUserBusinessEntityModel) -> UserBusinessEntity:
+    async def update_user_business_entity(self, user_id: str, update_user_business_entity: UpdateUserBusinessEntityModel) -> UserBusinessEntity:
+        pass
+
+    @abstractmethod
+    async def remove_user_business_entity(self, user_id: str, user_business_entity_id: str) -> bool:
         pass
