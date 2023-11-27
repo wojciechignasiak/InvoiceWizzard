@@ -107,6 +107,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
             user_business_entity = await self.session.scalar(stmt)
             if user_business_entity == None:
                 raise PostgreSQLNotFoundError("User Business Entity with provided id not found in database.")
+            return user_business_entity
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserBusinessEntityRepository.get_user_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
