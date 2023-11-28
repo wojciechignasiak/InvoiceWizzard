@@ -44,10 +44,10 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
             user_business_entity = await self.session.scalar(stmt)
             return user_business_entity
         except IntegrityError as e:
-            logger.error(f"UserBusinessEntityRepository.create_user_business_entity() Error: {e}")
+            logger.error(f"UserBusinessEntityPostgresRepository.create_user_business_entity() Error: {e}")
             raise PostgreSQLIntegrityError("Cannot create new user business entity in database. Integrity error occured.")
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"UserBusinessEntityRepository.create_user_business_entity() Error: {e}")
+            logger.error(f"UserBusinessEntityPostgresRepository.create_user_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
         
     async def update_user_business_entity(self, user_id: str, update_user_business_entity: UpdateUserBusinessEntityModel) -> UserBusinessEntity:
@@ -73,7 +73,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                 raise PostgreSQLNotFoundError("User Business Entity with provided id not found in database.")
             return updated_user_business_entity
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"UserBusinessEntityRepository.update_user_business_entity() Error: {e}")
+            logger.error(f"UserBusinessEntityPostgresRepository.update_user_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
         
     async def remove_user_business_entity(self, user_id: str, user_business_entity_id: str) -> bool:
@@ -92,7 +92,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
             else:
                 return False
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"UserBusinessEntityRepository.remove_user_business_entity() Error: {e}")
+            logger.error(f"UserBusinessEntityPostgresRepository.remove_user_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
         
     async def get_user_business_entity(self, user_id: str, user_business_entity_id: str) -> UserBusinessEntity:
@@ -109,7 +109,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                 raise PostgreSQLNotFoundError("User Business Entity with provided id not found in database.")
             return user_business_entity
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"UserBusinessEntityRepository.get_user_business_entity() Error: {e}")
+            logger.error(f"UserBusinessEntityPostgresRepository.get_user_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
         
     async def get_all_user_business_entities(self, user_id: str) -> list:
@@ -126,5 +126,5 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                 raise PostgreSQLNotFoundError("No User Business Entities found in database.")
             return user_business_entities
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"UserBusinessEntityRepository.get_all_user_business_entities() Error: {e}")
+            logger.error(f"UserBusinessEntityPostgresRepository.get_all_user_business_entities() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")

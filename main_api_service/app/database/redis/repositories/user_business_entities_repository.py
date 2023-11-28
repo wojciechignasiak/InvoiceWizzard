@@ -1,0 +1,33 @@
+from app.database.redis.repositories.base_redis_repository import BaseRedisRepository
+from app.logging import logger
+from app.database.redis.exceptions.custom_redis_exceptions import (
+    RedisDatabaseError,
+    RedisNotFoundError,
+    RedisSetError,
+)
+from redis.exceptions import (
+    RedisError, 
+    ConnectionError, 
+    TimeoutError, 
+    ResponseError
+)
+from app.database.redis.repositories.user_business_entities_repository_abc import UserBusinessEntitiesRedisRepositoryABC
+
+
+class UserBusinessEntitiesRedisRepository(BaseRedisRepository, UserBusinessEntitiesRedisRepositoryABC):
+
+    async def initialize_user_business_entity_removal(self, key_id: str, user_business_entity_id: str) -> bool:
+        try:
+            is_user_business_entity_removal_initialized = self.redis_client.setex(f"remove_user_business_entity:{key_id}", 60*60*48, {"id":{user_business_entity_id}})
+            if is_user_business_entity_removal_initialized == False:
+                raise RedisSetError("Error durning initializing user business entity removal.")
+            return is_user_business_entity_removal_initialized
+        except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
+            logger.error(f"UserBusinessEntitiesRedisRepository.initialize_user_business_entity_removal() Error: {e}")
+            raise RedisDatabaseError("Error related to database occurred.")
+    
+    async def get_user_business_entity_removal(self, key_id: str) -> bytes:
+        pass
+
+    async def delete_user_business_entity_removal(self, key_id: str) -> bool:
+        pass
