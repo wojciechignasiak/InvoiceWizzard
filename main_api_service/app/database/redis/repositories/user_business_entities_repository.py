@@ -26,8 +26,15 @@ class UserBusinessEntitiesRedisRepository(BaseRedisRepository, UserBusinessEntit
             logger.error(f"UserBusinessEntitiesRedisRepository.initialize_user_business_entity_removal() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
     
-    async def get_user_business_entity_removal(self, key_id: str) -> bytes:
-        pass
+    async def retrieve_user_business_entity_removal(self, key_id: str) -> bytes:
+        try:
+            user_business_entity_to_remove = self.redis_client.get(f"remove_user_business_entity:{key_id}")
+            if user_business_entity_to_remove == None:
+                raise RedisNotFoundError("Not found user business entity to remove in database.")
+            return user_business_entity_to_remove
+        except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
+            logger.error(f"UserBusinessEntitiesRedisRepository.retrieve_user_business_entity_removal() Error: {e}")
+            raise RedisDatabaseError("Error related to database occurred.")
 
     async def delete_user_business_entity_removal(self, key_id: str) -> bool:
         pass
