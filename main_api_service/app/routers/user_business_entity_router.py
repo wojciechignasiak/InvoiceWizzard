@@ -6,7 +6,8 @@ from app.database.repositories_registry import RepositoriesRegistry
 from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError, 
-    RedisJWTNotFoundError
+    RedisJWTNotFoundError,
+    RedisSetError
     )
 import redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +26,10 @@ from app.models.user_business_entity_model import (
     UserBusinessEntityModel
 )
 from app.schema.schema import UserBusinessEntity
+from uuid import uuid4
+from aiokafka import AIOKafkaProducer
+from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
+from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
 
 router = APIRouter()
 http_bearer = HTTPBearer()
@@ -55,7 +60,6 @@ async def create_user_business_entity(
         
         user_business_entity_model = UserBusinessEntityModel(
             id=str(user_business_entity.id),
-            user_id=str(user_business_entity.user_id),
             company_name=user_business_entity.company_name,
             city=user_business_entity.city,
             postal_code=user_business_entity.postal_code,
@@ -99,7 +103,6 @@ async def get_user_business_entity(
         
         user_business_entity_model = UserBusinessEntityModel(
             id=str(user_business_entity.id),
-            user_id=str(user_business_entity.user_id),
             company_name=user_business_entity.company_name,
             city=user_business_entity.city,
             postal_code=user_business_entity.postal_code,
@@ -143,7 +146,6 @@ async def get_all_user_business_entities(
         for user_business_entity in user_business_entity_list:
             user_business_entity_model = UserBusinessEntityModel(
                 id=str(user_business_entity.id),
-                user_id=str(user_business_entity.user_id),
                 company_name=user_business_entity.company_name,
                 city=user_business_entity.city,
                 postal_code=user_business_entity.postal_code,
@@ -189,7 +191,6 @@ async def update_user_business_entity(
         
         user_business_entity_model = UserBusinessEntityModel(
             id=str(updated_user_business_entity.id),
-            user_id=str(updated_user_business_entity.user_id),
             company_name=updated_user_business_entity.company_name,
             city=updated_user_business_entity.city,
             postal_code=updated_user_business_entity.postal_code,
@@ -206,4 +207,54 @@ async def update_user_business_entity(
     except PostgreSQLNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@router.put("/user-business-entity-module/initialize-user-business-entity-removal/")
+async def initialize_user_business_entity_removal(
+    user_business_entity_id: str,
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    redis_client: redis.Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
+    ):
+
+    try:
+        user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        user_business_entity_redis_repository = await repositories_registry.return_user_business_entity_redis_repository(redis_client)
+        event_producer: UserBusinessEntityEvents = UserBusinessEntityEvents(kafka_producer_client)
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.get_user_business_entity(
+            user_id=jwt_payload.id,
+            user_business_entity_id=user_business_entity_id
+        )
+        
+        key_id = str(uuid4())
+
+        await user_business_entity_redis_repository.initialize_user_business_entity_removal(
+            key_id=key_id,
+            user_business_entity_id=user_business_entity_id
+            )
+        
+        await event_producer.remove_user_business_entity(
+            id=key_id,
+            email_address=jwt_payload.email,
+            user_business_entity_name=user_business_entity.company_name
+        )
+
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"detail": "User business entity removal process has been initialized. Check your email address."})
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError, RedisSetError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
