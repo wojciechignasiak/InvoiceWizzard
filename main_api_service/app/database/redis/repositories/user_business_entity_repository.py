@@ -12,13 +12,13 @@ from redis.exceptions import (
     ResponseError
 )
 from app.database.redis.repositories.user_business_entity_repository_abc import UserBusinessEntityRedisRepositoryABC
-
+import json
 
 class UserBusinessEntityRedisRepository(BaseRedisRepository, UserBusinessEntityRedisRepositoryABC):
 
     async def initialize_user_business_entity_removal(self, key_id: str, user_business_entity_id: str) -> bool:
         try:
-            is_user_business_entity_removal_initialized = self.redis_client.setex(f"remove_user_business_entity:{key_id}", 60*60*48, {"id":{user_business_entity_id}})
+            is_user_business_entity_removal_initialized = self.redis_client.setex(f"remove_user_business_entity:{key_id}", 60*60*48, json.dumps({"id":f"{user_business_entity_id}"}))
             if is_user_business_entity_removal_initialized == False:
                 raise RedisSetError("Error durning initializing user business entity removal.")
             return is_user_business_entity_removal_initialized

@@ -85,9 +85,9 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                     UserBusinessEntity.user_id == user_id)
             )
             deleted_user_business_entity = await self.session.execute(stmt)
-            rows_after_delete = deleted_user_business_entity.fetchall()
+            rows_after_delete = deleted_user_business_entity.rowcount
 
-            if not rows_after_delete:
+            if rows_after_delete == 1:
                 return True
             else:
                 return False
