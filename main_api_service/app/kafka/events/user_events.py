@@ -4,11 +4,9 @@ from app.kafka.exceptions.custom_kafka_exceptions import KafkaBaseError
 from app.models.kafka_topics_enum import KafkaTopicsEnum
 import json
 from app.logging import logger
+from app.kafka.events.kafka_producer_base import KafkaProducerBase
 
-class UserEvents:
-
-    def __init__(self, kafka_producer: AIOKafkaProducer):
-        self.kafka_producer: AIOKafkaProducer = kafka_producer
+class UserEvents(KafkaProducerBase):
 
     async def account_registered_event(self, id: str, email_address: str):
         try:

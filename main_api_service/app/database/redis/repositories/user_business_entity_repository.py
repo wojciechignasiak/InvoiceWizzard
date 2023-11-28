@@ -11,10 +11,10 @@ from redis.exceptions import (
     TimeoutError, 
     ResponseError
 )
-from app.database.redis.repositories.user_business_entities_repository_abc import UserBusinessEntitiesRedisRepositoryABC
+from app.database.redis.repositories.user_business_entity_repository_abc import UserBusinessEntityRedisRepositoryABC
 
 
-class UserBusinessEntitiesRedisRepository(BaseRedisRepository, UserBusinessEntitiesRedisRepositoryABC):
+class UserBusinessEntityRedisRepository(BaseRedisRepository, UserBusinessEntityRedisRepositoryABC):
 
     async def initialize_user_business_entity_removal(self, key_id: str, user_business_entity_id: str) -> bool:
         try:

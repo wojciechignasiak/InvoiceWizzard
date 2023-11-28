@@ -1,5 +1,5 @@
 from app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
-from app.database.postgres.repositories.user_business_entites_repository_abc import UserBusinessEntityPostgresRepositoryABC
+from app.database.postgres.repositories.user_business_entity_repository_abc import UserBusinessEntityPostgresRepositoryABC
 from app.schema.schema import UserBusinessEntity
 from app.models.user_business_entity_model import (
     CreateUserBusinessEntityModel,

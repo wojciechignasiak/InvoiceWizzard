@@ -15,11 +15,13 @@ from contextlib import asynccontextmanager
 from app.schema.schema import Base
 from app.database.repositories_registry import RepositoriesRegistry
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
-from app.database.postgres.repositories.user_business_entites_repository import UserBusinessEntityPostgresRepository
 from app.database.redis.repositories.user_repository import UserRedisRepository
+from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
+from app.database.redis.repositories.user_business_entity_repository import UserBusinessEntityRedisRepository
 from app.routers import (
     user_router,
-    user_business_entity_router)
+    user_business_entity_router
+    )
 
 
 middleware = [
@@ -109,7 +111,8 @@ async def lifespan(app: FastAPI):
             repositories_registry: RepositoriesRegistry = RepositoriesRegistry(
                 UserPostgresRepository, 
                 UserRedisRepository, 
-                UserBusinessEntityPostgresRepository
+                UserBusinessEntityPostgresRepository,
+                UserBusinessEntityRedisRepository
                 )
             app.state.repositories_registry = repositories_registry
             print("Repositories registry initialized!")
