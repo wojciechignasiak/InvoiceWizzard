@@ -24,3 +24,17 @@ class UserBusinessEntityEvents:
         except KafkaError as e:
             logger.exception(f"UserBusinessEntityEvents.remove_user_business_entity() Error: {e}")
             raise KafkaBaseError("Error related to Kafka occured.")
+        
+    async def user_business_entity_removed(self, email_address: str, user_business_entity_name: str):
+        try:
+            message = { 
+                "email": email_address,
+                "user_business_entity_name": user_business_entity_name
+            }
+            await self.kafka_producer.send(
+                KafkaTopicsEnum.remove_user_business_entity.value, 
+                json.dumps(message).encode('utf-8')
+                )
+        except KafkaError as e:
+            logger.exception(f"UserBusinessEntityEvents.user_business_entity_removed() Error: {e}")
+            raise KafkaBaseError("Error related to Kafka occured.")
