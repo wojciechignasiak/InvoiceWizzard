@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 from app.database.get_repositories_registry import get_repositories_registry
@@ -108,6 +109,51 @@ async def get_user_business_entity(
         )
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model.model_dump())
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@router.get("/user-business-entity-module/get-all-user-business-entities/")
+async def get_all_user_business_entities(
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    redis_client: redis.Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    ):
+
+    try:
+        user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        user_business_entity_list: list = await user_business_entity_postgres_repository.get_all_user_business_entities(
+            user_id=jwt_payload.id
+        )
+        user_business_entity_model_list = []
+        for user_business_entity in user_business_entity_list:
+            user_business_entity_model = UserBusinessEntityModel(
+                id=str(user_business_entity.id),
+                user_id=str(user_business_entity.user_id),
+                company_name=user_business_entity.company_name,
+                city=user_business_entity.city,
+                postal_code=user_business_entity.postal_code,
+                street=user_business_entity.street,
+                nip=user_business_entity.nip,
+                krs=user_business_entity.krs
+            )
+            user_business_entity_model_list.append(user_business_entity_model.model_dump())
+        
+        return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model_list)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
