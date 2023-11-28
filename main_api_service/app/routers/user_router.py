@@ -57,8 +57,8 @@ async def get_current_user(
     ):
 
     try:
-        user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
+        user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -107,8 +107,8 @@ async def register_account(
     ):
 
     try:
-        user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
+        user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         event_producer: UserEvents = UserEvents(kafka_producer_client)
         user_utils: UserUtils = UserUtils()
 
@@ -181,8 +181,8 @@ async def confirm_account(
     ):
 
     try:
-        user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
+        user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         event_producer: UserEvents = UserEvents(kafka_producer_client)
 
         user_to_confirm_data: bytes = await user_redis_repository.search_user_by_id(
@@ -226,8 +226,8 @@ async def log_in(
     ):
 
     try:
-        user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
+        user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         user_utils = UserUtils()
 
         user: User = await user_postgres_repository.get_user_by_email_address(
@@ -287,8 +287,8 @@ async def update_personal_information(
     postgres_session: AsyncSession = Depends(get_session)):
 
     try:
-        user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
+        user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -323,8 +323,8 @@ async def change_email_address(
     ):
 
     try:
-        user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
+        user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         event_producer: UserEvents = UserEvents(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -387,8 +387,8 @@ async def confirm_email_address_change(
     ):
 
     try:
-        user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
+        user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         event_producer: UserEvents = UserEvents(kafka_producer_client)
 
         new_email_data: bytes = await user_redis_repository.retrieve_new_email(
@@ -442,8 +442,8 @@ async def change_password(
     ):
 
     try:
-        user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
+        user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         event_producer: UserEvents = UserEvents(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -515,8 +515,8 @@ async def reset_password(
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
     try:
-        user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
+        user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         user_utils: UserUtils = UserUtils()
         event_producer: UserEvents = UserEvents(kafka_producer_client)
 
@@ -570,8 +570,8 @@ async def confirm_password_change(
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
     try:
-        user_postgres_repository = repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository = repositories_registry.return_user_redis_repository(redis_client)
+        user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         event_producer: UserEvents = UserEvents(kafka_producer_client)
 
         new_password_data: bytes = await user_redis_repository.retrieve_new_password(

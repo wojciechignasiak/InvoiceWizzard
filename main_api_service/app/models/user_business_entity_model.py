@@ -34,3 +34,6 @@ class UpdateUserBusinessEntityModel(CreateUserBusinessEntityModel):
             }
         )
     id: str
+
+class UserBusinessEntityModel(UpdateUserBusinessEntityModel):
+    user_id: str
