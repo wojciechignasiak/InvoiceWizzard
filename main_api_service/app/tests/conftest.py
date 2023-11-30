@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, Mock
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis import Redis
 from aiokafka import AIOKafkaProducer
-from app.schema.schema import User
+from app.schema.schema import User, UserBusinessEntity
 from app.models.user_model import (
     CreateUserModel, 
     UserPersonalInformationModel, 
@@ -15,16 +15,19 @@ from app.models.user_model import (
     ResetUserPasswordModel
 )
 from app.models.jwt_model import JWTPayloadModel
+from app.models.user_business_entity_model import (
+    CreateUserBusinessEntityModel, 
+    UserBusinessEntityModel, 
+    UpdateUserBusinessEntityModel
+)
 from uuid import UUID
 from datetime import datetime, date
 from app.database.redis.repositories.user_repository import UserRedisRepository
+from app.database.redis.repositories.user_business_entity_repository import UserBusinessEntityRedisRepository
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
+from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
 from app.database.repositories_registry import RepositoriesRegistry
-import docker
-from docker import DockerClient
-from docker.models.containers import Container
-from docker.models.networks import Network
-from kafka.admin import KafkaAdminClient, NewTopic
+
 
 @pytest.fixture
 def mock_postgres_async_session():
@@ -37,6 +40,8 @@ def mock_redis_client():
 @pytest.fixture
 def mock_kafka_producer_client():
     yield AsyncMock(spec=AIOKafkaProducer)
+
+#MOCKED SCHEMA
 
 @pytest.fixture
 def mock_user_schema_object():
@@ -59,12 +64,28 @@ def mock_user_schema_object():
 
     return user_schema_object
 
+@pytest.fixture
+def mock_user_business_entity_schema_object():
+    user_business_entity_schema_object = UserBusinessEntity(
+        id=UUID("c487e563-a0e5-4bf7-ba20-d747db6da205"),
+        user_id=UUID("7024353b-aa89-4097-8925-f2855519c0ae"),
+        company_name="Company Name",
+        city="Warsaw",
+        postal_code="00-000",
+        street="ul. Nowa 3/4",
+        nip="8386732400",
+        krs="0123624482"
+    )
+    
+    return user_business_entity_schema_object
 
 @pytest.fixture
 def mock_jwt_token():
     jwt_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjcwMjQzNTNiLWFhODktNDA5Ny04OTI1LWYyODU1NTE5YzBhZSIsImVtYWlsIjoiZW1haWxAZXhhbXBsZS5jb20iLCJleHAiOjE1MTYyMzkwMjJ9.bpoXUQdibTb0nltDSQF7ujjSHv-v0nb7qdvhnkXdv4c"
 
     return jwt_token
+
+#MOCKED REPOSITORIES
 
 @pytest.fixture
 def mock_user_redis_repository_object():
@@ -79,11 +100,22 @@ def mock_user_postgres_repository_object():
     return user_postgres_repository_mock_object
 
 @pytest.fixture
+def mock_user_business_entity_postgres_repository_object():
+    user_business_entity_repository_postgres_mock_object = Mock(spec=UserBusinessEntityPostgresRepository)
+
+    return user_business_entity_repository_postgres_mock_object
+
+@pytest.fixture
+def mock_user_business_entity_redis_repository_object():
+    user_business_entity_repository_redis_mock_object = Mock(spec=UserBusinessEntityRedisRepository)
+
+    return user_business_entity_repository_redis_mock_object
+
+@pytest.fixture
 def mock_registry_repository_object():
     repositories_registry_mock_object = Mock(spec=RepositoriesRegistry)
 
     return repositories_registry_mock_object
-
 
 #MOCKED MODELS
 
@@ -179,3 +211,44 @@ def mock_reset_user_password_model_object():
     )
 
     return reset_user_password_model_mock_object
+
+@pytest.fixture
+def mock_create_user_business_entity_model_object():
+    create_user_business_entity_model_object = CreateUserBusinessEntityModel(
+        company_name = "Warsaw",
+        city = "Warsaw",
+        postal_code = "00-000",
+        street = "ul. Nowa 3/4",
+        nip = "8386732400",
+        krs = "0123624482"
+    )
+
+    return create_user_business_entity_model_object
+
+@pytest.fixture
+def mock_update_user_business_entity_model_object():
+    update_user_business_entity_model_object = UpdateUserBusinessEntityModel(
+        id="c487e563-a0e5-4bf7-ba20-d747db6da205",
+        company_name = "Warsaw",
+        city = "Warsaw",
+        postal_code = "00-000",
+        street = "ul. Nowa 3/4",
+        nip = "8386732400",
+        krs = "0123624482"
+    )
+    
+    return update_user_business_entity_model_object
+
+@pytest.fixture
+def mock_user_business_entity_model_object():
+    user_business_entity_model_object = UserBusinessEntityModel(
+        id="c487e563-a0e5-4bf7-ba20-d747db6da205",
+        company_name = "Warsaw",
+        city = "Warsaw",
+        postal_code = "00-000",
+        street = "ul. Nowa 3/4",
+        nip = "8386732400",
+        krs = "0123624482"
+    )
+
+    return user_business_entity_model_object

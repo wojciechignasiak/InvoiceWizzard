@@ -121,7 +121,6 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                 )
             )
             user_business_entities = await self.session.scalars(stmt)
-            user_business_entities = user_business_entities.all()
             if not user_business_entities:
                 raise PostgreSQLNotFoundError("No User Business Entities found in database.")
             return user_business_entities
