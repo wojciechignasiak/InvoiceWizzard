@@ -6,10 +6,7 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisSetError,
 )
 from redis.exceptions import (
-    RedisError, 
-    ConnectionError, 
-    TimeoutError, 
-    ResponseError
+    RedisError
 )
 from app.database.redis.repositories.user_business_entity_repository import UserBusinessEntityRedisRepository
 
