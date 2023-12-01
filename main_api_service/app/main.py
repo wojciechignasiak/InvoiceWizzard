@@ -7,6 +7,8 @@ from starlette import middleware
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session, async_sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 from kafka.errors import KafkaTimeoutError, KafkaError
 from aiokafka import AIOKafkaProducer
@@ -72,6 +74,9 @@ async def lifespan(app: FastAPI):
             else:
                 print('Connection to PostgreSQL status: Failed. Retrying...')
                 raise SQLAlchemyError
+            print("Creating async scoped session with PostgreSQL engine...")
+            app.state.async_postgres_session = async_scoped_session(async_sessionmaker(app.state.engine, expire_on_commit=False, class_=AsyncSession), scopefunc=asyncio.current_task)
+            print("Async scoped session with PostgreSQL engine created!")
             break
         except SQLAlchemyError:
             await asyncio.sleep(3)

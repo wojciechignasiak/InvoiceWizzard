@@ -7,7 +7,8 @@ from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError, 
     RedisJWTNotFoundError,
-    RedisSetError
+    RedisSetError,
+    RedisNotFoundError
     )
 import redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -300,7 +301,7 @@ async def confirm_user_business_entity_removal(
         )
         
         if is_user_business_entity_removed == False:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User business entity don't exists in database.")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="User business entity has not been removed.")
         
         await user_business_entity_redis_repository.delete_user_business_entity_removal(
             key_id=id
@@ -312,6 +313,8 @@ async def confirm_user_business_entity_removal(
         return JSONResponse(status_code=status.HTTP_200_OK, content={"detail": "User business entity has been removed."})
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except (PostgreSQLNotFoundError, RedisNotFoundError) as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except RedisJWTNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError, RedisSetError) as e:
