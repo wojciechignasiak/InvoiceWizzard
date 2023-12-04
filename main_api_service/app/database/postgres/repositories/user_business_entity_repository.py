@@ -20,7 +20,7 @@ from sqlalchemy.exc import (
     ProgrammingError
     )
 from app.logging import logger
-from sqlalchemy import insert, update, delete, select
+from sqlalchemy import insert, update, delete, select, or_
 from uuid import uuid4, UUID
 
 class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessEntityPostgresRepositoryABC):
@@ -49,6 +49,27 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserBusinessEntityPostgresRepository.create_user_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
+    
+    async def is_user_business_entity_unique(self, user_id: str, new_user_business_entity: CreateUserBusinessEntityModel) -> bool:
+        try:
+            stmt = (
+                select(UserBusinessEntity).
+                where(
+                        or_(
+                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.company_name == new_user_business_entity.company_name),
+                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.nip == new_user_business_entity.nip),
+                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.krs == new_user_business_entity.krs)
+                        )
+                    )
+                )
+            user_business_entity = await self.session.scalar(stmt)
+            if user_business_entity == None:
+                return True
+            else:
+                return False
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"UserBusinessEntityPostgresRepository.is_user_business_entity_unique() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
         
     async def update_user_business_entity(self, user_id: str, update_user_business_entity: UpdateUserBusinessEntityModel) -> UserBusinessEntity:
         try:
@@ -74,6 +95,27 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
             return updated_user_business_entity
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserBusinessEntityPostgresRepository.update_user_business_entity() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+    
+    async def is_user_business_entity_unique_beside_one_to_update(self, user_id: str, update_user_business_entity: UpdateUserBusinessEntityModel) -> bool:
+        try:
+            stmt = (
+                select(UserBusinessEntity).
+                where(
+                        or_(
+                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.company_name == update_user_business_entity.company_name) & (UserBusinessEntity.id != update_user_business_entity.id),
+                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.nip == update_user_business_entity.nip) & (UserBusinessEntity.id != update_user_business_entity.id),
+                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.krs == update_user_business_entity.krs) & (UserBusinessEntity.id != update_user_business_entity.id)
+                        )
+                    )
+                )
+            user_business_entity = await self.session.scalar(stmt)
+            if user_business_entity == None:
+                return True
+            else:
+                return False
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"UserBusinessEntityPostgresRepository.is_user_business_entity_unique_beside_one_to_update() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
         
     async def remove_user_business_entity(self, user_id: str, user_business_entity_id: str) -> bool:

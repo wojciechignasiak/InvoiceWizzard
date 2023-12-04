@@ -60,6 +60,38 @@ async def test_create_user_business_entity_success(
     assert data["krs"] == mock_user_business_entity_schema_object.krs
 
 @pytest.mark.asyncio
+async def test_create_user_business_entity_not_unique_error(
+    mock_registry_repository_object,
+    mock_user_business_entity_postgres_repository_object,
+    mock_user_redis_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_payload_model_object,
+    mock_user_business_entity_schema_object,
+    mock_create_user_business_entity_model_object,
+    mock_jwt_token
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+    mock_user_business_entity_postgres_repository_object.create_user_business_entity.return_value = mock_user_business_entity_schema_object
+    mock_user_business_entity_postgres_repository_object.is_user_business_entity_unique.return_value = False
+    mock_registry_repository_object.return_user_business_entity_postgres_repository.return_value = mock_user_business_entity_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    
+    json = mock_create_user_business_entity_model_object.model_dump()
+    response = client.post(
+        "/user-business-entity-module/create-user-business-entity/",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"},
+        json=json)
+    
+    assert response.status_code == 409
+    
+
+@pytest.mark.asyncio
 async def test_create_user_business_entity_unauthorized_error(
     mock_registry_repository_object,
     mock_user_business_entity_postgres_repository_object,
@@ -456,6 +488,37 @@ async def test_update_user_business_entities_success(
         json=json)
     
     assert response.status_code == 200
+
+@pytest.mark.asyncio
+async def test_update_user_business_entities_not_unique_error(
+    mock_registry_repository_object,
+    mock_user_business_entity_postgres_repository_object,
+    mock_user_redis_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_payload_model_object,
+    mock_user_business_entity_schema_object,
+    mock_update_user_business_entity_model_object,
+    mock_jwt_token
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+    mock_user_business_entity_postgres_repository_object.update_user_business_entity.return_value = mock_user_business_entity_schema_object
+    mock_user_business_entity_postgres_repository_object.is_user_business_entity_unique_beside_one_to_update.return_value = False
+    mock_registry_repository_object.return_user_business_entity_postgres_repository.return_value = mock_user_business_entity_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    
+    json = mock_update_user_business_entity_model_object.model_dump()
+    response = client.patch(
+        f"/user-business-entity-module/update-user-business-entity/",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"},
+        json=json)
+    
+    assert response.status_code == 409
 
 @pytest.mark.asyncio
 async def test_update_user_business_entities_unauthorized_error(

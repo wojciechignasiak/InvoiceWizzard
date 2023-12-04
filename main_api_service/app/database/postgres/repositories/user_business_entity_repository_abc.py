@@ -11,7 +11,15 @@ class UserBusinessEntityPostgresRepositoryABC(ABC):
         pass
 
     @abstractmethod
+    async def is_user_business_entity_unique(self, user_id: str, new_user_business_entity: CreateUserBusinessEntityModel) -> bool:
+        pass
+
+    @abstractmethod
     async def update_user_business_entity(self, user_id: str, update_user_business_entity: UpdateUserBusinessEntityModel) -> UserBusinessEntity:
+        pass
+    
+    @abstractmethod
+    async def is_user_business_entity_unique_beside_one_to_update(self, user_id: str, update_user_business_entity: UpdateUserBusinessEntityModel) -> bool:
         pass
 
     @abstractmethod

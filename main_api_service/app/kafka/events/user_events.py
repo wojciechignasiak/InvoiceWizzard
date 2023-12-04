@@ -1,4 +1,3 @@
-from aiokafka import AIOKafkaProducer
 from aiokafka.errors import KafkaError
 from app.kafka.exceptions.custom_kafka_exceptions import KafkaBaseError
 from app.models.kafka_topics_enum import KafkaTopicsEnum

@@ -2,8 +2,6 @@ from app.database.postgres.repositories.user_repository_abc import UserPostgresR
 from app.database.postgres.repositories.user_business_entity_repository_abc import UserBusinessEntityPostgresRepositoryABC
 from app.database.redis.repositories.user_repository_abc import UserRedisRepositoryABC
 from app.database.redis.repositories.user_business_entity_repository_abc import UserBusinessEntityRedisRepositoryABC
-from sqlalchemy.ext.asyncio import AsyncSession
-from redis import Redis
 
 class RepositoriesRegistry:
     def __init__(self, 
@@ -18,14 +16,14 @@ class RepositoriesRegistry:
         self.user_business_entity_redis_repository = user_business_entity_redis_repository
 
 
-    async def return_user_postgres_repository(self, session: AsyncSession) -> UserPostgresRepositoryABC:
+    async def return_user_postgres_repository(self, session) -> UserPostgresRepositoryABC:
         return self.user_postgres_repository(session)
     
-    async def return_user_redis_repository(self, redis_client: Redis) -> UserRedisRepositoryABC:
+    async def return_user_redis_repository(self, redis_client) -> UserRedisRepositoryABC:
         return self.user_redis_repository(redis_client)
 
-    async def return_user_business_entity_postgres_repository(self, session: AsyncSession) -> UserBusinessEntityPostgresRepositoryABC:
+    async def return_user_business_entity_postgres_repository(self, session) -> UserBusinessEntityPostgresRepositoryABC:
         return self.user_business_entity_postgres_repository(session)
     
-    async def return_user_business_entity_redis_repository(self, redis_client: Redis) -> UserBusinessEntityRedisRepositoryABC:
+    async def return_user_business_entity_redis_repository(self, redis_client) -> UserBusinessEntityRedisRepositoryABC:
         return self.user_business_entity_redis_repository(redis_client)

@@ -55,6 +55,14 @@ async def create_user_business_entity(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
+        is_unique: bool = await user_business_entity_postgres_repository.is_user_business_entity_unique(
+            user_id=jwt_payload.id,
+            new_user_business_entity=new_user_business_entity
+        )
+
+        if is_unique == False:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip/krs arleady exists.")
+
         user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.create_user_business_entity(
             user_id=jwt_payload.id, 
             new_user_business_entity=new_user_business_entity
@@ -185,6 +193,14 @@ async def update_user_business_entity(
             )
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        is_unique: bool = await user_business_entity_postgres_repository.is_user_business_entity_unique_beside_one_to_update(
+            user_id=jwt_payload.id,
+            update_user_business_entity=update_user_business_entity
+        )
+
+        if is_unique == False:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip/krs arleady exists.")
 
         updated_user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.update_user_business_entity(
             user_id=jwt_payload.id,
