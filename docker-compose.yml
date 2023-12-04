@@ -74,6 +74,17 @@ services:
       - backend-network
     restart: always
 
+  redisearch:
+    container_name: redisearch
+    image: redislabs/redisearch:2.8.8
+    ports:
+      - "6380:6380"
+    expose:
+      - 6380
+    networks:
+      - backend-network
+    restart: always
+
 ######################Databases SERVICES - End###########################
 
 ######################Kafka SERVICES - Start###########################
