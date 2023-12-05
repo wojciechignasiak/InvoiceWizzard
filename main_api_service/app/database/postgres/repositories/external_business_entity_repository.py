@@ -117,3 +117,20 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"ExternalBusinessEntityPostgresRepository.is_external_business_entity_unique_beside_one_to_update() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
+        
+    async def get_external_business_entity(self, user_id: str, external_business_entity_id: str) -> ExternalBusinessEntity:
+        try:
+            stmt = (
+                select(ExternalBusinessEntity).
+                where(
+                    ExternalBusinessEntity.id == external_business_entity_id,
+                    ExternalBusinessEntity.user_id == user_id
+                )
+            )
+            external_business_entity = await self.session.scalar(stmt)
+            if external_business_entity == None:
+                raise PostgreSQLNotFoundError("External Business Entity with provided id not found in database.")
+            return external_business_entity
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"ExternalBusinessEntityPostgresRepository.get_external_business_entity() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
