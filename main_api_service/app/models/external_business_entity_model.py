@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
-class CreateUserBusinessEntityModel(BaseModel):
+class CreateExternalBusinessEntityModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
                 "company_name": "Company Name",
@@ -20,7 +20,7 @@ class CreateUserBusinessEntityModel(BaseModel):
     nip: Optional[str]
     krs: Optional[str]
 
-class UpdateUserBusinessEntityModel(CreateUserBusinessEntityModel):
+class UpdateExternalBusinessEntityModel(CreateExternalBusinessEntityModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
                 "id": "a91031db-fc69-4b48-878e-0db79cef4cca",
@@ -35,5 +35,5 @@ class UpdateUserBusinessEntityModel(CreateUserBusinessEntityModel):
         )
     id: str
 
-class UserBusinessEntityModel(UpdateUserBusinessEntityModel):
+class ExternalBusinessEntityModel(UpdateExternalBusinessEntityModel):
     pass
