@@ -2,7 +2,8 @@ from app.database.postgres.repositories.base_postgres_repository import BasePost
 from app.database.postgres.repositories.external_business_entity_repository_abc import ExternalBusinessEntityPostgresRepositoryABC
 from app.schema.schema import ExternalBusinessEntity
 from app.models.external_business_entity_model import (
-    CreateExternalBusinessEntityModel
+    CreateExternalBusinessEntityModel,
+    UpdateExternalBusinessEntityModel
 )
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLDatabaseError,
@@ -68,4 +69,30 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                 return False
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"ExternalBusinessEntityPostgresRepository.is_external_business_entity_unique() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+        
+    async def update_external_business_entity(self, user_id: str, update_external_business_entity: UpdateExternalBusinessEntityModel) -> ExternalBusinessEntity:
+        try:
+            stmt = (
+                update(ExternalBusinessEntity).
+                where(
+                    ExternalBusinessEntity.id == update_external_business_entity.id,
+                    ExternalBusinessEntity.user_id == user_id
+                    ).
+                values(
+                    company_name=update_external_business_entity.company_name,
+                    city=update_external_business_entity.city,
+                    postal_code=update_external_business_entity.postal_code,
+                    street=update_external_business_entity.street,
+                    nip=update_external_business_entity.nip,
+                    krs=update_external_business_entity.krs
+                ).
+                returning(ExternalBusinessEntity)
+            )
+            updated_external_business_entity = await self.session.scalar(stmt)
+            if updated_external_business_entity == None:
+                raise PostgreSQLNotFoundError("External Business Entity with provided id not found in database.")
+            return updated_external_business_entity
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"ExternalBusinessEntityPostgresRepository.update_external_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
