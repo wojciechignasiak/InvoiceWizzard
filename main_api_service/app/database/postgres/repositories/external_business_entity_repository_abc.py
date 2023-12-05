@@ -18,3 +18,7 @@ class ExternalBusinessEntityPostgresRepositoryABC(ABC):
     @abstractmethod
     async def update_external_business_entity(self, user_id: str, update_external_business_entity: UpdateExternalBusinessEntityModel) -> ExternalBusinessEntity:
         pass
+
+    @abstractmethod
+    async def is_external_business_entity_unique_beside_one_to_update(self, user_id: str, update_external_business_entity: UpdateExternalBusinessEntityModel) -> bool:
+        pass

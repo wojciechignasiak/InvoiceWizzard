@@ -96,3 +96,24 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"ExternalBusinessEntityPostgresRepository.update_external_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
+        
+    async def is_external_business_entity_unique_beside_one_to_update(self, user_id: str, update_external_business_entity: UpdateExternalBusinessEntityModel) -> bool:
+        try:
+            stmt = (
+                select(ExternalBusinessEntity).
+                where(
+                        or_(
+                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.company_name == update_external_business_entity.company_name) & (ExternalBusinessEntity.id != update_external_business_entity.id),
+                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.nip == update_external_business_entity.nip) & (ExternalBusinessEntity.id != update_external_business_entity.id),
+                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.krs == update_external_business_entity.krs) & (ExternalBusinessEntity.id != update_external_business_entity.id)
+                        )
+                    )
+                )
+            external_business_entity = await self.session.scalar(stmt)
+            if external_business_entity == None:
+                return True
+            else:
+                return False
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"ExternalBusinessEntityPostgresRepository.is_external_business_entity_unique_beside_one_to_update() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
