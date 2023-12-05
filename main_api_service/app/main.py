@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session, async_sessionmaker
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 from kafka.errors import KafkaTimeoutError, KafkaError
 from aiokafka import AIOKafkaProducer
@@ -20,6 +19,7 @@ from app.database.postgres.repositories.user_repository import UserPostgresRepos
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
 from app.database.redis.repositories.user_business_entity_repository import UserBusinessEntityRedisRepository
+from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
 from app.routers import (
     user_router,
     user_business_entity_router
@@ -117,7 +117,8 @@ async def lifespan(app: FastAPI):
                 UserPostgresRepository, 
                 UserRedisRepository, 
                 UserBusinessEntityPostgresRepository,
-                UserBusinessEntityRedisRepository
+                UserBusinessEntityRedisRepository,
+                ExternalBusinessEntityPostgresRepository
                 )
             app.state.repositories_registry = repositories_registry
             print("Repositories registry initialized!")
