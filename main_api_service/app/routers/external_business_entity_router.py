@@ -26,8 +26,10 @@ from app.models.external_business_entity_model import (
     UpdateExternalBusinessEntityModel,
     ExternalBusinessEntityModel
 )
+from app.models.user_business_entity_model import (
+    CreateUserBusinessEntityModel
+)
 from app.schema.schema import ExternalBusinessEntity
-import ast
 from typing import Optional
 
 router = APIRouter()
@@ -44,6 +46,7 @@ async def create_external_business_entity(
 
     try:
         external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+        user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -59,7 +62,22 @@ async def create_external_business_entity(
 
         if is_unique == False:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External business entity with provided name/nip/krs arleady exists.")
-
+        
+        is_unique_in_user_business_entity: bool = await user_business_entity_postgres_repository.is_user_business_entity_unique(
+            user_id=jwt_payload.id,
+            new_user_business_entity=CreateUserBusinessEntityModel(
+                company_name=new_external_business_entity.company_name,
+                city=new_external_business_entity.city,
+                postal_code=new_external_business_entity.postal_code,
+                street=new_external_business_entity.street,
+                nip=new_external_business_entity.nip,
+                krs=new_external_business_entity.krs
+            )
+        )
+        
+        if is_unique_in_user_business_entity == False:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External business entity with provided name/nip/krs arleady exists in User Business Entities.")
+        
         external_business_entity: ExternalBusinessEntity = await external_business_entity_postgres_repository.create_external_business_entity(
             user_id=jwt_payload.id, 
             new_external_business_entity=new_external_business_entity
