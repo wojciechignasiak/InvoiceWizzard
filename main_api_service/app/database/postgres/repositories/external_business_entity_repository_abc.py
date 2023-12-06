@@ -30,3 +30,7 @@ class ExternalBusinessEntityPostgresRepositoryABC(ABC):
     @abstractmethod
     async def get_all_external_business_entities(self, user_id: str) -> list:
         pass
+
+    @abstractmethod
+    async def remove_external_business_entity(self, user_id: str, external_business_entity_id: str) -> bool:
+        pass
