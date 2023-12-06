@@ -22,7 +22,8 @@ from app.database.redis.repositories.user_business_entity_repository import User
 from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
 from app.routers import (
     user_router,
-    user_business_entity_router
+    user_business_entity_router,
+    external_business_entity_router
     )
 
 
@@ -152,6 +153,7 @@ def create_application() -> FastAPI:
     application = FastAPI(lifespan=lifespan, openapi_url="/openapi.json", docs_url="/docs", middleware=middleware)
     application.include_router(user_router.router, tags=["user"])
     application.include_router(user_business_entity_router.router, tags=["user-business-entity"])
+    application.include_router(external_business_entity_router.router, tags=["external-business-entity"])
     return application
 
 app = create_application()
