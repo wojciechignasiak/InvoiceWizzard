@@ -84,3 +84,47 @@ async def create_external_business_entity(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+@router.get("/external-business-entity-module/get-external-business-entity/", response_model=ExternalBusinessEntityModel)
+async def get_external_business_entity(
+    external_business_entity_id: str,
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    redis_client: redis.Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    ):
+
+    try:
+        external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        user_business_entity: ExternalBusinessEntity = await external_business_entity_postgres_repository.get_external_business_entity(
+            user_id=jwt_payload.id,
+            external_business_entity_id=external_business_entity_id
+        )
+        
+        external_business_entity_model = ExternalBusinessEntityModel(
+            id=str(user_business_entity.id),
+            company_name=user_business_entity.company_name,
+            city=user_business_entity.city,
+            postal_code=user_business_entity.postal_code,
+            street=user_business_entity.street,
+            nip=user_business_entity.nip,
+            krs=user_business_entity.krs
+        )
+        
+        return JSONResponse(status_code=status.HTTP_200_OK, content=external_business_entity_model.model_dump())
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
