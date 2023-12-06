@@ -150,3 +150,22 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"ExternalBusinessEntityPostgresRepository.get_all_external_business_entities() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
+    
+    async def remove_external_business_entity(self, user_id: str, external_business_entity_id: str) -> bool:
+        try:
+            stmt = (
+                delete(ExternalBusinessEntity).
+                where(
+                    ExternalBusinessEntity.id == external_business_entity_id,
+                    ExternalBusinessEntity.user_id == user_id)
+            )
+            deleted_external_business_entity = await self.session.execute(stmt)
+            rows_after_delete = deleted_external_business_entity.rowcount
+
+            if rows_after_delete == 1:
+                return True
+            else:
+                return False
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"ExternalBusinessEntityPostgresRepository.remove_external_business_entity() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
