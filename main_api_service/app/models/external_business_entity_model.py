@@ -17,8 +17,8 @@ class CreateExternalBusinessEntityModel(BaseModel):
     city: Optional[str]
     postal_code: Optional[str]
     street: Optional[str]
-    nip: Optional[str]
-    krs: Optional[str]
+    nip: str
+    krs: str
 
 class UpdateExternalBusinessEntityModel(CreateExternalBusinessEntityModel):
     model_config = ConfigDict(json_schema_extra={
