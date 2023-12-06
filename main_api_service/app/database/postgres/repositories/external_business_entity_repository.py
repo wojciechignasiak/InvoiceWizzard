@@ -22,6 +22,7 @@ from sqlalchemy.exc import (
 from app.logging import logger
 from sqlalchemy import insert, update, delete, select, or_
 from uuid import uuid4, UUID
+from typing import Optional
 
 class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalBusinessEntityPostgresRepositoryABC):
     
@@ -135,13 +136,30 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
             logger.error(f"ExternalBusinessEntityPostgresRepository.get_external_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
         
-    async def get_all_external_business_entities(self, user_id: str) -> list:
+    async def get_all_external_business_entities(self, 
+                                                user_id: str, 
+                                                page: int = 1, 
+                                                items_per_page: int = 10,
+                                                company_name: Optional[str] = None,
+                                                city: Optional[str] = None,
+                                                postal_code: Optional[str] = None,
+                                                street: Optional[str] = None,
+                                                nip: Optional[str] = None,
+                                                krs: Optional[str] = None) -> list:
         try:
             stmt = (
                 select(ExternalBusinessEntity).
                 where(
-                    ExternalBusinessEntity.user_id == user_id
-                )
+                    (ExternalBusinessEntity.user_id == user_id) &
+                    (ExternalBusinessEntity.company_name.ilike(f"%{company_name}%") if company_name else True) &
+                    (ExternalBusinessEntity.city.ilike(f"%{city}%") if city else True) &
+                    (ExternalBusinessEntity.postal_code.ilike(f"%{postal_code}%") if postal_code else True) &
+                    (ExternalBusinessEntity.street.ilike(f"%{street}%") if street else True) &
+                    (ExternalBusinessEntity.nip.ilike(f"%{nip}%") if nip else True) &
+                    (ExternalBusinessEntity.krs.ilike(f"%{krs}%") if krs else True)
+                ).
+                limit(items_per_page).
+                offset((page - 1) * items_per_page)
             )
             external_business_entities = await self.session.scalars(stmt)
             if not external_business_entities:
