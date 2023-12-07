@@ -25,6 +25,7 @@ from app.models.jwt_model import (
     JWTDataModel, 
     JWTPayloadModel
 )
+from app.models.authentication_model import LogInModel
 from app.models.user_model import (
     ReturnUserModel,
     RegisterUserModel, 
@@ -215,11 +216,9 @@ async def confirm_account(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.get("/user-module/log-in/")
+@router.post("/user-module/log-in/")
 async def log_in(
-    email: str, 
-    password: str, 
-    remember_me: bool,
+    log_in: LogInModel,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session)
@@ -231,19 +230,19 @@ async def log_in(
         user_utils = UserUtils()
 
         user: User = await user_postgres_repository.get_user_by_email_address(
-            user_email_adress=email
+            user_email_adress=log_in.email
         )
 
         verify_password: bool = await user_utils.verify_password(
             salt=user.salt, 
-            password=password, 
+            password=log_in.password, 
             hash=user.password
             )
 
         if verify_password == False:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong email adress or password.")
         
-        if remember_me == True:
+        if log_in.remember_me == True:
             jwt_expiration_time: datetime = datetime.datetime.utcnow() + datetime.timedelta(hours=24*14)
         else:
             jwt_expiration_time: datetime = datetime.datetime.utcnow() + datetime.timedelta(hours=12)
