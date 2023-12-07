@@ -348,7 +348,7 @@ async def test_get_all_user_business_entities_success(
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     
     response = client.get(
-        f"/user-business-entity-module/get-all-user-business-entities/",
+        f"/user-business-entity-module/get-all-user-business-entities/?page=1&items_per_page=1",
         headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
     
     assert response.status_code == 200
@@ -374,7 +374,7 @@ async def test_get_all_user_business_entities_unauthorized_error(
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     
     response = client.get(
-        f"/user-business-entity-module/get-all-user-business-entities/",
+        f"/user-business-entity-module/get-all-user-business-entities/?page=1&items_per_page=1",
         headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
     
     assert response.status_code == 401
@@ -400,7 +400,7 @@ async def test_get_all_user_business_entities_redis_databse_error(
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     
     response = client.get(
-        f"/user-business-entity-module/get-all-user-business-entities/",
+        f"/user-business-entity-module/get-all-user-business-entities/?page=1&items_per_page=1",
         headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
     
     assert response.status_code == 500
@@ -426,7 +426,7 @@ async def test_get_all_user_business_not_found_error(
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     
     response = client.get(
-        f"/user-business-entity-module/get-all-user-business-entities/",
+        f"/user-business-entity-module/get-all-user-business-entities/?page=1&items_per_page=1",
         headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
     
     assert response.status_code == 404
@@ -452,7 +452,7 @@ async def test_get_all_user_business_postgres_database_error(
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     
     response = client.get(
-        f"/user-business-entity-module/get-all-user-business-entities/",
+        f"/user-business-entity-module/get-all-user-business-entities/?page=1&items_per_page=1",
         headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
     
     assert response.status_code == 500

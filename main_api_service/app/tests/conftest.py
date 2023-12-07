@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, Mock
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis import Redis
 from aiokafka import AIOKafkaProducer
-from app.schema.schema import User, UserBusinessEntity
+from app.schema.schema import User, UserBusinessEntity, ExternalBusinessEntity
 from app.models.user_model import (
     CreateUserModel, 
     UserPersonalInformationModel, 
@@ -20,12 +20,19 @@ from app.models.user_business_entity_model import (
     UserBusinessEntityModel, 
     UpdateUserBusinessEntityModel
 )
+from app.models.external_business_entity_model import (
+    CreateExternalBusinessEntityModel,
+    UpdateExternalBusinessEntityModel,
+    ExternalBusinessEntityModel
+)
+from app.models.authentication_model import LogInModel
 from uuid import UUID
 from datetime import datetime, date
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.database.redis.repositories.user_business_entity_repository import UserBusinessEntityRedisRepository
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
 from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
+from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
 from app.database.repositories_registry import RepositoriesRegistry
 
 
@@ -80,6 +87,21 @@ def mock_user_business_entity_schema_object():
     return user_business_entity_schema_object
 
 @pytest.fixture
+def mock_external_business_entity_schema_object():
+    external_business_entity_schema_object = ExternalBusinessEntity(
+        id=UUID("c487e563-a0e5-4bf7-ba20-d747db6da205"),
+        user_id=UUID("7024353b-aa89-4097-8925-f2855519c0ae"),
+        company_name="Company Name",
+        city="Warsaw",
+        postal_code="00-000",
+        street="ul. Nowa 3/4",
+        nip="8386732400",
+        krs="0123624482"
+    )
+    
+    return external_business_entity_schema_object
+
+@pytest.fixture
 def mock_jwt_token():
     jwt_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjcwMjQzNTNiLWFhODktNDA5Ny04OTI1LWYyODU1NTE5YzBhZSIsImVtYWlsIjoiZW1haWxAZXhhbXBsZS5jb20iLCJleHAiOjE1MTYyMzkwMjJ9.bpoXUQdibTb0nltDSQF7ujjSHv-v0nb7qdvhnkXdv4c"
 
@@ -104,6 +126,12 @@ def mock_user_business_entity_postgres_repository_object():
     user_business_entity_repository_postgres_mock_object = Mock(spec=UserBusinessEntityPostgresRepository)
 
     return user_business_entity_repository_postgres_mock_object
+
+@pytest.fixture
+def mock_external_business_entity_postgres_repository_object():
+    external_business_entity_repository_postgres_mock_object = Mock(spec=ExternalBusinessEntityPostgresRepository)
+
+    return external_business_entity_repository_postgres_mock_object
 
 @pytest.fixture
 def mock_user_business_entity_redis_repository_object():
@@ -252,3 +280,54 @@ def mock_user_business_entity_model_object():
     )
 
     return user_business_entity_model_object
+
+@pytest.fixture
+def mock_log_in_model_object():
+    log_in_model_object = LogInModel(
+        email="email@example.com",
+        password="passw0rd!",
+        remember_me=True
+    )
+
+    return log_in_model_object
+
+@pytest.fixture
+def mock_create_external_business_entity_model_object():
+    create_external_business_entity_model_object = CreateExternalBusinessEntityModel(
+        company_name = "Warsaw",
+        city = "Warsaw",
+        postal_code = "00-000",
+        street = "ul. Nowa 3/4",
+        nip = "8386732400",
+        krs = "0123624482"
+    )
+
+    return create_external_business_entity_model_object
+
+@pytest.fixture
+def mock_update_external_business_entity_model_object():
+    update_external_business_entity_model_object = UpdateExternalBusinessEntityModel(
+        id="c487e563-a0e5-4bf7-ba20-d747db6da205",
+        company_name = "Warsaw",
+        city = "Warsaw",
+        postal_code = "00-000",
+        street = "ul. Nowa 3/4",
+        nip = "8386732400",
+        krs = "0123624482"
+    )
+    
+    return update_external_business_entity_model_object
+
+@pytest.fixture
+def mock_external_business_entity_model_object():
+    external_business_entity_model_object = ExternalBusinessEntityModel(
+        id="c487e563-a0e5-4bf7-ba20-d747db6da205",
+        company_name = "Warsaw",
+        city = "Warsaw",
+        postal_code = "00-000",
+        street = "ul. Nowa 3/4",
+        nip = "8386732400",
+        krs = "0123624482"
+    )
+
+    return external_business_entity_model_object

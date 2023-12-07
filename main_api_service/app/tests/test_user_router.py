@@ -535,7 +535,7 @@ async def test_log_in_success(
     mock_redis_client,
     mock_postgres_async_session,
     mock_user_schema_object,
-    mock_create_user_model_object
+    mock_log_in_model_object
     ):
 
     mock_user_redis_repository_object.save_jwt.return_value = True
@@ -548,9 +548,11 @@ async def test_log_in_success(
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     
     headers = {"Content-Type": "application/json"}
-    response = client.get(
-        f"/user-module/log-in/?email={mock_create_user_model_object.email}&password={mock_create_user_model_object.password}&remember_me={True}",
-        headers=headers)
+    json = mock_log_in_model_object.model_dump()
+    response = client.post(
+        f"/user-module/log-in/",
+        headers=headers,
+        json=json)
     
     assert response.status_code == 200
     data = response.json()
@@ -563,7 +565,7 @@ async def test_log_in_user_not_found_by_email_error(
     mock_user_redis_repository_object,
     mock_redis_client,
     mock_postgres_async_session,
-    mock_create_user_model_object
+    mock_log_in_model_object
     ):
 
     mock_user_redis_repository_object.save_jwt.return_value = True
@@ -576,9 +578,11 @@ async def test_log_in_user_not_found_by_email_error(
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     
     headers = {"Content-Type": "application/json"}
-    response = client.get(
-        f"/user-module/log-in/?email={mock_create_user_model_object.email}&password={mock_create_user_model_object.password}&remember_me={True}",
-        headers=headers)
+    json = mock_log_in_model_object.model_dump()
+    response = client.post(
+        f"/user-module/log-in/",
+        headers=headers,
+        json=json)
     
     assert response.status_code == 401
 
@@ -590,7 +594,7 @@ async def test_log_in_jwt_not_saved_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_user_schema_object,
-    mock_create_user_model_object
+    mock_log_in_model_object
     ):
 
     mock_user_redis_repository_object.save_jwt.side_effect = RedisSetError()
@@ -603,9 +607,11 @@ async def test_log_in_jwt_not_saved_error(
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     
     headers = {"Content-Type": "application/json"}
-    response = client.get(
-        f"/user-module/log-in/?email={mock_create_user_model_object.email}&password={mock_create_user_model_object.password}&remember_me={True}",
-        headers=headers)
+    json = mock_log_in_model_object.model_dump()
+    response = client.post(
+        f"/user-module/log-in/",
+        headers=headers,
+        json=json)
     
     assert response.status_code == 500
 
@@ -616,7 +622,7 @@ async def test_log_in_postgres_database_error(
     mock_user_redis_repository_object,
     mock_redis_client,
     mock_postgres_async_session,
-    mock_create_user_model_object
+    mock_log_in_model_object
     ):
 
     mock_user_redis_repository_object.save_jwt.return_value = True
@@ -629,9 +635,11 @@ async def test_log_in_postgres_database_error(
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     
     headers = {"Content-Type": "application/json"}
-    response = client.get(
-        f"/user-module/log-in/?email={mock_create_user_model_object.email}&password={mock_create_user_model_object.password}&remember_me={True}",
-        headers=headers)
+    json = mock_log_in_model_object.model_dump()
+    response = client.post(
+        f"/user-module/log-in/",
+        headers=headers,
+        json=json)
     
     assert response.status_code == 500
 
@@ -643,7 +651,7 @@ async def test_log_in_redis_database_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_user_schema_object,
-    mock_create_user_model_object
+    mock_log_in_model_object
     ):
 
     mock_user_redis_repository_object.save_jwt.side_effect = RedisDatabaseError()
@@ -656,9 +664,11 @@ async def test_log_in_redis_database_error(
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     
     headers = {"Content-Type": "application/json"}
-    response = client.get(
-        f"/user-module/log-in/?email={mock_create_user_model_object.email}&password={mock_create_user_model_object.password}&remember_me={True}",
-        headers=headers)
+    json = mock_log_in_model_object.model_dump()
+    response = client.post(
+        f"/user-module/log-in/",
+        headers=headers,
+        json=json)
     
     assert response.status_code == 500
 
