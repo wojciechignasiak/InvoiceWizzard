@@ -32,6 +32,7 @@ import ast
 from aiokafka import AIOKafkaProducer
 from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
 from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
+from typing import Optional
 
 router = APIRouter()
 http_bearer = HTTPBearer()
@@ -133,6 +134,14 @@ async def get_user_business_entity(
     
 @router.get("/user-business-entity-module/get-all-user-business-entities/")
 async def get_all_user_business_entities(
+    page: int,
+    items_per_page: int,
+    company_name: Optional[str] = None,
+    city: Optional[str] = None,
+    postal_code: Optional[str] = None,
+    street: Optional[str] = None,
+    nip: Optional[str] = None,
+    krs: Optional[str] = None,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
@@ -150,7 +159,15 @@ async def get_all_user_business_entities(
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
         user_business_entity_list: list = await user_business_entity_postgres_repository.get_all_user_business_entities(
-            user_id=jwt_payload.id
+            user_id=jwt_payload.id,
+            page=page,
+            items_per_page=items_per_page,
+            company_name=company_name,
+            city=city,
+            postal_code=postal_code,
+            street=street,
+            nip=nip,
+            krs=krs
         )
         user_business_entity_model_list = []
         for user_business_entity in user_business_entity_list:

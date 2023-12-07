@@ -22,6 +22,7 @@ from sqlalchemy.exc import (
 from app.logging import logger
 from sqlalchemy import insert, update, delete, select, or_
 from uuid import uuid4, UUID
+from typing import Optional
 
 class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessEntityPostgresRepositoryABC):
 
@@ -154,13 +155,30 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
             logger.error(f"UserBusinessEntityPostgresRepository.get_user_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
         
-    async def get_all_user_business_entities(self, user_id: str) -> list:
+    async def get_all_user_business_entities(self, 
+                                            user_id: str,
+                                            page: int = 1, 
+                                            items_per_page: int = 10,
+                                            company_name: Optional[str] = None,
+                                            city: Optional[str] = None,
+                                            postal_code: Optional[str] = None,
+                                            street: Optional[str] = None,
+                                            nip: Optional[str] = None,
+                                            krs: Optional[str] = None) -> list:
         try:
             stmt = (
                 select(UserBusinessEntity).
                 where(
-                    UserBusinessEntity.user_id == user_id
-                )
+                    (UserBusinessEntity.user_id == user_id) &
+                    (UserBusinessEntity.company_name.ilike(f"%{company_name}%") if company_name else True) &
+                    (UserBusinessEntity.city.ilike(f"%{city}%") if city else True) &
+                    (UserBusinessEntity.postal_code.ilike(f"%{postal_code}%") if postal_code else True) &
+                    (UserBusinessEntity.street.ilike(f"%{street}%") if street else True) &
+                    (UserBusinessEntity.nip.ilike(f"%{nip}%") if nip else True) &
+                    (UserBusinessEntity.krs.ilike(f"%{krs}%") if krs else True)
+                ).
+                limit(items_per_page).
+                offset((page - 1) * items_per_page)
             )
             user_business_entities = await self.session.scalars(stmt)
             if not user_business_entities:
