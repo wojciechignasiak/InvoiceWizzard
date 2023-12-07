@@ -7,6 +7,7 @@ networks:
 
 volumes:
   postgres-volume:
+  invoice-volume:      
 
 services:
 ######################FastAPI SERVICES - Beginning###########################
@@ -35,6 +36,7 @@ services:
     restart: always
     volumes:
       - ./main_api_service:/usr/src/main_api_service/
+      - invoice-volume:/usr/app/invoice/
     depends_on:
       - postgresql
       - redis
