@@ -48,6 +48,7 @@ async def create_user_business_entity(
 
     try:
         user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
+        external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -64,6 +65,21 @@ async def create_user_business_entity(
         if is_unique == False:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip/krs arleady exists.")
 
+        is_unique_in_external_business_entity: bool = await external_business_entity_postgres_repository.is_external_business_entity_unique(
+            user_id=jwt_payload.id,
+            new_user_business_entity=CreateUserBusinessEntityModel(
+                company_name=new_user_business_entity.company_name,
+                city=new_user_business_entity.city,
+                postal_code=new_user_business_entity.postal_code,
+                street=new_user_business_entity.street,
+                nip=new_user_business_entity.nip,
+                krs=new_user_business_entity.krs
+            )
+        )
+        
+        if is_unique_in_external_business_entity == False:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip/krs arleady exists in External Business Entities.")
+        
         user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.create_user_business_entity(
             user_id=jwt_payload.id, 
             new_user_business_entity=new_user_business_entity
