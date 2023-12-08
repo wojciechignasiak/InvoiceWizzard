@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import List
+from decimal import Decimal
 
 class CreateInvoiceItemModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
@@ -8,7 +9,7 @@ class CreateInvoiceItemModel(BaseModel):
                 "item_description": "My product/service name",
                 "net_value": 8.00,
                 "gross_value": 10.00,
-                "tax_percentage": "20%"
+                "tax_percentage": 0.20
                 }
             }
         )
@@ -17,7 +18,7 @@ class CreateInvoiceItemModel(BaseModel):
     item_description: str
     net_value: float
     gross_value: float
-    tax_percent: str
+    tax_percent: Decimal
 
 class CreateInvoiceManuallyModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
@@ -25,10 +26,10 @@ class CreateInvoiceManuallyModel(BaseModel):
                 "user_business_entity_id": "abcac67f-6d59-41b5-bf88-58fbaefbd725",
                 "external_business_entity_id": "abcac67f-6d59-41b5-bf88-58fbaefbd725",
                 "invoice_number": "1/2023",
-                "issue_date": "06.12.2023",
-                "sale_date": "05.12.2023",
+                "issue_date": "2023-12-05",
+                "sale_date": "2023-12-05",
                 "payment_method": "Card",
-                "payment_deadline": "10.12.2023",
+                "payment_deadline": "2023-12-10",
                 "is_settled": False,
                 "is_accepted": True,
                 "is_issued": True,
