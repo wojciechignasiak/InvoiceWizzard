@@ -1,8 +1,8 @@
 from app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
 from app.database.postgres.repositories.invoice_postgres_repository_abc import InvoicePostgresRepositoryABC
-from app.models.invoice_model import CreateInvoiceManuallyModel
+from app.models.invoice_model import CreateInvoiceManuallyModel, UpdateInvoiceModel
 from app.schema.schema import Invoice
-from sqlalchemy import insert, select, or_, and_
+from sqlalchemy import insert, select, or_, and_, update
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLDatabaseError,
     PostgreSQLIntegrityError,
@@ -146,4 +146,35 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
             return invoices
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoicePostgresRepository.get_all_invoices() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+        
+    async def update_invoice(self, user_id: str, invoice_pdf_location: str, update_invoice: UpdateInvoiceModel) -> Invoice:
+        try:
+            stmt = (
+                update(Invoice).
+                where(
+                    Invoice.id == update_invoice.id,
+                    Invoice.user_id == user_id
+                    ).
+                values(
+                    user_business_entity_id=UUID(update_invoice.user_business_entity_id),
+                    external_business_entity_id=UUID(update_invoice.external_business_entity_id),
+                    invoice_pdf=invoice_pdf_location,
+                    invoice_number=update_invoice.invoice_number,
+                    issue_date=datetime.strptime(update_invoice.issue_date, '%Y-%m-%d').date(),
+                    sale_date=datetime.strptime(update_invoice.sale_date, '%Y-%m-%d').date(),
+                    payment_method=update_invoice.payment_method,
+                    payment_deadline=datetime.strptime(update_invoice.payment_deadline, '%Y-%m-%d').date(),
+                    is_settled=update_invoice.is_settled,
+                    is_accepted=update_invoice.is_accepted,
+                    is_issued=update_invoice.is_issued
+                ).
+                returning(Invoice)
+            )
+            updated_invoice = await self.session.scalar(stmt)
+            if updated_invoice == None:
+                raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
+            return updated_invoice
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoicePostgresRepository.update_invoice() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
