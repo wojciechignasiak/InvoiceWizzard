@@ -2,7 +2,7 @@ from app.database.postgres.repositories.base_postgres_repository import BasePost
 from app.database.postgres.repositories.invoice_postgres_repository_abc import InvoicePostgresRepositoryABC
 from app.models.invoice_model import CreateInvoiceManuallyModel
 from app.schema.schema import Invoice
-from sqlalchemy import insert
+from sqlalchemy import insert, select
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLDatabaseError,
     PostgreSQLIntegrityError,
@@ -53,4 +53,21 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
             raise PostgreSQLIntegrityError("Cannot create new invoice in database. Integrity error occured.")
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoicePostgresRepository.create_invoice_manually() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+    
+    async def get_invoice(self, user_id: str, invoice_id: str) -> Invoice:
+        try:
+            stmt = (
+                select(Invoice).
+                where(
+                    Invoice.id == invoice_id,
+                    Invoice.user_id == user_id
+                )
+            )
+            invoice = await self.session.scalar(stmt)
+            if invoice == None:
+                raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
+            return invoice
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoicePostgresRepository.get_invoice() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
