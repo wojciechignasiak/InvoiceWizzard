@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 from app.schema.schema import ExternalBusinessEntity
 from app.models.external_business_entity_model import (
     CreateExternalBusinessEntityModel,
@@ -28,7 +29,15 @@ class ExternalBusinessEntityPostgresRepositoryABC(ABC):
         pass
 
     @abstractmethod
-    async def get_all_external_business_entities(self, user_id: str) -> list:
+    async def get_all_external_business_entities(self, user_id: str, 
+                                                page: int = 1, 
+                                                items_per_page: int = 10,
+                                                company_name: Optional[str] = None,
+                                                city: Optional[str] = None,
+                                                postal_code: Optional[str] = None,
+                                                street: Optional[str] = None,
+                                                nip: Optional[str] = None,
+                                                krs: Optional[str] = None) -> list:
         pass
 
     @abstractmethod
