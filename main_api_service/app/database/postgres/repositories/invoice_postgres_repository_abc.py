@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-from app.models.invoice_model import CreateInvoiceManuallyModel
+from app.models.invoice_model import CreateInvoiceManuallyModel, UpdateInvoiceModel 
 from app.schema.schema import Invoice
 
 class InvoicePostgresRepositoryABC(ABC):
@@ -39,7 +39,7 @@ class InvoicePostgresRepositoryABC(ABC):
         pass
 
     @abstractmethod
-    async def update_invoice(self):
+    async def update_invoice(self, user_id: str, update_invoice: UpdateInvoiceModel) -> Invoice:
         pass
 
     @abstractmethod
