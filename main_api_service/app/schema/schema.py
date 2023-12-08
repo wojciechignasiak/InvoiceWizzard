@@ -1,8 +1,8 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, VARCHAR, DATE, BOOLEAN, FLOAT, INTEGER
+from sqlalchemy.dialects.postgresql import UUID, VARCHAR, DATE, BOOLEAN, FLOAT, INTEGER, NUMERIC
 from typing import Optional, List
-
+from decimal import Decimal
 
 class Base(DeclarativeBase):
     pass
@@ -60,9 +60,6 @@ class Invoice(Base):
     invoice_number: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     issue_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
     sale_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
-    net_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
-    gross_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
-    currency: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
     payment_method: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     payment_deadline: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
     added_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=False)
@@ -81,4 +78,4 @@ class InvoiceItem(Base):
     item_description: Mapped[Optional[str]] = mapped_column(VARCHAR, nullable=True)
     net_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
     gross_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
-    tax_percent: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
+    tax_percent: Mapped[Optional[Decimal]] = mapped_column(NUMERIC(1,3), nullable=True)
