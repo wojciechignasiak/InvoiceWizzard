@@ -9,17 +9,17 @@ class InvoicePostgresRepositoryABC(ABC):
         pass
 
     @abstractmethod
-    async def get_invoice(user_id: str, invoice_id: str) -> Invoice:
+    async def get_invoice(self, user_id: str, invoice_id: str) -> Invoice:
         pass
 
     @abstractmethod
-    async def get_all_invoices(user_id: str) -> list:
+    async def get_all_invoices(self, user_id: str) -> list:
         pass
 
     @abstractmethod
-    async def update_invoice():
+    async def update_invoice(self):
         pass
 
     @abstractmethod
-    async def remove_invoice(user_id: str, invoice_id: str) -> bool:
+    async def remove_invoice(self, user_id: str, invoice_id: str) -> bool:
         pass
