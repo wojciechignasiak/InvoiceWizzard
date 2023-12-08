@@ -39,7 +39,7 @@ class InvoicePostgresRepositoryABC(ABC):
         pass
 
     @abstractmethod
-    async def update_invoice(self, user_id: str, update_invoice: UpdateInvoiceModel) -> Invoice:
+    async def update_invoice(self, user_id: str, invoice_pdf_location: str, update_invoice: UpdateInvoiceModel) -> Invoice:
         pass
 
     @abstractmethod

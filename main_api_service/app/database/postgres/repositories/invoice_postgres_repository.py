@@ -2,7 +2,7 @@ from app.database.postgres.repositories.base_postgres_repository import BasePost
 from app.database.postgres.repositories.invoice_postgres_repository_abc import InvoicePostgresRepositoryABC
 from app.models.invoice_model import CreateInvoiceManuallyModel, UpdateInvoiceModel
 from app.schema.schema import Invoice
-from sqlalchemy import insert, select, or_, and_, update
+from sqlalchemy import insert, select, or_, and_, update, delete
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLDatabaseError,
     PostgreSQLIntegrityError,
@@ -178,3 +178,23 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoicePostgresRepository.update_invoice() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
+        
+    async def remove_invoice(self, user_id: str, invoice_id: str) -> bool:
+        try:
+            stmt = (
+                delete(Invoice).
+                where(
+                    Invoice.id == invoice_id,
+                    Invoice.user_id == user_id)
+            )
+            deleted_invoice = await self.session.execute(stmt)
+            rows_after_delete = deleted_invoice.rowcount
+
+            if rows_after_delete == 1:
+                return True
+            else:
+                return False
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoicePostgresRepository.remove_invoice() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+        
