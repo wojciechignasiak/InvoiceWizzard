@@ -224,6 +224,7 @@ async def confirm_account(
 @router.post("/user-module/log-in/")
 async def log_in(
     log_in: LogInModel,
+    background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session)
@@ -267,10 +268,16 @@ async def log_in(
             jwt_data=jwt_data
             )
         
-        await user_redis_repository.save_jwt(
+        background_tasks.add_task(
+            user_redis_repository.save_jwt,
             jwt_token=jwt_token, 
             jwt_payload=jwt_payload
-            )
+        )
+
+        background_tasks.add_task(
+            user_postgres_repository.update_user_last_login,
+            user_id=jwt_payload.id
+        )
 
         return JSONResponse(content={"jwt_token": f"{jwt_token}"})
 
