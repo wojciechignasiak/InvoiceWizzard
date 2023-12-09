@@ -198,3 +198,24 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
             logger.error(f"InvoicePostgresRepository.remove_invoice() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
         
+    async def is_invoice_unique(self, user_id: str, new_invoice: CreateInvoiceManuallyModel) -> bool:
+        try:
+            stmt = (
+                select(Invoice).
+                where(
+                    (Invoice.user_id == user_id) & 
+                    (Invoice.user_business_entity_id == new_invoice.user_business_entity_id) & 
+                    (Invoice.external_business_entity_id == new_invoice.external_business_entity_id) &
+                    (Invoice.invoice_number == new_invoice.invoice_number) &
+                    (Invoice.is_issued == new_invoice.is_issued) 
+                    )
+                )
+            invoice = await self.session.scalar(stmt)
+            if invoice == None:
+                return True
+            else:
+                return False
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoicePostgresRepository.is_invoice_unique() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+        
