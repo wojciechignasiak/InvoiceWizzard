@@ -268,8 +268,7 @@ async def log_in(
             jwt_data=jwt_data
             )
         
-        background_tasks.add_task(
-            user_redis_repository.save_jwt,
+        await user_redis_repository.save_jwt(
             jwt_token=jwt_token, 
             jwt_payload=jwt_payload
         )
