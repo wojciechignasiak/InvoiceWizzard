@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 from app.database.get_repositories_registry import get_repositories_registry
@@ -263,6 +263,7 @@ async def update_user_business_entity(
 @router.put("/user-business-entity-module/initialize-user-business-entity-removal/")
 async def initialize_user_business_entity_removal(
     user_business_entity_id: str,
+    background_tasks: BackgroundTasks,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
@@ -293,7 +294,8 @@ async def initialize_user_business_entity_removal(
             user_business_entity_id=user_business_entity_id
             )
         
-        await event_producer.remove_user_business_entity(
+        background_tasks.add_task(
+            event_producer.remove_user_business_entity,
             id=key_id,
             email_address=jwt_payload.email,
             user_business_entity_name=user_business_entity.company_name
@@ -312,6 +314,7 @@ async def initialize_user_business_entity_removal(
 @router.delete("/user-business-entity-module/confirm-user-business-entity-removal/")
 async def confirm_user_business_entity_removal(
     id: str,
+    background_tasks: BackgroundTasks,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
@@ -352,13 +355,17 @@ async def confirm_user_business_entity_removal(
         if is_user_business_entity_removed == False:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="User business entity has not been removed.")
         
-        await user_business_entity_redis_repository.delete_user_business_entity_removal(
+        background_tasks.add_task(
+            user_business_entity_redis_repository.delete_user_business_entity_removal,
             key_id=id
         )
-        await event_producer.user_business_entity_removed(
+        
+        background_tasks.add_task(
+            event_producer.user_business_entity_removed,
             email_address=jwt_payload.email,
             user_business_entity_name=user_business_entity.company_name
         )
+        
         return JSONResponse(status_code=status.HTTP_200_OK, content={"detail": "User business entity has been removed."})
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

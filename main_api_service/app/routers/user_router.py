@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 import redis
@@ -101,10 +101,11 @@ async def get_current_user(
 @router.post("/user-module/register-account/")
 async def register_account(
     new_user: RegisterUserModel,
+    background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
-    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
+    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client),
     ):
 
     try:
@@ -159,10 +160,11 @@ async def register_account(
             new_user=new_user_to_redis
             )
         
-        await event_producer.account_registered_event(
-            id = key_id,
+        background_tasks.add_task(
+            event_producer.account_registered_event,
+            id=key_id,
             email_address=new_user.email
-            )
+        )
         
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "Account has been registered. Now confirm your email address."})
     except HTTPException as e:
@@ -175,6 +177,7 @@ async def register_account(
 @router.patch("/user-module/confirm-account/")
 async def confirm_account(
     id: str,
+    background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
@@ -196,13 +199,15 @@ async def confirm_account(
             new_user=user_to_confirm_data
             )
 
-        await user_redis_repository.delete_user_by_id(
+        background_tasks.add_task(
+            user_redis_repository.delete_user_by_id,
             key_id=id
-            )
-        
-        await event_producer.account_confirmed_event(
-            email_address=created_user.email
         )
+        
+        background_tasks.add_task(
+            event_producer.account_confirmed_event,
+            email_address=created_user.email
+            )
         
         return JSONResponse(content={"detail": "Account has been confirmed. Now you can log in."})
     
@@ -314,6 +319,7 @@ async def update_personal_information(
 @router.put("/user-module/change-email-address/")
 async def change_email_address(
     new_email: UpdateUserEmailModel,
+    background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     token = Depends(http_bearer), 
     redis_client: redis.Redis = Depends(get_redis_client),
@@ -358,7 +364,8 @@ async def change_email_address(
             key_id=key_id,
             new_email=new_email_data)
         
-        await event_producer.change_email_event(
+        background_tasks.add_task(
+            event_producer.change_email_event,
             id=key_id,
             email_address=user.email
         )
@@ -379,6 +386,7 @@ async def change_email_address(
 @router.patch("/user-module/confirm-email-address-change/")
 async def confirm_email_address_change(
     id: str,
+    background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
@@ -407,14 +415,17 @@ async def confirm_email_address_change(
             new_email=new_email_data
             )
         
-        await user_redis_repository.delete_all_jwt_tokens_of_user(
+        background_tasks.add_task(
+            user_redis_repository.delete_all_jwt_tokens_of_user,
             user_id=str(user.id)
-            )
+        )
         
-        await user_redis_repository.delete_new_email(
+        background_tasks.add_task(
+            user_redis_repository.delete_new_email,
             key_id=id
-            )
-        await event_producer.email_changed_event(
+        )
+        background_tasks.add_task(
+            event_producer.email_changed_event,
             email_address=user.email
         )
         
@@ -432,6 +443,7 @@ async def confirm_email_address_change(
 @router.put("/user-module/change-password/")
 async def change_password(
     new_password: UpdateUserPasswordModel,
+    background_tasks: BackgroundTasks,
     token = Depends(http_bearer),
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
@@ -489,10 +501,11 @@ async def change_password(
             new_password=new_password_data
             )
 
-        await event_producer.change_password_event(
+        background_tasks.add_task(
+            event_producer.change_password_event,
             id=key_id,
             email_address=user.email
-            )
+        )
         
         return JSONResponse(content={"message": "New password has been saved. Email message with confirmation link has been send to email address."})
     
@@ -508,6 +521,7 @@ async def change_password(
 @router.put("/user-module/reset-password/")
 async def reset_password(
     reset_password: ResetUserPasswordModel,
+    background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
@@ -546,7 +560,8 @@ async def reset_password(
             key_id=key_id,
             new_password=new_password_data)
 
-        await event_producer.reset_password_event(
+        background_tasks.add_task(
+            event_producer.reset_password_event,
             id=key_id,
             email_address=user.email
         )
@@ -563,6 +578,7 @@ async def reset_password(
 @router.patch("/user-module/confirm-password-change/")
 async def confirm_password_change(
     id: str,
+    background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
@@ -583,15 +599,18 @@ async def confirm_password_change(
             new_password=new_password_data
             )
 
-        await user_redis_repository.delete_all_jwt_tokens_of_user(
+        background_tasks.add_task(
+            user_redis_repository.delete_all_jwt_tokens_of_user,
             user_id=str(user.id)
-            )
+        )
         
-        await user_redis_repository.delete_new_password(
+        background_tasks.add_task(
+            user_redis_repository.delete_new_password,
             key_id=id
-            )
+        )
 
-        await event_producer.password_changed_event(
+        background_tasks.add_task(
+            event_producer.password_changed_event,
             email_address=user.email
         )
 
