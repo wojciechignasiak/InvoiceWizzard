@@ -7,7 +7,6 @@ from starlette import middleware
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session, async_sessionmaker
 from sqlalchemy import text
 from kafka.errors import KafkaTimeoutError, KafkaError
 from aiokafka import AIOKafkaProducer
@@ -22,6 +21,7 @@ from app.database.redis.repositories.user_business_entity_repository import User
 from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
 from app.database.postgres.repositories.invoice_postgres_repository import InvoicePostgresRepository
 from app.database.redis.repositories.invoice_repository import InvoiceRedisRepository
+from app.database.postgres.repositories.invoice_item_repository import InvoiceItemPostgresRepository
 from app.routers import (
     user_router,
     user_business_entity_router,
@@ -77,9 +77,6 @@ async def lifespan(app: FastAPI):
             else:
                 print('Connection to PostgreSQL status: Failed. Retrying...')
                 raise SQLAlchemyError
-            print("Creating async scoped session with PostgreSQL engine...")
-            app.state.async_postgres_session = async_scoped_session(async_sessionmaker(app.state.engine, expire_on_commit=False, class_=AsyncSession), scopefunc=asyncio.current_task)
-            print("Async scoped session with PostgreSQL engine created!")
             break
         except SQLAlchemyError:
             await asyncio.sleep(3)
@@ -123,7 +120,8 @@ async def lifespan(app: FastAPI):
                 UserBusinessEntityRedisRepository,
                 ExternalBusinessEntityPostgresRepository,
                 InvoicePostgresRepository,
-                InvoiceRedisRepository
+                InvoiceRedisRepository,
+                InvoiceItemPostgresRepository
                 )
             app.state.repositories_registry = repositories_registry
             print("Repositories registry initialized!")
