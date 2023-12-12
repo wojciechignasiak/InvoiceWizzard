@@ -102,4 +102,20 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
     async def remove_invoice_item(self, invoice_item_id: str) -> bool:
-        pass
+        try:
+            stmt = (
+                delete(InvoiceItem).
+                where(
+                    InvoiceItem.id == invoice_item_id
+                )
+            )
+            deleted_invoice_item = await self.session.execute(stmt)
+            rows_after_delete = deleted_invoice_item.rowcount
+
+            if rows_after_delete == 1:
+                return True
+            else:
+                return False
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoiceItemPostgresRepository.remove_invoice_item() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
