@@ -16,7 +16,7 @@ from sqlalchemy.exc import (
     ProgrammingError
     )
 from app.schema.schema import InvoiceItem
-from sqlalchemy import insert, select, or_, and_, update, delete
+from sqlalchemy import insert, select, update, delete
 from app.logging import logger
 from uuid import uuid4, UUID
 
@@ -78,7 +78,28 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
     async def update_invoice_item(self, update_invoice_item: UpdateInvoiceItemModel) -> InvoiceItem:
-        pass
+        try:
+            stmt = (
+                update(InvoiceItem).
+                where(
+                    InvoiceItem.id == update_invoice_item.id,
+                    ).
+                values(
+                    invoice_id=update_invoice_item.invoice_id,
+                    ordinal_number=update_invoice_item.ordinal_number,
+                    invoice_description=update_invoice_item.invoice_description,
+                    net_value=update_invoice_item.net_value,
+                    gross_value=update_invoice_item.gross_value
+                ).
+                returning(InvoiceItem)
+            )
+            updated_invoice_item = await self.session.scalar(stmt)
+            if updated_invoice_item == None:
+                raise PostgreSQLNotFoundError("Invoice item with provided id not found in database.")
+            return updated_invoice_item
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoiceItemPostgresRepository.update_invoice_item() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
 
     async def remove_invoice_item(self, invoice_item_id: str) -> bool:
         pass
