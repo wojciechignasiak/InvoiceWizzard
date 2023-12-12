@@ -46,7 +46,20 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
     async def get_invoice_item(self, invoice_item_id: str) -> InvoiceItem:
-        pass
+        try:
+            stmt = (
+                select(InvoiceItem).
+                where(
+                    InvoiceItem.id == invoice_item_id
+                )
+            )
+            invoice_item = await self.session.scalar(stmt)
+            if invoice_item == None:
+                raise PostgreSQLNotFoundError("Invoice item with provided id not found in database.")
+            return invoice_item
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoiceItemPostgresRepository.get_invoice_item() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
 
     async def get_invoice_items_from_invoice(self, invoice_id: str) -> list:
         pass
