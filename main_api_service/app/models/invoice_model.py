@@ -35,6 +35,7 @@ class CreateInvoiceManuallyModel(BaseModel):
     sale_date: str
     payment_method: str
     payment_deadline: str
+    notes: str
     is_settled: bool = False
     is_accepted: bool = True
     is_issued: bool = True
@@ -74,6 +75,7 @@ class UpdateInvoiceModel(BaseModel):
     sale_date: Optional[str] = None
     payment_method: Optional[str] = None
     payment_deadline: Optional[str] = None
+    notes: str
     is_settled: Optional[bool] = None
     is_accepted: Optional[bool] = None
     is_issued: Optional[bool] = None

@@ -61,7 +61,7 @@ async def create_external_business_entity(
         )
 
         if is_unique == False:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External business entity with provided name/nip/krs arleady exists.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External business entity with provided name/nip arleady exists.")
         
         is_unique_in_user_business_entity: bool = await user_business_entity_postgres_repository.is_user_business_entity_unique(
             user_id=jwt_payload.id,
@@ -70,13 +70,12 @@ async def create_external_business_entity(
                 city=new_external_business_entity.city,
                 postal_code=new_external_business_entity.postal_code,
                 street=new_external_business_entity.street,
-                nip=new_external_business_entity.nip,
-                krs=new_external_business_entity.krs
+                nip=new_external_business_entity.nip
             )
         )
         
         if is_unique_in_user_business_entity == False:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External business entity with provided name/nip/krs arleady exists in User Business Entities.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External business entity with provided name/nip arleady exists in User Business Entities.")
         
         external_business_entity: ExternalBusinessEntity = await external_business_entity_postgres_repository.create_external_business_entity(
             user_id=jwt_payload.id, 
@@ -89,8 +88,7 @@ async def create_external_business_entity(
             city=external_business_entity.city,
             postal_code=external_business_entity.postal_code,
             street=external_business_entity.street,
-            nip=external_business_entity.nip,
-            krs=external_business_entity.krs
+            nip=external_business_entity.nip
         )
         
         return JSONResponse(status_code=status.HTTP_201_CREATED, content=external_business_entity_model.model_dump())
@@ -131,8 +129,7 @@ async def get_external_business_entity(
             city=user_business_entity.city,
             postal_code=user_business_entity.postal_code,
             street=user_business_entity.street,
-            nip=user_business_entity.nip,
-            krs=user_business_entity.krs
+            nip=user_business_entity.nip
         )
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=external_business_entity_model.model_dump())
@@ -154,7 +151,6 @@ async def get_all_external_business_entities(
     postal_code: Optional[str] = None,
     street: Optional[str] = None,
     nip: Optional[str] = None,
-    krs: Optional[str] = None,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
@@ -179,8 +175,7 @@ async def get_all_external_business_entities(
             city=city,
             postal_code=postal_code,
             street=street,
-            nip=nip,
-            krs=krs
+            nip=nip
         )
         external_business_entity_model_list = []
         for external_business_entity in external_business_entity_list:
@@ -190,8 +185,7 @@ async def get_all_external_business_entities(
                 city=external_business_entity.city,
                 postal_code=external_business_entity.postal_code,
                 street=external_business_entity.street,
-                nip=external_business_entity.nip,
-                krs=external_business_entity.krs
+                nip=external_business_entity.nip
             )
             external_business_entity_model_list.append(external_business_entity_model.model_dump())
         
@@ -230,7 +224,7 @@ async def update_external_business_entity(
         )
 
         if is_unique == False:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External business entity with provided name/nip/krs arleady exists.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External business entity with provided name/nip arleady exists.")
 
         updated_external_business_entity: ExternalBusinessEntity = await external_business_entity_postgres_repository.update_external_business_entity(
             user_id=jwt_payload.id,
@@ -243,8 +237,7 @@ async def update_external_business_entity(
             city=updated_external_business_entity.city,
             postal_code=updated_external_business_entity.postal_code,
             street=updated_external_business_entity.street,
-            nip=updated_external_business_entity.nip,
-            krs=updated_external_business_entity.krs
+            nip=updated_external_business_entity.nip
         )
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=external_business_entity_model.model_dump())

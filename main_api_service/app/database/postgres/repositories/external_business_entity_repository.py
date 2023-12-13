@@ -37,8 +37,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                     city=new_external_business_entity.city,
                     postal_code=new_external_business_entity.postal_code,
                     street=new_external_business_entity.street,
-                    nip=new_external_business_entity.nip,
-                    krs=new_external_business_entity.krs
+                    nip=new_external_business_entity.nip
                     ).
                     returning(ExternalBusinessEntity)
                 )
@@ -58,8 +57,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                 where(
                         or_(
                             (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.company_name == new_external_business_entity.company_name),
-                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.nip == new_external_business_entity.nip),
-                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.krs == new_external_business_entity.krs)
+                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.nip == new_external_business_entity.nip)
                         )
                     )
                 )
@@ -85,8 +83,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                     city=update_external_business_entity.city,
                     postal_code=update_external_business_entity.postal_code,
                     street=update_external_business_entity.street,
-                    nip=update_external_business_entity.nip,
-                    krs=update_external_business_entity.krs
+                    nip=update_external_business_entity.nip
                 ).
                 returning(ExternalBusinessEntity)
             )
@@ -105,8 +102,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                 where(
                         or_(
                             (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.company_name == update_external_business_entity.company_name) & (ExternalBusinessEntity.id != update_external_business_entity.id),
-                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.nip == update_external_business_entity.nip) & (ExternalBusinessEntity.id != update_external_business_entity.id),
-                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.krs == update_external_business_entity.krs) & (ExternalBusinessEntity.id != update_external_business_entity.id)
+                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.nip == update_external_business_entity.nip) & (ExternalBusinessEntity.id != update_external_business_entity.id)
                         )
                     )
                 )
@@ -144,8 +140,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                                                 city: Optional[str] = None,
                                                 postal_code: Optional[str] = None,
                                                 street: Optional[str] = None,
-                                                nip: Optional[str] = None,
-                                                krs: Optional[str] = None) -> list:
+                                                nip: Optional[str] = None) -> list:
         try:
             stmt = (
                 select(ExternalBusinessEntity).
@@ -155,8 +150,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                     (ExternalBusinessEntity.city.ilike(f"%{city}%") if city else True) &
                     (ExternalBusinessEntity.postal_code.ilike(f"%{postal_code}%") if postal_code else True) &
                     (ExternalBusinessEntity.street.ilike(f"%{street}%") if street else True) &
-                    (ExternalBusinessEntity.nip.ilike(f"%{nip}%") if nip else True) &
-                    (ExternalBusinessEntity.krs.ilike(f"%{krs}%") if krs else True)
+                    (ExternalBusinessEntity.nip.ilike(f"%{nip}%") if nip else True)
                 ).
                 limit(items_per_page).
                 offset((page - 1) * items_per_page)

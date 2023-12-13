@@ -63,7 +63,7 @@ async def create_user_business_entity(
         )
 
         if is_unique == False:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip/krs arleady exists.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip arleady exists.")
 
         is_unique_in_external_business_entity: bool = await external_business_entity_postgres_repository.is_external_business_entity_unique(
             user_id=jwt_payload.id,
@@ -72,13 +72,12 @@ async def create_user_business_entity(
                 city=new_user_business_entity.city,
                 postal_code=new_user_business_entity.postal_code,
                 street=new_user_business_entity.street,
-                nip=new_user_business_entity.nip,
-                krs=new_user_business_entity.krs
+                nip=new_user_business_entity.nip
             )
         )
         
         if is_unique_in_external_business_entity == False:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip/krs arleady exists in External Business Entities.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip arleady exists in External Business Entities.")
         
         user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.create_user_business_entity(
             user_id=jwt_payload.id, 
@@ -91,8 +90,7 @@ async def create_user_business_entity(
             city=user_business_entity.city,
             postal_code=user_business_entity.postal_code,
             street=user_business_entity.street,
-            nip=user_business_entity.nip,
-            krs=user_business_entity.krs
+            nip=user_business_entity.nip
         )
         
         return JSONResponse(status_code=status.HTTP_201_CREATED, content=user_business_entity_model.model_dump())
@@ -134,8 +132,7 @@ async def get_user_business_entity(
             city=user_business_entity.city,
             postal_code=user_business_entity.postal_code,
             street=user_business_entity.street,
-            nip=user_business_entity.nip,
-            krs=user_business_entity.krs
+            nip=user_business_entity.nip
         )
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model.model_dump())
@@ -157,7 +154,6 @@ async def get_all_user_business_entities(
     postal_code: Optional[str] = None,
     street: Optional[str] = None,
     nip: Optional[str] = None,
-    krs: Optional[str] = None,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
@@ -182,8 +178,7 @@ async def get_all_user_business_entities(
             city=city,
             postal_code=postal_code,
             street=street,
-            nip=nip,
-            krs=krs
+            nip=nip
         )
         user_business_entity_model_list = []
         for user_business_entity in user_business_entity_list:
@@ -193,8 +188,7 @@ async def get_all_user_business_entities(
                 city=user_business_entity.city,
                 postal_code=user_business_entity.postal_code,
                 street=user_business_entity.street,
-                nip=user_business_entity.nip,
-                krs=user_business_entity.krs
+                nip=user_business_entity.nip
             )
             user_business_entity_model_list.append(user_business_entity_model.model_dump())
         
@@ -233,7 +227,7 @@ async def update_user_business_entity(
         )
 
         if is_unique == False:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip/krs arleady exists.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip arleady exists.")
 
         updated_user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.update_user_business_entity(
             user_id=jwt_payload.id,
@@ -246,8 +240,7 @@ async def update_user_business_entity(
             city=updated_user_business_entity.city,
             postal_code=updated_user_business_entity.postal_code,
             street=updated_user_business_entity.street,
-            nip=updated_user_business_entity.nip,
-            krs=updated_user_business_entity.krs
+            nip=updated_user_business_entity.nip
         )
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model.model_dump())

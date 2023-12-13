@@ -37,8 +37,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                     city=new_user_business_entity.city,
                     postal_code=new_user_business_entity.postal_code,
                     street=new_user_business_entity.street,
-                    nip=new_user_business_entity.nip,
-                    krs=new_user_business_entity.krs
+                    nip=new_user_business_entity.nip
                     ).
                     returning(UserBusinessEntity)
                 )
@@ -85,8 +84,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                     city=update_user_business_entity.city,
                     postal_code=update_user_business_entity.postal_code,
                     street=update_user_business_entity.street,
-                    nip=update_user_business_entity.nip,
-                    krs=update_user_business_entity.krs
+                    nip=update_user_business_entity.nip
                 ).
                 returning(UserBusinessEntity)
             )
@@ -163,8 +161,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                                             city: Optional[str] = None,
                                             postal_code: Optional[str] = None,
                                             street: Optional[str] = None,
-                                            nip: Optional[str] = None,
-                                            krs: Optional[str] = None) -> list:
+                                            nip: Optional[str] = None) -> list:
         try:
             stmt = (
                 select(UserBusinessEntity).
@@ -174,8 +171,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                     (UserBusinessEntity.city.ilike(f"%{city}%") if city else True) &
                     (UserBusinessEntity.postal_code.ilike(f"%{postal_code}%") if postal_code else True) &
                     (UserBusinessEntity.street.ilike(f"%{street}%") if street else True) &
-                    (UserBusinessEntity.nip.ilike(f"%{nip}%") if nip else True) &
-                    (UserBusinessEntity.krs.ilike(f"%{krs}%") if krs else True)
+                    (UserBusinessEntity.nip.ilike(f"%{nip}%") if nip else True)
                 ).
                 limit(items_per_page).
                 offset((page - 1) * items_per_page)

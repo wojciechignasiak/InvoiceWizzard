@@ -9,7 +9,6 @@ class CreateExternalBusinessEntityModel(BaseModel):
                 "postal_code": "00-000",
                 "street": "ul. Nowa 3/4",
                 "nip": "8386732400",
-                "krs": "0123624482"
                 }
             }
         )
@@ -18,7 +17,6 @@ class CreateExternalBusinessEntityModel(BaseModel):
     postal_code: Optional[str]
     street: Optional[str]
     nip: str
-    krs: str
 
 class UpdateExternalBusinessEntityModel(CreateExternalBusinessEntityModel):
     model_config = ConfigDict(json_schema_extra={
@@ -29,7 +27,6 @@ class UpdateExternalBusinessEntityModel(CreateExternalBusinessEntityModel):
                 "postal_code": "00-000",
                 "street": "ul. Nowa 3/4",
                 "nip": "8386732400",
-                "krs": "0123624482"
                 }
             }
         )

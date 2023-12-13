@@ -32,8 +32,7 @@ class UserBusinessEntity(Base):
     city: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
-    krs: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
+    nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=False)
     invoice: Mapped[List["Invoice"]] = relationship(back_populates="user_business_entity")
 
 class ExternalBusinessEntity(Base):
@@ -45,7 +44,6 @@ class ExternalBusinessEntity(Base):
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
-    krs: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
     invoice: Mapped[List["Invoice"]] = relationship(back_populates="external_business_entity")
 
 class Invoice(Base):
@@ -60,6 +58,7 @@ class Invoice(Base):
     invoice_number: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     issue_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
     sale_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(VARCHAR, nullable=True)
     payment_method: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     payment_deadline: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
     added_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=False)
@@ -76,6 +75,6 @@ class InvoiceItem(Base):
     invoice: Mapped["Invoice"] = relationship(back_populates="invoice_item")
     ordinal_number: Mapped[int] = mapped_column(INTEGER, nullable=False)
     item_description: Mapped[Optional[str]] = mapped_column(VARCHAR, nullable=True)
+    number_of_items: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=False)
     net_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
     gross_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
-    tax_percent: Mapped[Optional[Decimal]] = mapped_column(NUMERIC(1,3), nullable=True)

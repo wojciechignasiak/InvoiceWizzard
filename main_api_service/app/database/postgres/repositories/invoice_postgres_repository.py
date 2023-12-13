@@ -40,6 +40,7 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                     sale_date=datetime.strptime(new_invoice.sale_date, '%Y-%m-%d').date(),
                     payment_method=new_invoice.payment_method,
                     payment_deadline=datetime.strptime(new_invoice.payment_deadline, '%Y-%m-%d').date(),
+                    notes=new_invoice.notes,
                     added_date=date.today(),
                     is_settled=new_invoice.is_settled,
                     is_accepted=new_invoice.is_accepted,
@@ -165,6 +166,7 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                     sale_date=datetime.strptime(update_invoice.sale_date, '%Y-%m-%d').date(),
                     payment_method=update_invoice.payment_method,
                     payment_deadline=datetime.strptime(update_invoice.payment_deadline, '%Y-%m-%d').date(),
+                    notes=update_invoice.notes,
                     is_settled=update_invoice.is_settled,
                     is_accepted=update_invoice.is_accepted,
                     is_issued=update_invoice.is_issued
@@ -218,4 +220,3 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoicePostgresRepository.is_invoice_unique() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
-        
