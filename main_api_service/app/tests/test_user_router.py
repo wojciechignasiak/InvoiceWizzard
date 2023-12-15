@@ -226,7 +226,7 @@ async def test_register_account_password_or_email_format_error(
         "/user-module/register-account/", 
         headers=headers,
         json=json)
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 @pytest.mark.asyncio
 async def test_register_account_email_arleady_taken_error(
@@ -1216,7 +1216,7 @@ async def test_change_password_password_format_error(
         headers={"Authorization": f"Bearer {str(mock_jwt_token)}"},
         json=json)
     
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 @pytest.mark.asyncio
 async def test_change_password_unauthorized_error(
@@ -1548,7 +1548,7 @@ async def test_reset_password_bad_password_format(
         "/user-module/reset-password/",
         json=json)
 
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 @pytest.mark.asyncio
 async def test_reset_password_save_new_password_error(

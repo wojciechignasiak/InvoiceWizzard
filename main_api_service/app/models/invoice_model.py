@@ -26,10 +26,10 @@ class CreateInvoiceModel(BaseModel):
     user_business_entity_id: UUID
     external_business_entity_id: UUID
     invoice_number: str
-    issue_date: datetime
-    sale_date: datetime
+    issue_date: date
+    sale_date: date
     payment_method: str
-    payment_deadline: datetime
+    payment_deadline: date
     notes: str
     is_settled: bool = False
     is_accepted: bool = True
@@ -44,11 +44,10 @@ class CreateInvoiceModel(BaseModel):
         return date.today()
     
     @field_validator("sale_date", "issue_date", "payment_deadline")
-    def parse_sale_date(cls, value):
+    def parse_date(cls, value):
         if isinstance(value, str):
             return datetime.strptime(value, "%Y-%m-%d").date()
         return value
-
 
 
 class UpdateInvoiceModel(BaseModel):
@@ -73,10 +72,10 @@ class UpdateInvoiceModel(BaseModel):
     user_business_entity_id: Optional[UUID] = None
     external_business_entity_id: Optional[UUID] = None
     invoice_number: Optional[str] = None
-    issue_date: Optional[str] = None
-    sale_date: Optional[datetime] = None
-    payment_method: Optional[datetime] = None
-    payment_deadline: Optional[datetime] = None
+    issue_date: Optional[date] = None
+    sale_date: Optional[date] = None
+    payment_method: Optional[str] = None
+    payment_deadline: Optional[date] = None
     notes: str
     is_settled: Optional[bool] = None
     is_accepted: Optional[bool] = None

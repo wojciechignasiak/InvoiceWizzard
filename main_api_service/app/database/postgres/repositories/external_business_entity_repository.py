@@ -31,7 +31,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
             stmt = (
                 insert(ExternalBusinessEntity).
                 values(
-                    id=uuid4(),
+                    id=new_external_business_entity.id,
                     user_id=UUID(user_id),
                     company_name=new_external_business_entity.company_name,
                     city=new_external_business_entity.city,
