@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
+from app.schema.schema import UserBusinessEntity
 
 class CreateUserBusinessEntityModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
@@ -34,3 +35,13 @@ class UpdateUserBusinessEntityModel(CreateUserBusinessEntityModel):
 
 class UserBusinessEntityModel(UpdateUserBusinessEntityModel):
     pass
+
+    def user_business_entity_schema_to_model(user_business_entity_schema: UserBusinessEntity) -> "UserBusinessEntityModel":
+        return UserBusinessEntityModel(
+            id=str(user_business_entity_schema.id),
+            company_name=user_business_entity_schema.company_name,
+            city=user_business_entity_schema.city,
+            postal_code=user_business_entity_schema.postal_code,
+            street=user_business_entity_schema.street,
+            nip=user_business_entity_schema.nip
+        )

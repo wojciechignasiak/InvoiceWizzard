@@ -1,7 +1,10 @@
 from pydantic import BaseModel, ConfigDict, EmailStr
+from datetime import date
+from uuid import uuid4
 from typing import Optional
+from app.schema.schema import User
 
-class ReturnUserModel(BaseModel):
+class UserModel(BaseModel):
     id: str
     email: EmailStr
     first_name: Optional[str]
@@ -14,6 +17,22 @@ class ReturnUserModel(BaseModel):
     last_login: str
     email_notification: bool
     push_notification: bool
+
+    def user_schema_to_model(user_schema: User) -> "UserModel":
+        return UserModel(
+            id=str(user_schema.id),
+            email=user_schema.email,
+            first_name=user_schema.first_name,
+            last_name=user_schema.last_name,
+            phone_number=user_schema.phone_number,
+            city=user_schema.city,
+            postal_code=user_schema.postal_code,
+            street=user_schema.street,
+            registration_date=str(user_schema.registration_date),
+            last_login=str(user_schema.last_login),
+            email_notification=user_schema.email_notification,
+            push_notification=user_schema.push_notification
+        )
 
 class RegisterUserModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
@@ -36,7 +55,6 @@ class CreateUserModel(BaseModel):
                 "email": "email@example.com",
                 "password": "hashedPassword",
                 "salt": "asksmdadkwdaskdawdakjfja===1asa!",
-                "registration_date": "2023-10-25"
                 }
             }
         )
@@ -44,7 +62,18 @@ class CreateUserModel(BaseModel):
     email: EmailStr
     password: str
     salt: str
-    registration_date: str
+
+    @property
+    def id(self):
+        return uuid4()
+    
+    @property
+    def registration_date(self):
+        return date.today()
+    
+    @property
+    def last_login(self):
+        return date.today()
 
 
 class UserPersonalInformationModel(BaseModel):

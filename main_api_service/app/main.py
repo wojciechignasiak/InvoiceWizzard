@@ -25,7 +25,8 @@ from app.database.postgres.repositories.invoice_item_repository import InvoiceIt
 from app.routers import (
     user_router,
     user_business_entity_router,
-    external_business_entity_router
+    external_business_entity_router,
+    invoice_router
     )
 
 
@@ -156,6 +157,7 @@ def create_application() -> FastAPI:
     application.include_router(user_router.router, tags=["user"])
     application.include_router(user_business_entity_router.router, tags=["user-business-entity"])
     application.include_router(external_business_entity_router.router, tags=["external-business-entity"])
+    application.include_router(invoice_router.router, tags=["invoice"])
     return application
 
 app = create_application()

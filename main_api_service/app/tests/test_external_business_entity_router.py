@@ -53,7 +53,6 @@ async def test_create_external_business_entity_success(
     assert data["postal_code"] == mock_external_business_entity_schema_object.postal_code
     assert data["street"] == mock_external_business_entity_schema_object.street
     assert data["nip"] == mock_external_business_entity_schema_object.nip
-    assert data["krs"] == mock_external_business_entity_schema_object.krs
 
 @pytest.mark.asyncio
 async def test_create_external_business_entity_not_unique_error(
@@ -210,7 +209,6 @@ async def test_get_external_business_entity_success(
     assert data["postal_code"] == mock_external_business_entity_schema_object.postal_code
     assert data["street"] == mock_external_business_entity_schema_object.street
     assert data["nip"] == mock_external_business_entity_schema_object.nip
-    assert data["krs"] == mock_external_business_entity_schema_object.krs
 
 @pytest.mark.asyncio
 async def test_get_external_business_entity_unauthorized_error(

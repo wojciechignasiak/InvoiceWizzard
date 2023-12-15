@@ -80,8 +80,7 @@ def mock_user_business_entity_schema_object():
         city="Warsaw",
         postal_code="00-000",
         street="ul. Nowa 3/4",
-        nip="8386732400",
-        krs="0123624482"
+        nip="8386732400"
     )
     
     return user_business_entity_schema_object
@@ -95,8 +94,7 @@ def mock_external_business_entity_schema_object():
         city="Warsaw",
         postal_code="00-000",
         street="ul. Nowa 3/4",
-        nip="8386732400",
-        krs="0123624482"
+        nip="8386732400"
     )
     
     return external_business_entity_schema_object
@@ -247,8 +245,7 @@ def mock_create_user_business_entity_model_object():
         city = "Warsaw",
         postal_code = "00-000",
         street = "ul. Nowa 3/4",
-        nip = "8386732400",
-        krs = "0123624482"
+        nip = "8386732400"
     )
 
     return create_user_business_entity_model_object
@@ -261,8 +258,7 @@ def mock_update_user_business_entity_model_object():
         city = "Warsaw",
         postal_code = "00-000",
         street = "ul. Nowa 3/4",
-        nip = "8386732400",
-        krs = "0123624482"
+        nip = "8386732400"
     )
     
     return update_user_business_entity_model_object
@@ -275,8 +271,7 @@ def mock_user_business_entity_model_object():
         city = "Warsaw",
         postal_code = "00-000",
         street = "ul. Nowa 3/4",
-        nip = "8386732400",
-        krs = "0123624482"
+        nip = "8386732400"
     )
 
     return user_business_entity_model_object
@@ -298,8 +293,7 @@ def mock_create_external_business_entity_model_object():
         city = "Warsaw",
         postal_code = "00-000",
         street = "ul. Nowa 3/4",
-        nip = "8386732400",
-        krs = "0123624482"
+        nip = "8386732400"
     )
 
     return create_external_business_entity_model_object
@@ -312,8 +306,7 @@ def mock_update_external_business_entity_model_object():
         city = "Warsaw",
         postal_code = "00-000",
         street = "ul. Nowa 3/4",
-        nip = "8386732400",
-        krs = "0123624482"
+        nip = "8386732400"
     )
     
     return update_external_business_entity_model_object
@@ -326,8 +319,7 @@ def mock_external_business_entity_model_object():
         city = "Warsaw",
         postal_code = "00-000",
         street = "ul. Nowa 3/4",
-        nip = "8386732400",
-        krs = "0123624482"
+        nip = "8386732400"
     )
 
     return external_business_entity_model_object

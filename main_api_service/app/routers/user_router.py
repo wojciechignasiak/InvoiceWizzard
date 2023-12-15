@@ -27,7 +27,7 @@ from app.models.jwt_model import (
 )
 from app.models.authentication_model import LogInModel
 from app.models.user_model import (
-    ReturnUserModel,
+    UserModel,
     RegisterUserModel, 
     CreateUserModel, 
     UserPersonalInformationModel, 
@@ -49,7 +49,7 @@ import re
 router = APIRouter()
 http_bearer = HTTPBearer()
 
-@router.get("/user-module/get-current-user/", response_model=ReturnUserModel)
+@router.get("/user-module/get-current-user/", response_model=UserModel)
 async def get_current_user(
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
     token = Depends(http_bearer), 
@@ -72,22 +72,9 @@ async def get_current_user(
             )
 
         
-        return_user_model: ReturnUserModel = ReturnUserModel(
-            id=str(user.id),
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            phone_number=user.phone_number,
-            city=user.city,
-            postal_code=user.postal_code,
-            street=user.street,
-            registration_date=str(user.registration_date),
-            last_login=str(user.last_login),
-            email_notification=user.email_notification,
-            push_notification=user.push_notification
-        )
+        user_model: UserModel = UserModel.user_schema_to_model(user) 
 
-        return JSONResponse(return_user_model.model_dump())
+        return JSONResponse(user_model.model_dump())
     
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

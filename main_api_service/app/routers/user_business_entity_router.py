@@ -67,7 +67,7 @@ async def create_user_business_entity(
 
         is_unique_in_external_business_entity: bool = await external_business_entity_postgres_repository.is_external_business_entity_unique(
             user_id=jwt_payload.id,
-            new_user_business_entity=CreateUserBusinessEntityModel(
+            new_external_business_entity=CreateUserBusinessEntityModel(
                 company_name=new_user_business_entity.company_name,
                 city=new_user_business_entity.city,
                 postal_code=new_user_business_entity.postal_code,
@@ -84,15 +84,8 @@ async def create_user_business_entity(
             new_user_business_entity=new_user_business_entity
             )
         
-        user_business_entity_model = UserBusinessEntityModel(
-            id=str(user_business_entity.id),
-            company_name=user_business_entity.company_name,
-            city=user_business_entity.city,
-            postal_code=user_business_entity.postal_code,
-            street=user_business_entity.street,
-            nip=user_business_entity.nip
-        )
-        
+        user_business_entity_model: UserBusinessEntityModel = UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
+
         return JSONResponse(status_code=status.HTTP_201_CREATED, content=user_business_entity_model.model_dump())
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
@@ -126,14 +119,7 @@ async def get_user_business_entity(
             user_business_entity_id=user_business_entity_id
         )
         
-        user_business_entity_model = UserBusinessEntityModel(
-            id=str(user_business_entity.id),
-            company_name=user_business_entity.company_name,
-            city=user_business_entity.city,
-            postal_code=user_business_entity.postal_code,
-            street=user_business_entity.street,
-            nip=user_business_entity.nip
-        )
+        user_business_entity_model: UserBusinessEntityModel = UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model.model_dump())
     except HTTPException as e:
@@ -182,14 +168,7 @@ async def get_all_user_business_entities(
         )
         user_business_entity_model_list = []
         for user_business_entity in user_business_entity_list:
-            user_business_entity_model = UserBusinessEntityModel(
-                id=str(user_business_entity.id),
-                company_name=user_business_entity.company_name,
-                city=user_business_entity.city,
-                postal_code=user_business_entity.postal_code,
-                street=user_business_entity.street,
-                nip=user_business_entity.nip
-            )
+            user_business_entity_model: UserBusinessEntityModel = UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
             user_business_entity_model_list.append(user_business_entity_model.model_dump())
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model_list)
@@ -234,14 +213,7 @@ async def update_user_business_entity(
             update_user_business_entity=update_user_business_entity
         )
         
-        user_business_entity_model = UserBusinessEntityModel(
-            id=str(updated_user_business_entity.id),
-            company_name=updated_user_business_entity.company_name,
-            city=updated_user_business_entity.city,
-            postal_code=updated_user_business_entity.postal_code,
-            street=updated_user_business_entity.street,
-            nip=updated_user_business_entity.nip
-        )
+        user_business_entity_model: UserBusinessEntityModel = UserBusinessEntityModel.user_business_entity_schema_to_model(updated_user_business_entity)
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model.model_dump())
     except HTTPException as e:
