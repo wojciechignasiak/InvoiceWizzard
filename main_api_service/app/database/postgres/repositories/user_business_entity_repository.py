@@ -31,7 +31,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
             stmt = (
                 insert(UserBusinessEntity).
                 values(
-                    id=uuid4(),
+                    id=new_user_business_entity.id,
                     user_id=UUID(user_id),
                     company_name=new_user_business_entity.company_name,
                     city=new_user_business_entity.city,

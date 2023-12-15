@@ -1,8 +1,11 @@
 from pydantic import BaseModel, ConfigDict, EmailStr
+from fastapi import HTTPException, status
 from datetime import date
 from uuid import uuid4
+import re
 from typing import Optional
 from app.schema.schema import User
+
 
 class UserModel(BaseModel):
     id: str
@@ -48,6 +51,26 @@ class RegisterUserModel(BaseModel):
     repeated_email: EmailStr
     password: str
     repeated_password: str
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._validate_email()
+        self._validate_password()
+
+    def _validate_email(self):
+        if self.email != self.repeated_email:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided email adresses don't match.")
+        
+    def _validate_password(self):
+        if len(self.password) < 8:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided password is too short.")
+        if self.password != self.repeated_password:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided passwords don't match.")
+        if not re.search(r'\d', self.password):
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contatain at least 1 digit.")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', self.password):
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contatain at least 1 special character.")
 
 class CreateUserModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
@@ -110,6 +133,22 @@ class UpdateUserPasswordModel(BaseModel):
     new_password: str
     new_repeated_password: str
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._validate_new_password()
+        
+    def _validate_new_password(self):
+        if len(self.new_password) < 8:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided password is too short.")
+        if self.new_password != self.new_repeated_password:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided passwords don't match.")
+        if not re.search(r'\d', self.new_password):
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contatain at least 1 digit.")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', self.new_password):
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contatain at least 1 special character.")
+        
+
 class UpdateUserEmailModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
@@ -123,6 +162,15 @@ class UpdateUserEmailModel(BaseModel):
     current_email: EmailStr
     new_email: EmailStr
     new_repeated_email: EmailStr
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._validate_email()
+
+    def _validate_email(self):
+        if self.new_email != self.new_repeated_email:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided email adresses don't match.")
 
 
 class ConfirmedUserEmailChangeModel(BaseModel):
@@ -162,3 +210,18 @@ class ResetUserPasswordModel(BaseModel):
     email: EmailStr
     new_password: str
     new_repeated_password: str
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._validate_new_password()
+        
+    def _validate_new_password(self):
+        if len(self.new_password) < 8:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided password is too short.")
+        if self.new_password != self.new_repeated_password:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided passwords don't match.")
+        if not re.search(r'\d', self.new_password):
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contatain at least 1 digit.")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', self.new_password):
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contatain at least 1 special character.")

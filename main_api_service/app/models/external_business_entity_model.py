@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from app.schema.schema import ExternalBusinessEntity
+from uuid import uuid4
 
 class CreateExternalBusinessEntityModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
@@ -19,7 +20,11 @@ class CreateExternalBusinessEntityModel(BaseModel):
     street: Optional[str]
     nip: str
 
-class UpdateExternalBusinessEntityModel(CreateExternalBusinessEntityModel):
+    @property
+    def id(self):
+        return uuid4()
+
+class UpdateExternalBusinessEntityModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
                 "id": "a91031db-fc69-4b48-878e-0db79cef4cca",
@@ -32,6 +37,11 @@ class UpdateExternalBusinessEntityModel(CreateExternalBusinessEntityModel):
             }
         )
     id: str
+    company_name: str
+    city: Optional[str]
+    postal_code: Optional[str]
+    street: Optional[str]
+    nip: str
 
 class ExternalBusinessEntityModel(UpdateExternalBusinessEntityModel):
     pass

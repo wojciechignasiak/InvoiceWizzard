@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from app.schema.schema import UserBusinessEntity
+from uuid import uuid4
 
 class CreateUserBusinessEntityModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
@@ -19,7 +20,11 @@ class CreateUserBusinessEntityModel(BaseModel):
     street: Optional[str]
     nip: str
 
-class UpdateUserBusinessEntityModel(CreateUserBusinessEntityModel):
+    @property
+    def id(self):
+        return uuid4()
+
+class UpdateUserBusinessEntityModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
                 "id": "a91031db-fc69-4b48-878e-0db79cef4cca",
@@ -32,9 +37,13 @@ class UpdateUserBusinessEntityModel(CreateUserBusinessEntityModel):
             }
         )
     id: str
+    company_name: str
+    city: Optional[str]
+    postal_code: Optional[str]
+    street: Optional[str]
+    nip: str
 
 class UserBusinessEntityModel(UpdateUserBusinessEntityModel):
-    pass
 
     def user_business_entity_schema_to_model(user_business_entity_schema: UserBusinessEntity) -> "UserBusinessEntityModel":
         return UserBusinessEntityModel(

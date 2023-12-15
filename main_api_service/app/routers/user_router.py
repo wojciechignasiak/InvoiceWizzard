@@ -43,7 +43,6 @@ from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_clien
 from datetime import date
 from uuid import uuid4
 import datetime
-import re
 
 
 router = APIRouter()
@@ -71,10 +70,9 @@ async def get_current_user(
             user_id=jwt_payload.id
             )
 
-        
         user_model: UserModel = UserModel.user_schema_to_model(user) 
 
-        return JSONResponse(user_model.model_dump())
+        return JSONResponse(status_code=status.HTTP_200_OK, content=user_model.model_dump())
     
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
@@ -100,17 +98,6 @@ async def register_account(
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         event_producer: UserEvents = UserEvents(kafka_producer_client)
         user_utils: UserUtils = UserUtils()
-
-        if new_user.email != new_user.repeated_email:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adresses don't match.")
-        if new_user.password != new_user.repeated_password:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided passwords don't match.")
-        if len(new_user.password) < 8:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided password is too short.")
-        if not re.search(r'\d', new_user.password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password needs to contatain at least 1 digit.")
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_user.password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password needs to contatain at least 1 special character.")
         
         is_email_address_arleady_taken: bool = await user_postgres_repository.is_email_address_arleady_taken(
             user_email_adress=new_user.email
@@ -335,11 +322,6 @@ async def change_email_address(
             user_id=jwt_payload.id
             )
 
-        if new_email.current_email != user.email:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adress don't match with current email.")
-        if new_email.new_email != new_email.new_repeated_email:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adresses don't match.")
-
         is_email_address_arleady_taken: bool = await user_postgres_repository.is_email_address_arleady_taken(
             user_email_adress=new_email.new_email
             )
@@ -467,15 +449,8 @@ async def change_password(
             )
 
         if password_match == False:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Wrong current password.")
-        if new_password.new_password != new_password.new_repeated_password:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided new passwords don't match")
-        if len(new_password.new_password) < 8:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided new password is too short")
-        if not re.search(r'\d', new_password.new_password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password needs to contatain at least 1 digit")
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_password.new_password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password needs to contatain at least 1 special character")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong current password.")
+
         
         hashed_new_password: str = await user_utils.hash_password(
             salt=user.salt, 
@@ -525,15 +500,6 @@ async def reset_password(
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         user_utils: UserUtils = UserUtils()
         event_producer: UserEvents = UserEvents(kafka_producer_client)
-
-        if reset_password.new_password != reset_password.new_repeated_password:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided passwords don't match")
-        if len(reset_password.new_password) < 8:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided password is too short")
-        if not re.search(r'\d', reset_password.new_password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password needs to contatain at least 1 digit")
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', reset_password.new_password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password needs to contatain at least 1 special character")
         
         user: User = await user_postgres_repository.get_user_by_email_address(
             user_email_adress=reset_password.email
