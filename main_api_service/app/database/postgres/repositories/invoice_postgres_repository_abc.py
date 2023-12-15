@@ -1,17 +1,17 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-from app.models.invoice_model import CreateInvoiceManuallyModel, UpdateInvoiceModel 
+from app.models.invoice_model import CreateInvoiceModel, UpdateInvoiceModel 
 from app.schema.schema import Invoice
 
 class InvoicePostgresRepositoryABC(ABC):
     
     @abstractmethod
-    async def create_invoice_manually(user_id: str, invoice_pdf_location: str, new_invoice: CreateInvoiceManuallyModel) -> Invoice:
-        pass
+    async def create_invoice(self, user_id: str, new_invoice: CreateInvoiceModel) -> Invoice:
+        ...
 
     @abstractmethod
     async def get_invoice(self, user_id: str, invoice_id: str) -> Invoice:
-        pass
+        ...
 
     @abstractmethod
     async def get_all_invoices(
@@ -36,12 +36,16 @@ class InvoicePostgresRepositoryABC(ABC):
                                 is_settled: Optional[bool] = None,
                                 is_accepted: Optional[bool] = None,
                                 is_issued: Optional[bool] = None) -> list:
-        pass
+        ...
 
     @abstractmethod
     async def update_invoice(self, user_id: str, invoice_pdf_location: str, update_invoice: UpdateInvoiceModel) -> Invoice:
-        pass
+        ...
 
     @abstractmethod
     async def remove_invoice(self, user_id: str, invoice_id: str) -> bool:
-        pass
+        ...
+
+    @abstractmethod
+    async def is_invoice_unique(self, user_id: str, new_invoice: CreateInvoiceModel) -> bool:
+        ...

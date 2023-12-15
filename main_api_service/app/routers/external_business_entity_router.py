@@ -54,7 +54,7 @@ async def create_external_business_entity(
             )
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
-
+        
         is_unique: bool = await external_business_entity_postgres_repository.is_external_business_entity_unique(
             user_id=jwt_payload.id,
             new_external_business_entity=new_external_business_entity
@@ -82,14 +82,7 @@ async def create_external_business_entity(
             new_external_business_entity=new_external_business_entity
             )
         
-        external_business_entity_model = ExternalBusinessEntityModel(
-            id=str(external_business_entity.id),
-            company_name=external_business_entity.company_name,
-            city=external_business_entity.city,
-            postal_code=external_business_entity.postal_code,
-            street=external_business_entity.street,
-            nip=external_business_entity.nip
-        )
+        external_business_entity_model: ExternalBusinessEntityModel = ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
         
         return JSONResponse(status_code=status.HTTP_201_CREATED, content=external_business_entity_model.model_dump())
     except HTTPException as e:
@@ -118,19 +111,12 @@ async def get_external_business_entity(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
-        user_business_entity: ExternalBusinessEntity = await external_business_entity_postgres_repository.get_external_business_entity(
+        external_business_entity: ExternalBusinessEntity = await external_business_entity_postgres_repository.get_external_business_entity(
             user_id=jwt_payload.id,
             external_business_entity_id=external_business_entity_id
         )
         
-        external_business_entity_model = ExternalBusinessEntityModel(
-            id=str(user_business_entity.id),
-            company_name=user_business_entity.company_name,
-            city=user_business_entity.city,
-            postal_code=user_business_entity.postal_code,
-            street=user_business_entity.street,
-            nip=user_business_entity.nip
-        )
+        external_business_entity_model: ExternalBusinessEntityModel = ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=external_business_entity_model.model_dump())
     except HTTPException as e:
@@ -179,14 +165,7 @@ async def get_all_external_business_entities(
         )
         external_business_entity_model_list = []
         for external_business_entity in external_business_entity_list:
-            external_business_entity_model = ExternalBusinessEntityModel(
-                id=str(external_business_entity.id),
-                company_name=external_business_entity.company_name,
-                city=external_business_entity.city,
-                postal_code=external_business_entity.postal_code,
-                street=external_business_entity.street,
-                nip=external_business_entity.nip
-            )
+            external_business_entity_model: ExternalBusinessEntityModel = ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
             external_business_entity_model_list.append(external_business_entity_model.model_dump())
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=external_business_entity_model_list)
@@ -231,14 +210,7 @@ async def update_external_business_entity(
             update_external_business_entity=update_external_business_entity
         )
         
-        external_business_entity_model = ExternalBusinessEntityModel(
-            id=str(updated_external_business_entity.id),
-            company_name=updated_external_business_entity.company_name,
-            city=updated_external_business_entity.city,
-            postal_code=updated_external_business_entity.postal_code,
-            street=updated_external_business_entity.street,
-            nip=updated_external_business_entity.nip
-        )
+        external_business_entity_model: ExternalBusinessEntityModel = ExternalBusinessEntityModel.external_business_entity_schema_to_model(updated_external_business_entity)
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=external_business_entity_model.model_dump())
     except HTTPException as e:

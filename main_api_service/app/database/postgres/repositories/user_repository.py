@@ -34,12 +34,12 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             stmt = (
                 insert(User).
                 values(
-                    id=uuid4(),
+                    id=new_user.id,
                     email=new_user.email, 
                     password=new_user.password,
                     salt=new_user.salt, 
-                    registration_date=datetime.strptime(new_user.registration_date, '%Y-%m-%d').date(),
-                    last_login=date.today()
+                    registration_date=new_user.registration_date,
+                    last_login=new_user.last_login
                     ).
                     returning(User)
                 )

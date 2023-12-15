@@ -57,8 +57,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                 where(
                         or_(
                             (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.company_name == new_user_business_entity.company_name),
-                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.nip == new_user_business_entity.nip),
-                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.krs == new_user_business_entity.krs)
+                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.nip == new_user_business_entity.nip)
                         )
                     )
                 )
@@ -103,8 +102,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                 where(
                         or_(
                             (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.company_name == update_user_business_entity.company_name) & (UserBusinessEntity.id != update_user_business_entity.id),
-                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.nip == update_user_business_entity.nip) & (UserBusinessEntity.id != update_user_business_entity.id),
-                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.krs == update_user_business_entity.krs) & (UserBusinessEntity.id != update_user_business_entity.id)
+                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.nip == update_user_business_entity.nip) & (UserBusinessEntity.id != update_user_business_entity.id)
                         )
                     )
                 )

@@ -1,6 +1,6 @@
 from app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
 from app.database.postgres.repositories.invoice_item_repository_abc import InvoiceItemPostgresRepositoryABC
-from app.models.invoice_model import CreateInvoiceItemModel, UpdateInvoiceItemModel
+from app.models.invoice_item_model import UpdateInvoiceItemModel, CreateInvoiceItemModel
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLDatabaseError,
     PostgreSQLIntegrityError,
