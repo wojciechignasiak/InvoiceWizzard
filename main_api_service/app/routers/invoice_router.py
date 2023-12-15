@@ -129,7 +129,6 @@ async def add_file_to_invoice(
                     if is_it_mpo:
                         base_image = Image.fromarray(reader.get_data(0))
 
-                        # Użyj io.BytesIO jako tymczasowego strumienia
                         with io.BytesIO() as jpeg_stream:
                             base_image.save(jpeg_stream, format=file_extension)
                             file_data = jpeg_stream.getvalue()
@@ -147,7 +146,7 @@ async def add_file_to_invoice(
             update_invoice=update_invoice_model
         )
 
-        return JSONResponse(status_code=status.HTTP_201_CREATED, content="The file has been added to invoice.")
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "The file has been added to invoice."})
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
