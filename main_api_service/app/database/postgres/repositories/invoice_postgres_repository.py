@@ -228,7 +228,7 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                     Invoice.user_id == user_id
                     ).
                 values(
-                    invoice_file=invoice_pdf_location
+                    invoice_pdf=invoice_pdf_location
                 ).
                 returning(Invoice)
             )
@@ -249,7 +249,7 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                     Invoice.user_id == user_id
                     ).
                 values(
-                    invoice_file=None
+                    invoice_pdf=None
                 ).
                 returning(Invoice)
             )
