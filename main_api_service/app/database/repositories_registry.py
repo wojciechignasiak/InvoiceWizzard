@@ -59,7 +59,7 @@ class RepositoriesRegistry:
         return self.invoice_postgres_repository(session)
     
     async def return_invoice_redis_repository(self, redis_client) -> InvoiceRedisRepositoryABC:
-        return self.invoice_postgres_repository(redis_client)
+        return self.invoice_redis_repository(redis_client)
     
     async def return_invoice_item_postgres_repository(self, session) -> InvoiceItemPostgresRepositoryABC:
         return self.invoice_item_postgres_repository(session)
