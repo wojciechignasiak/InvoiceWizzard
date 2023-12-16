@@ -213,7 +213,7 @@ async def confirm_invoice_removal(
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
-    except PostgreSQLNotFoundError as e:
+    except (PostgreSQLNotFoundError, RedisNotFoundError) as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError, RedisSetError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
@@ -296,6 +296,56 @@ async def add_file_to_invoice(
 
 @router.delete("/invoice-module/delete-invoice-pdf/")
 async def delete_invoice_pdf(
+    invoice_id: str,
+    background_tasks: BackgroundTasks,
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    redis_client: redis.Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    ):
+    try:
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        invoice: Invoice = await invoice_postgres_repository.get_invoice(
+            user_id=jwt_payload.id,
+            invoice_id=invoice_id
+        )
+
+        invoice_model: InvoiceModel = InvoiceModel.invoice_schema_to_model(invoice)
+
+        if invoice_model.invoice_pdf == None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice doesn't have file.")
+        
+        await invoice_postgres_repository.remove_invoice_file(
+            user_id=jwt_payload.id,
+            invoice_id=invoice_id
+        )
+
+        background_tasks.add_task(
+            shutil.rmtree,
+            f"/usr/app/invoice/{jwt_payload.id}/{invoice_id}"
+        )
+
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "The file has been deleted."})
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/invoice-module/download-invoice-pdf/")
+async def download_invoice_pdf(
     invoice_id: str,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
