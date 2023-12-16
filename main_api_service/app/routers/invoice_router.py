@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, BackgroundTasks
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.security import HTTPBearer
 from app.database.get_repositories_registry import get_repositories_registry
 from app.database.repositories_registry import RepositoriesRegistry
@@ -35,6 +35,7 @@ import io
 from uuid import uuid4
 import ast
 import shutil
+from pathlib import Path
 
 router = APIRouter()
 http_bearer = HTTPBearer()
@@ -283,7 +284,7 @@ async def add_file_to_invoice(
             invoice_pdf_location=file_path
         )
 
-        return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "The file has been added to invoice."})
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "File has been added to the invoice."})
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
@@ -333,7 +334,7 @@ async def delete_invoice_pdf(
             f"/usr/app/invoice/{jwt_payload.id}/{invoice_id}"
         )
 
-        return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "The file has been deleted."})
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "File has been deleted."})
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
@@ -352,7 +353,40 @@ async def download_invoice_pdf(
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
-    pass
+    try:
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        invoice: Invoice = await invoice_postgres_repository.get_invoice(
+            user_id=jwt_payload.id,
+            invoice_id=invoice_id
+        )
+
+        invoice_model: InvoiceModel = InvoiceModel.invoice_schema_to_model(invoice)
+
+        if invoice_model.invoice_pdf == None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice doesn't have file.")
+        
+        file_path = Path(invoice_model.invoice_pdf)
+    
+        if not file_path.is_file():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+
+        return FileResponse(file_path, filename=file_path.name)
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.post("/invoice-module/generate-invoice-pdf/")
 async def generate_invoice_pdf(
