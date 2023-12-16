@@ -148,7 +148,7 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
             logger.error(f"InvoicePostgresRepository.get_all_invoices() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
         
-    async def update_invoice(self, user_id: str, invoice_pdf_location: str, update_invoice: UpdateInvoiceModel) -> None:
+    async def update_invoice(self, user_id: str, update_invoice: UpdateInvoiceModel) -> None:
         try:
             stmt = (
                 update(Invoice).
@@ -159,7 +159,6 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                 values(
                     user_business_entity_id=update_invoice.user_business_entity_id,
                     external_business_entity_id=update_invoice.external_business_entity_id,
-                    invoice_pdf=invoice_pdf_location,
                     invoice_number=update_invoice.invoice_number,
                     issue_date=update_invoice.issue_date,
                     sale_date=update_invoice.sale_date,
@@ -217,4 +216,46 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                 return False
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoicePostgresRepository.is_invoice_unique() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+        
+        
+    async def update_invoice_file(self, user_id: str, invoice_id: str, invoice_pdf_location: str) -> None:
+        try:
+            stmt = (
+                update(Invoice).
+                where(
+                    Invoice.id == invoice_id,
+                    Invoice.user_id == user_id
+                    ).
+                values(
+                    invoice_file=invoice_pdf_location
+                ).
+                returning(Invoice)
+            )
+            updated_invoice = await self.session.scalar(stmt)
+            if updated_invoice == None:
+                raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoicePostgresRepository.update_invoice_file() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+    
+    
+    async def remove_invoice_file(self, user_id: str, invoice_id: str) -> None:
+        try:
+            stmt = (
+                update(Invoice).
+                where(
+                    Invoice.id == invoice_id,
+                    Invoice.user_id == user_id
+                    ).
+                values(
+                    invoice_file=None
+                ).
+                returning(Invoice)
+            )
+            updated_invoice = await self.session.scalar(stmt)
+            if updated_invoice == None:
+                raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoicePostgresRepository.delete_invoice_file() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")

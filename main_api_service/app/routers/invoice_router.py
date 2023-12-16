@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, UploadFile
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 from app.database.get_repositories_registry import get_repositories_registry
@@ -78,7 +78,59 @@ async def create_invoice(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-    
+
+@router.patch("/invoice-module/update-invoice/")
+async def update_invoice(
+    update_invoice: UpdateInvoiceModel,
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    redis_client: redis.Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    ):
+    try:
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        invoice_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        await invoice_repository.update_invoice(
+            user_id=jwt_payload.id,
+            update_invoice=update_invoice
+        )
+
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"details": "Invoice updated succesfully."})
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+@router.put("/invoice-module/initialize-invoice-removal/")
+async def initialize_invoice_removal(
+    invoice_id: str,
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    redis_client: redis.Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    ):
+    pass
+
+@router.delete("/invoice-module/confirm-invoice-removal/")
+async def confirm_invoice_removal(
+    id: str,
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    redis_client: redis.Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    ):
+    pass
 
 @router.post("/invoice-module/add-file-to-invoice/")
 async def add_file_to_invoice(
@@ -138,12 +190,10 @@ async def add_file_to_invoice(
             case _:
                 raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Invoice file in unsupported format. Use PDF or JPG/JPEG/PNG.")
 
-        update_invoice_model: UpdateInvoiceModel = UpdateInvoiceModel.model_validate(invoice_model.model_dump())
-
-        await invoice_postgres_repository.update_invoice(
+        await invoice_postgres_repository.update_invoice_file(
             user_id=jwt_payload.id,
-            invoice_pdf_location=file_path,
-            update_invoice=update_invoice_model
+            invoice_id=invoice_id,
+            invoice_pdf_location=file_path
         )
 
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "The file has been added to invoice."})
