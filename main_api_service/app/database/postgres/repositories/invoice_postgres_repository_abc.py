@@ -39,7 +39,7 @@ class InvoicePostgresRepositoryABC(ABC):
         ...
 
     @abstractmethod
-    async def update_invoice(self, user_id: str, invoice_pdf_location: str, update_invoice: UpdateInvoiceModel) -> None:
+    async def update_invoice(self, user_id: str, update_invoice: UpdateInvoiceModel) -> None:
         ...
 
     @abstractmethod
@@ -48,4 +48,12 @@ class InvoicePostgresRepositoryABC(ABC):
 
     @abstractmethod
     async def is_invoice_unique(self, user_id: str, new_invoice: CreateInvoiceModel) -> bool:
+        ...
+
+    @abstractmethod
+    async def update_invoice_file(self, user_id: str, invoice_id: str, invoice_pdf_location: str) -> None:
+        ...
+    
+    @abstractmethod
+    async def remove_invoice_file(self, user_id: str, invoice_id: str, invoice_pdf_location: str) -> None:
         ...
