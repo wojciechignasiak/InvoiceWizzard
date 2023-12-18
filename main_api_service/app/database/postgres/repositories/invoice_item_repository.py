@@ -18,19 +18,20 @@ from sqlalchemy.exc import (
 from app.schema.schema import InvoiceItem
 from sqlalchemy import insert, select, update, delete
 from app.logging import logger
-from uuid import uuid4, UUID
+from uuid import UUID
 
 class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresRepositoryABC):
 
-    async def create_invoice_item(self, invoice_id: str, new_invoice_item: CreateInvoiceItemModel) -> InvoiceItem:
+    async def create_invoice_item(self, user_id: str, invoice_id: str, new_invoice_item: CreateInvoiceItemModel) -> InvoiceItem:
         try:
             stmt = (
                 insert(InvoiceItem).
                 values(
-                    id=uuid4(),
+                    id=new_invoice_item.id,
+                    user_id=UUID(user_id),
                     invoice_id=UUID(invoice_id),
-                    ordinal_number=new_invoice_item.ordinal_number,
-                    invoice_description=new_invoice_item.invoice_description,
+                    item_description=new_invoice_item.item_description,
+                    number_of_items=new_invoice_item.number_of_items,
                     net_value=new_invoice_item.net_value,
                     gross_value=new_invoice_item.gross_value
                 ). 
@@ -45,12 +46,13 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
             logger.error(f"InvoiceItemPostgresRepository.create_invoice_item() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def get_invoice_item(self, invoice_item_id: str) -> InvoiceItem:
+    async def get_invoice_item(self, user_id: str, invoice_item_id: str) -> InvoiceItem:
         try:
             stmt = (
                 select(InvoiceItem).
                 where(
-                    InvoiceItem.id == invoice_item_id
+                    InvoiceItem.id == UUID(invoice_item_id),
+                    InvoiceItem.user_id == UUID(user_id)
                 )
             )
             invoice_item = await self.session.scalar(stmt)
@@ -61,12 +63,13 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
             logger.error(f"InvoiceItemPostgresRepository.get_invoice_item() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def get_invoice_items_from_invoice(self, invoice_id: str) -> list:
+    async def get_invoice_items_by_invoice_id(self, user_id: str, invoice_id: str) -> list:
         try:
             stmt = (
                 select(InvoiceItem).
                 where(
-                    InvoiceItem.invoice_id == invoice_id
+                    InvoiceItem.invoice_id == UUID(invoice_id),
+                    InvoiceItem.user_id == UUID(user_id)
                 )
             )
             invoice_items = await self.session.scalar(stmt)
@@ -74,20 +77,21 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
                 raise PostgreSQLNotFoundError("Invoice items with provided invoice id not found in database.")
             return invoice_items
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"InvoiceItemPostgresRepository.get_invoice_items_from_invoice() Error: {e}")
+            logger.error(f"InvoiceItemPostgresRepository.get_invoice_items_by_invoice_id() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def update_invoice_item(self, update_invoice_item: UpdateInvoiceItemModel) -> InvoiceItem:
+    async def update_invoice_item(self, user_id: str, update_invoice_item: UpdateInvoiceItemModel) -> None:
         try:
             stmt = (
                 update(InvoiceItem).
                 where(
                     InvoiceItem.id == update_invoice_item.id,
+                    InvoiceItem.user_id == UUID(user_id)
                     ).
                 values(
                     invoice_id=update_invoice_item.invoice_id,
-                    ordinal_number=update_invoice_item.ordinal_number,
-                    invoice_description=update_invoice_item.invoice_description,
+                    item_description=update_invoice_item.item_description,
+                    number_of_items=update_invoice_item.number_of_items,
                     net_value=update_invoice_item.net_value,
                     gross_value=update_invoice_item.gross_value
                 ).
@@ -96,17 +100,17 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
             updated_invoice_item = await self.session.scalar(stmt)
             if updated_invoice_item == None:
                 raise PostgreSQLNotFoundError("Invoice item with provided id not found in database.")
-            return updated_invoice_item
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoiceItemPostgresRepository.update_invoice_item() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def remove_invoice_item(self, invoice_item_id: str) -> bool:
+    async def remove_invoice_item(self, user_id: str, invoice_item_id: str) -> bool:
         try:
             stmt = (
                 delete(InvoiceItem).
                 where(
-                    InvoiceItem.id == invoice_item_id
+                    InvoiceItem.id == UUID(invoice_item_id),
+                    InvoiceItem.user_id == UUID(user_id)
                 )
             )
             deleted_invoice_item = await self.session.execute(stmt)

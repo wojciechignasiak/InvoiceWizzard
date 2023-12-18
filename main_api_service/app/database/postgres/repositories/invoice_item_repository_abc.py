@@ -17,7 +17,7 @@ class InvoiceItemPostgresRepositoryABC(ABC):
         ...
 
     @abstractmethod
-    async def update_invoice_item(self, user_id: str, update_invoice_item: UpdateInvoiceItemModel) -> InvoiceItem:
+    async def update_invoice_item(self, user_id: str, update_invoice_item: UpdateInvoiceItemModel) -> None:
         ...
 
     @abstractmethod
