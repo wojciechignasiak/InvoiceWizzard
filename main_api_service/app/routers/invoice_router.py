@@ -26,7 +26,10 @@ from app.models.invoice_model import (
     CreateInvoiceModel,
     UpdateInvoiceModel
 )
-from app.schema.schema import Invoice
+from app.models.invoice_item_model import InvoiceItemModel
+from app.models.user_business_entity_model import UserBusinessEntityModel
+from app.models.external_business_entity_model import ExternalBusinessEntityModel
+from app.schema.schema import Invoice, InvoiceItem, UserBusinessEntity, ExternalBusinessEntity
 import img2pdf
 import os
 from PIL import Image
@@ -36,6 +39,8 @@ from uuid import uuid4
 import ast
 import shutil
 from pathlib import Path
+from app.utils.invoice_generator import invoice_generator
+from app.utils.invoice_html_to_pdf import invoice_html_to_pdf
 
 router = APIRouter()
 http_bearer = HTTPBearer()
@@ -331,7 +336,7 @@ async def delete_invoice_pdf(
 
         background_tasks.add_task(
             shutil.rmtree,
-            invoice_model.invoice_pdf
+            f"/usr/app/invoice/{jwt_payload.id}/{invoice_id}"
         )
 
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "File has been deleted."})
@@ -396,4 +401,78 @@ async def generate_invoice_pdf(
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
-    pass
+    try:
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+        invoice_item_postgres_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
+        user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
+        external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        invoice: Invoice = await invoice_postgres_repository.get_invoice(
+            user_id=jwt_payload.id,
+            invoice_id=invoice_id
+        )
+
+        invoice_model: InvoiceModel = InvoiceModel.invoice_schema_to_model(invoice)
+
+        if invoice_model.invoice_pdf != None:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Invoice arleady have file.")
+        
+        invoice_items: list[InvoiceItem] = await invoice_item_postgres_repository.get_invoice_items_by_invoice_id(
+            user_id=jwt_payload.id,
+            invoice_id=invoice_model.id
+        )
+
+        invoice_items_model: list = []
+
+        for invoice_item in invoice_items:
+            invoice_item_model: InvoiceItemModel = InvoiceItemModel.invoice_item_schema_to_model(invoice_item)
+            invoice_items_model.append(invoice_item_model)
+        
+        user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.get_user_business_entity(
+            user_id=jwt_payload.id,
+            user_business_entity_id=invoice_model.user_business_entity_id
+        )
+
+        user_business_entity_model: UserBusinessEntityModel = UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
+
+        external_business_entity: ExternalBusinessEntity = await external_business_entity_postgres_repository.get_external_business_entity(
+            user_id=jwt_payload.id,
+            external_business_entity_id=invoice_model.external_business_entity_id
+        )
+
+        external_business_entity_model: ExternalBusinessEntityModel = ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
+
+        invoice_html = await invoice_generator(
+            user_business_entity=user_business_entity_model,
+            external_business_entity=external_business_entity_model,
+            invoice=invoice_model,
+            invoice_items=invoice_items_model
+        )
+        file_path = f"/usr/app/invoice/{jwt_payload.id}/{invoice_model.id}/invoice.pdf"
+        
+        await invoice_html_to_pdf(
+            invoice_html=invoice_html,
+            file_path=file_path
+            )
+        
+        await invoice_postgres_repository.update_invoice_file(
+            user_id=jwt_payload.id,
+            invoice_id=invoice_id,
+            invoice_pdf_location=file_path
+        )
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "File has been generated."})
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

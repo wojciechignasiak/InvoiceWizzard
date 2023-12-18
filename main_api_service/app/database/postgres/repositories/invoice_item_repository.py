@@ -72,7 +72,7 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
                     InvoiceItem.user_id == UUID(user_id)
                 )
             )
-            invoice_items = await self.session.scalar(stmt)
+            invoice_items = await self.session.scalars(stmt)
             if not invoice_items:
                 raise PostgreSQLNotFoundError("Invoice items with provided invoice id not found in database.")
             return invoice_items

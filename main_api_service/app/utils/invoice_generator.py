@@ -1,4 +1,5 @@
-from app.models.invoice_item_model import CreateInvoiceItemModel
+from app.models.invoice_item_model import InvoiceItemModel
+from app.models.invoice_model import InvoiceModel
 from app.models.user_business_entity_model import UserBusinessEntityModel
 from app.models.external_business_entity_model import ExternalBusinessEntityModel
 from app.logging import logger
@@ -6,35 +7,33 @@ from app.logging import logger
 async def invoice_generator(
         user_business_entity: UserBusinessEntityModel,
         external_business_entity: ExternalBusinessEntityModel,
-        invoice_number,
-        issue_date,
-        sale_date,
-        payment_method,
-        payment_deadline,
-        notes,
-        invoice_items: list[CreateInvoiceItemModel]) -> str:
+        invoice: InvoiceModel,
+        invoice_items: list[InvoiceItemModel]) -> str:
     try:
         styles = """
         <head>
                 <meta charset="UTF-8">
                 <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Sora:wght@100;200;300;400;500;600;700;800&display=swap');
                     *{
                         box-sizing: border-box;
-                        font-family: 'Roboto', sans-serif;
+                    }
+                    @media print {
+                        body {
+                            margin: 0;
+                        }
+                    }
+                    @page {
+                        margin: 0cm;
                     }
                     body{
-                        background-color: #999;
-                        margin: 0;
-                        padding: 0;
-                        width: fit-content;
-                        height: fit-content;
+                        background: #fff;
+                        margin: 0px;
+                        padding: 0px;
                         font-family: Arial, Helvetica, sans-serif;
                     }
                     .invoice-main{
-                        width: 800px;
                         background: #fff;
-                        height: 100vh;
+                        height: 100%
                     }
                     .invoice-header{
                         width: 100%;
@@ -72,7 +71,7 @@ async def invoice_generator(
                         border-bottom: #1F1F1F25 solid 1px;
                     }
                     hr{
-                        opacity: 0%;
+                        opacity: 0;
                     }
                     .invoice-header-data{
                         display: flex;
@@ -95,23 +94,19 @@ async def invoice_generator(
                     }
                     .invoice-client-data{
                         width: 50%;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: center;
-                        align-items: flex-start;
                         padding: 20px 40px 0px 40px;
                     }
                     .invoice-client-entry-title{
                         display: block;
                         width: 100%;
                         font-weight: 700;
-                        margin: 3px 0px;
+                        margin: 10px 0px;
                         font-size: 18px;
                         border-bottom: #1F1F1F25 solid 1px;
                     }
                     .invoice-client-entry{
                         display: block;
-                        margin: 3px 0px;
+                        margin: 10px 0px;
                         font-weight: 400;
                         font-size: 16px;
                     }
@@ -176,7 +171,7 @@ async def invoice_generator(
                         padding:0px 5px;
                     }
                     .invoice-sign-wrapper{
-                        margin-top: 150px;
+                        margin-top: 100px;
                         display: flex;
                         width: 100%;
                         justify-content: space-between;
@@ -204,35 +199,35 @@ async def invoice_generator(
         invoice_number_container = f"""
         <div class="invoice-header-data-entry">
             <span class="invoice-entry-title">Nr Faktury: </span>
-            <span class="invoice-entry">{invoice_number}</span>
+            <span class="invoice-entry">{invoice.invoice_number}</span>
         </div>
         """
 
         issue_date_container = f"""
         <div class="invoice-header-data-entry">
             <span class="invoice-entry-title">Data wystawienia: </span>
-            <span class="invoice-entry">{issue_date}</span>
+            <span class="invoice-entry">{invoice.issue_date}</span>
         </div>
         """
 
         sale_date_container = f"""
         <div class="invoice-header-data-entry">
             <span class="invoice-entry-title">Data sprzedaży: </span>
-            <span class="invoice-entry">{sale_date}</span>
+            <span class="invoice-entry">{invoice.sale_date}</span>
         </div>
         """
 
         payment_method_container = f"""
         <div class="invoice-header-data-entry">
             <span class="invoice-entry-title">Metoda Płatności: </span>
-            <span class="invoice-entry">{payment_method}</span>
+            <span class="invoice-entry">{invoice.payment_method}</span>
         </div>
         """
 
         payment_deadline_container = f"""
         <div class="invoice-header-data-entry">
             <span class="invoice-entry-title">Termin Płatności: </span>
-            <span class="invoice-entry">{payment_deadline}</span>
+            <span class="invoice-entry">{invoice.payment_deadline}</span>
         </div>
         """
 
@@ -244,17 +239,18 @@ async def invoice_generator(
             <span class="invoice-client-entry">NIP {external_business_entity.nip}</span>
         </div>
         """
+        gross_sum = 0.0
         invoice_items_container = ""
-        for invoice_item in invoice_items:
-            vat_percent = ((invoice_item.gross_value - invoice_item.net_value) / invoice_item.net_value) * 100
+        for ordinal_number, invoice_item in enumerate(invoice_items):
+            ordinal_number += 1
             gross_sum += invoice_item.gross_value
             item = f"""
             <tr>
-                <td>{invoice_item.ordinal_number}</th>
+                <td>{ordinal_number}</th>
                 <td>{invoice_item.item_description}</th>
                 <td>{invoice_item.number_of_items}</th>
                 <td>{invoice_item.net_value} PLN</th>
-                <td>{vat_percent} %</th>
+                <td>{invoice_item.vat_percent} %</th>
                 <td>{invoice_item.gross_value} PLN</th>
             </tr>
             """
@@ -270,11 +266,11 @@ async def invoice_generator(
         notes_container = f"""
         <div class="invoice-details">
             <span class="invoice-details-title">Uwagi:</span>
-            <span class="invoice-details-text">{notes}</span>
+            <span class="invoice-details-text">{invoice.notes}</span>
         </div>
         """
 
-        html_invoice = f"""
+        invoice_html = f"""
         <html>
             {styles}
             <body>
@@ -326,6 +322,6 @@ async def invoice_generator(
             </html>
         """
 
-        return html_invoice
+        return invoice_html
     except Exception as e:
         logger.error(f"invoice_generator() Error: {e}")
