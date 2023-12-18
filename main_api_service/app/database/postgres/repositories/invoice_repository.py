@@ -1,5 +1,5 @@
 from app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
-from app.database.postgres.repositories.invoice_postgres_repository_abc import InvoicePostgresRepositoryABC
+from app.database.postgres.repositories.invoice_repository_abc import InvoicePostgresRepositoryABC
 from app.models.invoice_model import CreateInvoiceModel, UpdateInvoiceModel
 from app.schema.schema import Invoice
 from sqlalchemy import insert, select, or_, and_, update, delete
@@ -183,8 +183,9 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
             stmt = (
                 delete(Invoice).
                 where(
-                    Invoice.id == invoice_id,
-                    Invoice.user_id == user_id)
+                    Invoice.id == UUID(invoice_id),
+                    Invoice.user_id == UUID(user_id)
+                    )
             )
             deleted_invoice = await self.session.execute(stmt)
             rows_after_delete = deleted_invoice.rowcount
@@ -245,17 +246,17 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
             stmt = (
                 update(Invoice).
                 where(
-                    Invoice.id == invoice_id,
-                    Invoice.user_id == user_id
+                    Invoice.id == UUID(invoice_id),
+                    Invoice.user_id == UUID(user_id)
                     ).
                 values(
                     invoice_pdf=None
                 ).
                 returning(Invoice)
             )
-            updated_invoice = await self.session.scalar(stmt)
-            if updated_invoice == None:
+            removed_invoice_file = await self.session.scalar(stmt)
+            if removed_invoice_file == None:
                 raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"InvoicePostgresRepository.delete_invoice_file() Error: {e}")
+            logger.error(f"InvoicePostgresRepository.remove_invoice_file() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")

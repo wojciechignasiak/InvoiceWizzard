@@ -19,7 +19,7 @@ from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
 from app.database.redis.repositories.user_business_entity_repository import UserBusinessEntityRedisRepository
 from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
-from app.database.postgres.repositories.invoice_postgres_repository import InvoicePostgresRepository
+from app.database.postgres.repositories.invoice_repository import InvoicePostgresRepository
 from app.database.redis.repositories.invoice_repository import InvoiceRedisRepository
 from app.database.postgres.repositories.invoice_item_repository import InvoiceItemPostgresRepository
 from app.routers import (

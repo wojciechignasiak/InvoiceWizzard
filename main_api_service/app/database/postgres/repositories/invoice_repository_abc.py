@@ -55,5 +55,5 @@ class InvoicePostgresRepositoryABC(ABC):
         ...
     
     @abstractmethod
-    async def remove_invoice_file(self, user_id: str, invoice_id: str, invoice_pdf_location: str) -> None:
+    async def remove_invoice_file(self, user_id: str, invoice_id: str) -> None:
         ...
