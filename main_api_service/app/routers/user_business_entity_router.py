@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
+from fastapi.encoders import jsonable_encoder
 from app.database.get_repositories_registry import get_repositories_registry
 from app.database.repositories_registry import RepositoriesRegistry
 from app.database.redis.client.get_redis_client import get_redis_client
@@ -166,12 +167,12 @@ async def get_all_user_business_entities(
             street=street,
             nip=nip
         )
-        user_business_entity_model_list = []
+        user_business_entities_model = []
         for user_business_entity in user_business_entity_list:
             user_business_entity_model: UserBusinessEntityModel = UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
-            user_business_entity_model_list.append(user_business_entity_model.model_dump())
+            user_business_entities_model.append(user_business_entity_model)
         
-        return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model_list)
+        return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(user_business_entities_model))
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
