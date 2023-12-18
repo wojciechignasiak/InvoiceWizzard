@@ -75,7 +75,6 @@ class InvoiceItem(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
     invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("invoice.id", ondelete="CASCADE"), nullable=False)
     invoice: Mapped["Invoice"] = relationship(back_populates="invoice_item")
-    ordinal_number: Mapped[int] = mapped_column(INTEGER, nullable=True)
     item_description: Mapped[Optional[str]] = mapped_column(VARCHAR, nullable=True)
     number_of_items: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     net_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)

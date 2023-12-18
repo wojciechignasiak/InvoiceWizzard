@@ -7,7 +7,6 @@ from pydantic.functional_validators import field_validator
 class CreateInvoiceItemModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
-                "ordinal_number": 1,
                 "item_description": "My product/service name",
                 "number_of_items": 1,
                 "net_value": 8.00,
@@ -15,7 +14,6 @@ class CreateInvoiceItemModel(BaseModel):
                 }
             }
         )
-    ordinal_number: int
     item_description: str
     number_of_items: int
     net_value: float
@@ -31,7 +29,6 @@ class InvoiceItemModel(BaseModel):
         "example":{
                 "id": "d09ac12a-f128-4aa5-8b62-849ea61fcc3c",
                 "invoice_id": "d09ac12a-f128-4aa5-8b62-849ea61fcc3c",
-                "ordinal_number": 1,
                 "item_description": "My product/service name",
                 "number_of_items": 1,
                 "net_value": 8.00,
@@ -41,7 +38,6 @@ class InvoiceItemModel(BaseModel):
         )
     id: str
     invoice_id: str
-    ordinal_number: int
     item_description: str
     number_of_items: int
     net_value: float
@@ -55,7 +51,6 @@ class InvoiceItemModel(BaseModel):
         return InvoiceItemModel(
             id=str(invoice_item_schema.id),
             invoice_id=str(invoice_item_schema.invoice_id),
-            ordinal_number=invoice_item_schema.ordinal_number,
             item_description=invoice_item_schema.item_description,
             number_of_items=invoice_item_schema.number_of_items,
             net_value=invoice_item_schema.net_value,
@@ -67,7 +62,6 @@ class UpdateInvoiceItemModel(BaseModel):
         "example":{
                 "id": "d09ac12a-f128-4aa5-8b62-849ea61fcc3c",
                 "invoice_id": "d09ac12a-f128-4aa5-8b62-849ea61fcc3c",
-                "ordinal_number": 1,
                 "item_description": "My product/service name",
                 "number_of_items": 1,
                 "net_value": 8.00,
@@ -77,7 +71,6 @@ class UpdateInvoiceItemModel(BaseModel):
         )
     id: UUID
     invoice_id: UUID
-    ordinal_number: Optional[int]
     item_description: Optional[str]
     number_of_items: Optional[int]
     net_value: Optional[float]

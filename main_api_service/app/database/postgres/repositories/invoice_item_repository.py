@@ -30,7 +30,6 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
                     id=new_invoice_item.id,
                     user_id=UUID(user_id),
                     invoice_id=UUID(invoice_id),
-                    ordinal_number=new_invoice_item.ordinal_number,
                     item_description=new_invoice_item.item_description,
                     number_of_items=new_invoice_item.number_of_items,
                     net_value=new_invoice_item.net_value,
@@ -87,12 +86,12 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
                 update(InvoiceItem).
                 where(
                     InvoiceItem.id == update_invoice_item.id,
+                    InvoiceItem.user_id == UUID(user_id)
                     ).
                 values(
                     invoice_id=update_invoice_item.invoice_id,
-                    user_id=UUID(user_id),
-                    ordinal_number=update_invoice_item.ordinal_number,
-                    invoice_description=update_invoice_item.invoice_description,
+                    item_description=update_invoice_item.item_description,
+                    number_of_items=update_invoice_item.number_of_items,
                     net_value=update_invoice_item.net_value,
                     gross_value=update_invoice_item.gross_value
                 ).

@@ -99,7 +99,6 @@ class InvoiceModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
                 "id": "cfafb4bd-59e0-46e5-9005-6afd7e5b8a38",
-                "user_id": "cdee4370-dfd5-416e-821e-054693ae4de5",
                 "user_business_entity_id": "abcac67f-6d59-41b5-bf88-58fbaefbd725",
                 "external_business_entity_id": "abcac67f-6d59-41b5-bf88-58fbaefbd725",
                 "invoice_number": "1/2023",
@@ -115,7 +114,6 @@ class InvoiceModel(BaseModel):
             }
         )
     id: str
-    user_id: str
     user_business_entity_id: str
     external_business_entity_id: str
     invoice_pdf: Optional[str] = None
@@ -133,7 +131,6 @@ class InvoiceModel(BaseModel):
     def invoice_schema_to_model(invoice_schema: Invoice) -> "InvoiceModel":
         return InvoiceModel(
             id=str(invoice_schema.id),
-            user_id=str(invoice_schema.user_id),
             user_business_entity_id=str(invoice_schema.user_business_entity_id),
             external_business_entity_id=str(invoice_schema.external_business_entity_id),
             invoice_pdf=invoice_schema.invoice_pdf,
