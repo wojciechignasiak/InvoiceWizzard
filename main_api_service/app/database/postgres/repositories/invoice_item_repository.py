@@ -75,7 +75,7 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
             invoice_items = await self.session.scalars(stmt)
             if not invoice_items:
                 raise PostgreSQLNotFoundError("Invoice items with provided invoice id not found in database.")
-            return invoice_items
+            return invoice_items.all()
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoiceItemPostgresRepository.get_invoice_items_by_invoice_id() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
