@@ -331,7 +331,7 @@ async def delete_invoice_pdf(
 
         background_tasks.add_task(
             shutil.rmtree,
-            f"/usr/app/invoice/{jwt_payload.id}/{invoice_id}"
+            invoice_model.invoice_pdf
         )
 
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "File has been deleted."})
@@ -397,5 +397,3 @@ async def generate_invoice_pdf(
     postgres_session: AsyncSession = Depends(get_session),
     ):
     pass
-
-

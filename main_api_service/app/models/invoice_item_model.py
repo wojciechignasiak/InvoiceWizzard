@@ -15,7 +15,6 @@ class CreateInvoiceItemModel(BaseModel):
                 }
             }
         )
-    
     ordinal_number: int
     item_description: str
     number_of_items: int
@@ -25,6 +24,7 @@ class CreateInvoiceItemModel(BaseModel):
     @property
     def id(self):
         return uuid4()
+
 
 class InvoiceItemModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
@@ -75,8 +75,8 @@ class UpdateInvoiceItemModel(BaseModel):
                 }
             }
         )
-    id: str
-    invoice_id: str
+    id: UUID
+    invoice_id: UUID
     ordinal_number: Optional[int]
     item_description: Optional[str]
     number_of_items: Optional[int]
