@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 from fastapi.encoders import jsonable_encoder
-from app.database.get_repositories_registry import get_repositories_registry
-from app.database.repositories_registry import RepositoriesRegistry
+from app.registries.get_repositories_registry import get_repositories_registry
+from app.registries.repositories_registry import RepositoriesRegistry
 from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError, 

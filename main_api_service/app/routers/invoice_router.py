@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.security import HTTPBearer
-from app.database.get_repositories_registry import get_repositories_registry
-from app.database.repositories_registry import RepositoriesRegistry
+from fastapi.encoders import jsonable_encoder
+from app.registries.get_repositories_registry import get_repositories_registry
+from app.registries.repositories_registry import RepositoriesRegistry
 from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError, 
@@ -41,6 +42,7 @@ import shutil
 from pathlib import Path
 from app.utils.invoice_generator import invoice_generator
 from app.utils.invoice_html_to_pdf import invoice_html_to_pdf
+from typing import Optional
 
 router = APIRouter()
 http_bearer = HTTPBearer()
@@ -87,6 +89,118 @@ async def create_invoice(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@router.get("/invoice-module/get-invoice/", response_model=InvoiceModel)
+async def get_invoice(
+    invoice_id: str,
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    redis_client: redis.Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session)
+    ):
+
+    try:
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+        
+        invoice: Invoice = await invoice_postgres_repository.get_invoice(
+            user_id=jwt_payload.id,
+            invoice_id=invoice_id
+        )
+
+        invoice_model: InvoiceModel = InvoiceModel.invoice_schema_to_model(invoice)
+
+        return JSONResponse(status_code=status.HTTP_200_OK, content=invoice_model.model_dump())
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@router.get("/invoice-module/get-all-invoices/")
+async def get_all_invoices(
+    page: int,
+    items_per_page: int,
+    user_business_entity_id: Optional[str] = None,
+    user_business_entity_name: Optional[str] = None,
+    external_business_entity_id: Optional[str] = None,
+    external_business_entity_name: Optional[str] = None,
+    invoice_number: Optional[str] = None,
+    start_issue_date: Optional[str] = None,
+    end_issue_date: Optional[str] = None,
+    start_sale_date: Optional[str] = None,
+    end_sale_date: Optional[str] = None,
+    payment_method: Optional[str] = None,
+    start_payment_deadline: Optional[str] = None,
+    end_payment_deadline: Optional[str] = None,
+    start_added_date: Optional[str] = None,
+    end_added_date: Optional[str] = None,
+    is_settled: Optional[bool] = None,
+    is_accepted: Optional[bool] = None,
+    is_issued: Optional[bool] = None,
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    redis_client: redis.Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    ):
+
+    try:
+        user_invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        invoices: list[Invoice] = await user_invoice_postgres_repository.get_all_invoices(
+            user_id=jwt_payload.id,
+            page=page,
+            items_per_page=items_per_page,
+            user_business_entity_id=user_business_entity_id,
+            user_business_entity_name=user_business_entity_name,
+            external_business_entity_id=external_business_entity_id,
+            external_business_entity_name=external_business_entity_name,
+            invoice_number=invoice_number,
+            start_issue_date=start_issue_date,
+            end_issue_date=end_issue_date,
+            start_sale_date=start_sale_date,
+            end_sale_date=end_sale_date,
+            payment_method=payment_method,
+            start_payment_deadline=start_payment_deadline,
+            end_payment_deadline=end_payment_deadline,
+            start_added_date=start_added_date,
+            end_added_date=end_added_date,
+            is_settled=is_settled,
+            is_accepted=is_accepted,
+            is_issued=is_issued,
+        )
+
+        invoices_model = []
+        for invoice in invoices:
+            invoice_model: InvoiceModel = InvoiceModel.invoice_schema_to_model(invoice)
+            invoices_model.append(invoice_model)
+        
+        return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(invoices_model))
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
 
 @router.patch("/invoice-module/update-invoice/")
 async def update_invoice(
@@ -106,6 +220,14 @@ async def update_invoice(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
+        is_invoice_unique_beside_one_to_update = await invoice_postgres_repository.is_invoice_unique_beside_one_to_update(
+            user_id=jwt_payload.id,
+            update_invoice=update_invoice
+        )
+        
+        if is_invoice_unique_beside_one_to_update == False:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Invoice with provided business, number and type arleady exists beside one to update.")
+        
         await invoice_postgres_repository.update_invoice(
             user_id=jwt_payload.id,
             update_invoice=update_invoice

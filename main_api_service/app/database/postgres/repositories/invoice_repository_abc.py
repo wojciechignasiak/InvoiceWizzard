@@ -51,6 +51,10 @@ class InvoicePostgresRepositoryABC(ABC):
         ...
 
     @abstractmethod
+    async def is_invoice_unique_beside_one_to_update(self, user_id: str, update_invoice: UpdateInvoiceModel) -> bool:
+        ...
+
+    @abstractmethod
     async def update_invoice_file(self, user_id: str, invoice_id: str, invoice_pdf_location: str) -> None:
         ...
     

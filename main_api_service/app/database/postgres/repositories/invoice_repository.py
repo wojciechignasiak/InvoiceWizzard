@@ -218,7 +218,28 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoicePostgresRepository.is_invoice_unique() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
-        
+    
+    async def is_invoice_unique_beside_one_to_update(self, user_id: str, update_invoice: UpdateInvoiceModel) -> bool:
+        try:
+            stmt = (
+                select(Invoice).
+                where(
+                    (Invoice.id != update_invoice.id) &
+                    (Invoice.user_id == user_id) & 
+                    (Invoice.user_business_entity_id == update_invoice.user_business_entity_id) & 
+                    (Invoice.external_business_entity_id == update_invoice.external_business_entity_id) &
+                    (Invoice.invoice_number == update_invoice.invoice_number) &
+                    (Invoice.is_issued == update_invoice.is_issued) 
+                    )
+                )
+            invoice = await self.session.scalar(stmt)
+            if invoice == None:
+                return True
+            else:
+                return False
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoicePostgresRepository.is_invoice_unique_beside_one_to_update() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
         
     async def update_invoice_file(self, user_id: str, invoice_id: str, invoice_pdf_location: str) -> None:
         try:
