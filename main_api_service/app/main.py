@@ -13,7 +13,7 @@ from aiokafka import AIOKafkaProducer
 from app.kafka.initialize_topics.startup_topics import startup_topics
 from contextlib import asynccontextmanager
 from app.schema.schema import Base
-from app.database.repositories_registry import RepositoriesRegistry
+from app.registries.repositories_registry import RepositoriesRegistry
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository

@@ -33,7 +33,7 @@ from app.database.redis.repositories.user_business_entity_repository import User
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
 from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
 from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
-from app.database.repositories_registry import RepositoriesRegistry
+from app.registries.repositories_registry import RepositoriesRegistry
 
 
 @pytest.fixture
