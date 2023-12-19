@@ -34,6 +34,7 @@ from app.database.postgres.repositories.user_repository import UserPostgresRepos
 from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
 from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
 from app.registries.repositories_registry import RepositoriesRegistry
+from app.registries.events_registry import EventsRegistry
 
 
 @pytest.fixture
@@ -137,11 +138,19 @@ def mock_user_business_entity_redis_repository_object():
 
     return user_business_entity_repository_redis_mock_object
 
+#MOCKED REGISTRIES
+
 @pytest.fixture
 def mock_registry_repository_object():
     repositories_registry_mock_object = Mock(spec=RepositoriesRegistry)
 
     return repositories_registry_mock_object
+
+@pytest.fixture
+def mock_registry_events_object():
+    events_registry_mock_object = Mock(spec=EventsRegistry)
+
+    return events_registry_mock_object
 
 #MOCKED MODELS
 

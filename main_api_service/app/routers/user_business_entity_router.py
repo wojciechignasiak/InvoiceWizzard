@@ -33,6 +33,8 @@ import ast
 from aiokafka import AIOKafkaProducer
 from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
 from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
+from app.registries.events_registry import EventsRegistry
+from app.registries.get_events_registry import get_events_registry
 from typing import Optional
 
 router = APIRouter()
@@ -232,6 +234,7 @@ async def initialize_user_business_entity_removal(
     background_tasks: BackgroundTasks,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    events_registry: EventsRegistry = Depends(get_events_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
@@ -240,7 +243,7 @@ async def initialize_user_business_entity_removal(
         user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         user_business_entity_redis_repository = await repositories_registry.return_user_business_entity_redis_repository(redis_client)
-        event_producer: UserBusinessEntityEvents = UserBusinessEntityEvents(kafka_producer_client)
+        user_business_entity_events = await events_registry.return_user_business_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -261,7 +264,7 @@ async def initialize_user_business_entity_removal(
             )
         
         background_tasks.add_task(
-            event_producer.remove_user_business_entity,
+            user_business_entity_events.remove_user_business_entity,
             id=key_id,
             email_address=jwt_payload.email,
             user_business_entity_name=user_business_entity.company_name
@@ -283,6 +286,7 @@ async def confirm_user_business_entity_removal(
     background_tasks: BackgroundTasks,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    events_registry: EventsRegistry = Depends(get_events_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
@@ -292,7 +296,7 @@ async def confirm_user_business_entity_removal(
         user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         user_business_entity_redis_repository = await repositories_registry.return_user_business_entity_redis_repository(redis_client)
-        event_producer: UserBusinessEntityEvents = UserBusinessEntityEvents(kafka_producer_client)
+        user_business_entity_events = await events_registry.return_user_business_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -327,7 +331,7 @@ async def confirm_user_business_entity_removal(
         )
         
         background_tasks.add_task(
-            event_producer.user_business_entity_removed,
+            user_business_entity_events.user_business_entity_removed,
             email_address=jwt_payload.email,
             user_business_entity_name=user_business_entity.company_name
         )

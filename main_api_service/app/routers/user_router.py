@@ -19,7 +19,8 @@ from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLNotFoundError
     )
 from app.schema.schema import User
-from app.kafka.events.user_events import UserEvents
+from app.registries.get_events_registry import get_events_registry
+from app.registries.events_registry import EventsRegistry
 from app.kafka.exceptions.custom_kafka_exceptions import KafkaBaseError
 from app.models.jwt_model import (
     JWTDataModel, 
@@ -40,7 +41,6 @@ from app.models.user_model import (
 from app.utils.user_utils import UserUtils
 from aiokafka import AIOKafkaProducer
 from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
-from datetime import date
 from uuid import uuid4
 import datetime
 
@@ -88,6 +88,7 @@ async def register_account(
     new_user: RegisterUserModel,
     background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    events_registry: EventsRegistry = Depends(get_events_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client),
@@ -96,7 +97,7 @@ async def register_account(
     try:
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
         user_utils: UserUtils = UserUtils()
         
         is_email_address_arleady_taken: bool = await user_postgres_repository.is_email_address_arleady_taken(
@@ -116,8 +117,7 @@ async def register_account(
         new_user_to_redis = CreateUserModel(
             email=new_user.email, 
             password=hashed_password,
-            salt=personal_salt,
-            registration_date=date.today().isoformat()
+            salt=personal_salt
             )
         
         is_user_arleady_registered: bool = await user_redis_repository.is_user_arleady_registered(
@@ -135,7 +135,7 @@ async def register_account(
             )
         
         background_tasks.add_task(
-            event_producer.account_registered_event,
+            user_events.account_registered_event,
             id=key_id,
             email_address=new_user.email
         )
@@ -153,6 +153,7 @@ async def confirm_account(
     id: str,
     background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    events_registry: EventsRegistry = Depends(get_events_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
@@ -161,7 +162,7 @@ async def confirm_account(
     try:
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
 
         user_to_confirm_data: bytes = await user_redis_repository.search_user_by_id(
             key_id=id
@@ -179,7 +180,7 @@ async def confirm_account(
         )
         
         background_tasks.add_task(
-            event_producer.account_confirmed_event,
+            user_events.account_confirmed_event,
             email_address=created_user.email
             )
         
@@ -301,6 +302,7 @@ async def change_email_address(
     new_email: UpdateUserEmailModel,
     background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    events_registry: EventsRegistry = Depends(get_events_registry),
     token = Depends(http_bearer), 
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
@@ -310,7 +312,7 @@ async def change_email_address(
     try:
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -340,7 +342,7 @@ async def change_email_address(
             new_email=new_email_data)
         
         background_tasks.add_task(
-            event_producer.change_email_event,
+            user_events.change_email_event,
             id=key_id,
             email_address=user.email
         )
@@ -363,6 +365,7 @@ async def confirm_email_address_change(
     id: str,
     background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    events_registry: EventsRegistry = Depends(get_events_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
@@ -371,7 +374,7 @@ async def confirm_email_address_change(
     try:
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
 
         new_email_data: bytes = await user_redis_repository.retrieve_new_email(
             key_id=id
@@ -400,7 +403,7 @@ async def confirm_email_address_change(
             key_id=id
         )
         background_tasks.add_task(
-            event_producer.email_changed_event,
+            user_events.email_changed_event,
             email_address=user.email
         )
         
@@ -421,6 +424,7 @@ async def change_password(
     background_tasks: BackgroundTasks,
     token = Depends(http_bearer),
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    events_registry: EventsRegistry = Depends(get_events_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     user_utils: UserUtils = Depends(UserUtils),
@@ -430,7 +434,7 @@ async def change_password(
     try:
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -470,7 +474,7 @@ async def change_password(
             )
 
         background_tasks.add_task(
-            event_producer.change_password_event,
+            user_events.change_password_event,
             id=key_id,
             email_address=user.email
         )
@@ -491,6 +495,7 @@ async def reset_password(
     reset_password: ResetUserPasswordModel,
     background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    events_registry: EventsRegistry = Depends(get_events_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
@@ -499,7 +504,7 @@ async def reset_password(
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         user_utils: UserUtils = UserUtils()
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
         
         user: User = await user_postgres_repository.get_user_by_email_address(
             user_email_adress=reset_password.email
@@ -520,7 +525,7 @@ async def reset_password(
             new_password=new_password_data)
 
         background_tasks.add_task(
-            event_producer.reset_password_event,
+            user_events.reset_password_event,
             id=key_id,
             email_address=user.email
         )
@@ -539,6 +544,7 @@ async def confirm_password_change(
     id: str,
     background_tasks: BackgroundTasks,
     repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    events_registry: EventsRegistry = Depends(get_events_registry),
     redis_client: redis.Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
@@ -546,7 +552,7 @@ async def confirm_password_change(
     try:
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
 
         new_password_data: bytes = await user_redis_repository.retrieve_new_password(
             key_id=id
@@ -569,7 +575,7 @@ async def confirm_password_change(
         )
 
         background_tasks.add_task(
-            event_producer.password_changed_event,
+            user_events.password_changed_event,
             email_address=user.email
         )
 

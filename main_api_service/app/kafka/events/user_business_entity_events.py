@@ -1,4 +1,4 @@
-from aiokafka import AIOKafkaProducer
+from app.kafka.events.user_business_entity_events_abc import UserBusinessEntityEventsABC
 from aiokafka.errors import KafkaError
 from app.kafka.events.kafka_producer_base import KafkaProducerBase
 from app.kafka.exceptions.custom_kafka_exceptions import KafkaBaseError
@@ -6,7 +6,7 @@ from app.models.kafka_topics_enum import KafkaTopicsEnum
 import json
 from app.logging import logger
 
-class UserBusinessEntityEvents(KafkaProducerBase):
+class UserBusinessEntityEvents(KafkaProducerBase, UserBusinessEntityEventsABC):
 
     async def remove_user_business_entity(self, id: str, email_address: str, user_business_entity_name: str):
         try:

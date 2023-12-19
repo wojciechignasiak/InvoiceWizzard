@@ -7,6 +7,7 @@ from typing import Optional
 from app.schema.schema import User
 
 
+
 class UserModel(BaseModel):
     id: str
     email: EmailStr
@@ -71,6 +72,7 @@ class RegisterUserModel(BaseModel):
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contatain at least 1 digit.")
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', self.password):
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contatain at least 1 special character.")
+
 
 class CreateUserModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
