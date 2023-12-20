@@ -6,9 +6,11 @@ from app.database.postgres.repositories.invoice_item_repository_abc import Invoi
 from app.database.redis.repositories.user_repository_abc import UserRedisRepositoryABC
 from app.database.redis.repositories.user_business_entity_repository_abc import UserBusinessEntityRedisRepositoryABC
 from app.database.redis.repositories.invoice_repository_abc import InvoiceRedisRepositoryABC
+from app.registries.repositories_registry_abc import RepositoriesRegistryABC
+from sqlalchemy.ext.asyncio import AsyncSession
+from redis.asyncio import Redis
 
-
-class RepositoriesRegistry:
+class RepositoriesRegistry(RepositoriesRegistryABC):
     __slots__= (
         'user_postgres_repository', 
         'user_redis_repository',
@@ -40,26 +42,26 @@ class RepositoriesRegistry:
         self.invoice_item_postgres_repository = invoice_item_postgres_repository
 
 
-    async def return_user_postgres_repository(self, session) -> UserPostgresRepositoryABC:
+    async def return_user_postgres_repository(self, session: AsyncSession) -> UserPostgresRepositoryABC:
         return self.user_postgres_repository(session)
     
-    async def return_user_redis_repository(self, redis_client) -> UserRedisRepositoryABC:
+    async def return_user_redis_repository(self, redis_client: Redis) -> UserRedisRepositoryABC:
         return self.user_redis_repository(redis_client)
 
-    async def return_user_business_entity_postgres_repository(self, session) -> UserBusinessEntityPostgresRepositoryABC:
+    async def return_user_business_entity_postgres_repository(self, session: AsyncSession) -> UserBusinessEntityPostgresRepositoryABC:
         return self.user_business_entity_postgres_repository(session)
     
-    async def return_user_business_entity_redis_repository(self, redis_client) -> UserBusinessEntityRedisRepositoryABC:
+    async def return_user_business_entity_redis_repository(self, redis_client: Redis) -> UserBusinessEntityRedisRepositoryABC:
         return self.user_business_entity_redis_repository(redis_client)
     
-    async def return_external_business_entity_postgres_repository(self, session) -> ExternalBusinessEntityPostgresRepositoryABC:
+    async def return_external_business_entity_postgres_repository(self, session: AsyncSession) -> ExternalBusinessEntityPostgresRepositoryABC:
         return self.external_business_entity_postgres_repository(session)
     
-    async def return_invoice_postgres_repository(self, session) -> InvoicePostgresRepositoryABC:
+    async def return_invoice_postgres_repository(self, session: AsyncSession) -> InvoicePostgresRepositoryABC:
         return self.invoice_postgres_repository(session)
     
-    async def return_invoice_redis_repository(self, redis_client) -> InvoiceRedisRepositoryABC:
+    async def return_invoice_redis_repository(self, redis_client: Redis) -> InvoiceRedisRepositoryABC:
         return self.invoice_redis_repository(redis_client)
     
-    async def return_invoice_item_postgres_repository(self, session) -> InvoiceItemPostgresRepositoryABC:
+    async def return_invoice_item_postgres_repository(self, session: AsyncSession) -> InvoiceItemPostgresRepositoryABC:
         return self.invoice_item_postgres_repository(session)

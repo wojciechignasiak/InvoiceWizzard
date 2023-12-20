@@ -94,7 +94,8 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                                 end_added_date: Optional[str] = None,
                                 is_settled: Optional[bool] = None,
                                 is_accepted: Optional[bool] = None,
-                                is_issued: Optional[bool] = None) -> list:
+                                is_issued: Optional[bool] = None,
+                                in_trash: bool = False) -> list:
         try:
             stmt = (
                 select(Invoice).
@@ -133,7 +134,8 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                         ),
                         Invoice.is_settled == is_settled if is_settled is not None else True,
                         Invoice.is_accepted == is_accepted if is_accepted is not None else True,
-                        Invoice.is_issued == is_issued if is_issued is not None else True
+                        Invoice.is_issued == is_issued if is_issued is not None else True,
+                        Invoice.in_trash == in_trash
                     )
                 ).
                 limit(items_per_page).

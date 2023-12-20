@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
-import redis
+from redis.asyncio import Redis
 from app.registries.get_repositories_registry import get_repositories_registry
-from app.registries.repositories_registry import RepositoriesRegistry
+from app.registries.repositories_registry_abc import RepositoriesRegistryABC
 from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisSetError, 
@@ -20,7 +20,7 @@ from app.database.postgres.exceptions.custom_postgres_exceptions import (
     )
 from app.schema.schema import User
 from app.registries.get_events_registry import get_events_registry
-from app.registries.events_registry import EventsRegistry
+from app.registries.events_registry_abc import EventsRegistryABC
 from app.kafka.exceptions.custom_kafka_exceptions import KafkaBaseError
 from app.models.jwt_model import (
     JWTDataModel, 
@@ -50,9 +50,9 @@ http_bearer = HTTPBearer()
 
 @router.get("/user-module/get-current-user/", response_model=UserModel)
 async def get_current_user(
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
     token = Depends(http_bearer), 
-    redis_client: redis.Redis = Depends(get_redis_client),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -87,9 +87,9 @@ async def get_current_user(
 async def register_account(
     new_user: RegisterUserModel,
     background_tasks: BackgroundTasks,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    events_registry: EventsRegistry = Depends(get_events_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client),
     ):
@@ -152,9 +152,9 @@ async def register_account(
 async def confirm_account(
     id: str,
     background_tasks: BackgroundTasks,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    events_registry: EventsRegistry = Depends(get_events_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
@@ -200,8 +200,8 @@ async def confirm_account(
 async def log_in(
     log_in: LogInModel,
     background_tasks: BackgroundTasks,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session)
     ):
 
@@ -266,9 +266,9 @@ async def log_in(
 @router.patch("/user-module/update-personal-information/")
 async def update_personal_information(
     user_personal_info: UserPersonalInformationModel,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
     token = Depends(http_bearer), 
-    redis_client: redis.Redis = Depends(get_redis_client),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session)):
 
     try:
@@ -301,10 +301,10 @@ async def update_personal_information(
 async def change_email_address(
     new_email: UpdateUserEmailModel,
     background_tasks: BackgroundTasks,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    events_registry: EventsRegistry = Depends(get_events_registry),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
     token = Depends(http_bearer), 
-    redis_client: redis.Redis = Depends(get_redis_client),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
@@ -364,9 +364,9 @@ async def change_email_address(
 async def confirm_email_address_change(
     id: str,
     background_tasks: BackgroundTasks,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    events_registry: EventsRegistry = Depends(get_events_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
@@ -423,9 +423,9 @@ async def change_password(
     new_password: UpdateUserPasswordModel,
     background_tasks: BackgroundTasks,
     token = Depends(http_bearer),
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    events_registry: EventsRegistry = Depends(get_events_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     user_utils: UserUtils = Depends(UserUtils),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
@@ -494,9 +494,9 @@ async def change_password(
 async def reset_password(
     reset_password: ResetUserPasswordModel,
     background_tasks: BackgroundTasks,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    events_registry: EventsRegistry = Depends(get_events_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
@@ -543,9 +543,9 @@ async def reset_password(
 async def confirm_password_change(
     id: str,
     background_tasks: BackgroundTasks,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    events_registry: EventsRegistry = Depends(get_events_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):

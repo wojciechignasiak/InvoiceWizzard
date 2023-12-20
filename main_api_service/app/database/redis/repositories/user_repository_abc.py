@@ -46,7 +46,7 @@ class UserRedisRepositoryABC(ABC):
         pass
 
     @abstractmethod
-    async def delete_new_email(self, key_id):
+    async def delete_new_email(self, key_id: str):
         pass
 
     @abstractmethod

@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 from fastapi.encoders import jsonable_encoder
 from app.registries.get_repositories_registry import get_repositories_registry
-from app.registries.repositories_registry import RepositoriesRegistry
+from app.registries.repositories_registry_abc import RepositoriesRegistryABC
 from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError, 
@@ -11,7 +11,7 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisSetError,
     RedisNotFoundError
     )
-import redis
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.postgres.session.get_session import get_session
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
@@ -32,8 +32,7 @@ from uuid import uuid4
 import ast
 from aiokafka import AIOKafkaProducer
 from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
-from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
-from app.registries.events_registry import EventsRegistry
+from app.registries.events_registry_abc import EventsRegistryABC
 from app.registries.get_events_registry import get_events_registry
 from typing import Optional
 
@@ -44,8 +43,8 @@ http_bearer = HTTPBearer()
 async def create_user_business_entity(
     new_user_business_entity: CreateUserBusinessEntityModel,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -102,8 +101,8 @@ async def create_user_business_entity(
 async def get_user_business_entity(
     user_business_entity_id: str,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -144,8 +143,8 @@ async def get_all_user_business_entities(
     street: Optional[str] = None,
     nip: Optional[str] = None,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -188,8 +187,8 @@ async def get_all_user_business_entities(
 async def update_user_business_entity(
     update_user_business_entity: UpdateUserBusinessEntityModel,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -233,9 +232,9 @@ async def initialize_user_business_entity_removal(
     user_business_entity_id: str,
     background_tasks: BackgroundTasks,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    events_registry: EventsRegistry = Depends(get_events_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
@@ -285,9 +284,9 @@ async def confirm_user_business_entity_removal(
     id: str,
     background_tasks: BackgroundTasks,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    events_registry: EventsRegistry = Depends(get_events_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):

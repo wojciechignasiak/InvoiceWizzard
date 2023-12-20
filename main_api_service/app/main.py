@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
     async with app.state.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    app.state.redis_client = await application_statup_processes.redis_client()
+    app.state.redis_pool = await application_statup_processes.redis_pool()
 
     await application_statup_processes.kafka_topics_initialization()
 

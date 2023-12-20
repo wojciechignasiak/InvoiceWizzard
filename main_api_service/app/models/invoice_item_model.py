@@ -33,6 +33,7 @@ class InvoiceItemModel(BaseModel):
                 "number_of_items": 1,
                 "net_value": 8.00,
                 "gross_value": 10.00,
+                "in_trash": False
                 }
             }
         )
@@ -42,6 +43,7 @@ class InvoiceItemModel(BaseModel):
     number_of_items: int
     net_value: float
     gross_value: float
+    in_trash: bool
 
     @property
     def vat_percent(self):

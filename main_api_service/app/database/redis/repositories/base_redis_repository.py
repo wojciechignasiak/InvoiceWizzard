@@ -1,4 +1,4 @@
-from redis import Redis
+from redis.asyncio import Redis
 
 class BaseRedisRepository:
     __slots__ = 'redis_client'

@@ -1,7 +1,8 @@
 import pytest
-from unittest.mock import AsyncMock, Mock
+import pytest_asyncio
+from unittest.mock import AsyncMock
 from sqlalchemy.ext.asyncio import AsyncSession
-from redis import Redis
+from redis.asyncio import Redis
 from aiokafka import AIOKafkaProducer
 from app.schema.schema import User, UserBusinessEntity, ExternalBusinessEntity
 from app.models.user_model import (
@@ -36,17 +37,16 @@ from app.database.postgres.repositories.external_business_entity_repository impo
 from app.registries.repositories_registry import RepositoriesRegistry
 from app.registries.events_registry import EventsRegistry
 
-
-@pytest.fixture
-def mock_postgres_async_session():
+@pytest_asyncio.fixture
+async def mock_postgres_async_session():
     yield AsyncMock(spec=AsyncSession)
 
-@pytest.fixture
-def mock_redis_client():
-    yield AsyncMock(spec=Redis)
+@pytest_asyncio.fixture
+async def mock_redis_client():
+    return AsyncMock()
 
-@pytest.fixture
-def mock_kafka_producer_client():
+@pytest_asyncio.fixture
+async def mock_kafka_producer_client():
     yield AsyncMock(spec=AIOKafkaProducer)
 
 #MOCKED SCHEMA
@@ -110,31 +110,31 @@ def mock_jwt_token():
 
 @pytest.fixture
 def mock_user_redis_repository_object():
-    user_redis_repository_mock_object = Mock(spec=UserRedisRepository)
+    user_redis_repository_mock_object = AsyncMock(spec=UserRedisRepository)
 
     return user_redis_repository_mock_object
 
 @pytest.fixture
 def mock_user_postgres_repository_object():
-    user_postgres_repository_mock_object = Mock(spec=UserPostgresRepository)
+    user_postgres_repository_mock_object = AsyncMock(spec=UserPostgresRepository)
 
     return user_postgres_repository_mock_object
 
 @pytest.fixture
 def mock_user_business_entity_postgres_repository_object():
-    user_business_entity_repository_postgres_mock_object = Mock(spec=UserBusinessEntityPostgresRepository)
+    user_business_entity_repository_postgres_mock_object = AsyncMock(spec=UserBusinessEntityPostgresRepository)
 
     return user_business_entity_repository_postgres_mock_object
 
 @pytest.fixture
 def mock_external_business_entity_postgres_repository_object():
-    external_business_entity_repository_postgres_mock_object = Mock(spec=ExternalBusinessEntityPostgresRepository)
+    external_business_entity_repository_postgres_mock_object = AsyncMock(spec=ExternalBusinessEntityPostgresRepository)
 
     return external_business_entity_repository_postgres_mock_object
 
 @pytest.fixture
 def mock_user_business_entity_redis_repository_object():
-    user_business_entity_repository_redis_mock_object = Mock(spec=UserBusinessEntityRedisRepository)
+    user_business_entity_repository_redis_mock_object = AsyncMock(spec=UserBusinessEntityRedisRepository)
 
     return user_business_entity_repository_redis_mock_object
 
@@ -142,13 +142,13 @@ def mock_user_business_entity_redis_repository_object():
 
 @pytest.fixture
 def mock_registry_repository_object():
-    repositories_registry_mock_object = Mock(spec=RepositoriesRegistry)
+    repositories_registry_mock_object = AsyncMock(spec=RepositoriesRegistry)
 
     return repositories_registry_mock_object
 
 @pytest.fixture
 def mock_registry_events_object():
-    events_registry_mock_object = Mock(spec=EventsRegistry)
+    events_registry_mock_object = AsyncMock(spec=EventsRegistry)
 
     return events_registry_mock_object
 

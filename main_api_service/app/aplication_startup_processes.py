@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
-import redis
+from redis.asyncio import Redis, BlockingConnectionPool
 from kafka.errors import KafkaTimeoutError, KafkaError
 from aiokafka import AIOKafkaProducer
 from app.kafka.initialize_topics.startup_topics import startup_topics
@@ -63,20 +63,23 @@ class ApplicationStartupProcesses:
             except SQLAlchemyError:
                 await asyncio.sleep(3)
 
-    async def redis_client(self) -> redis.Redis:
+    async def redis_pool(self) -> BlockingConnectionPool:
         while True:
             try:
-                print("Creating Redis client...")
-                redis_client: redis.Redis = redis.Redis(host=self.redis_host, port=self.redis_port, password=self.redis_password)
+                print("Creating Redis connection pool...")
+                redis_pool = BlockingConnectionPool(host=self.redis_host, port=self.redis_port, password=self.redis_password)
+                redis_client: Redis = await Redis(connection_pool=redis_pool)
                 print("Testing connection to Redis...")
-                redis_info = redis_client.ping()
+                redis_info = await redis_client.ping()
                 if redis_info:
                     print('Connection to Redis status: Connected')
+                    
                 else:
                     print('Connection to Redis status: Failed. Retrying...')
                     raise ConnectionError
-                return redis_client
+                return redis_pool
             except ConnectionError:
+                await redis_client.close()
                 await asyncio.sleep(3)
 
     async def kafka_topics_initialization(self):

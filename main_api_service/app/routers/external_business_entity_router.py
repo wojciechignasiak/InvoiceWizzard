@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 from fastapi.encoders import jsonable_encoder
 from app.registries.get_repositories_registry import get_repositories_registry
-from app.registries.repositories_registry import RepositoriesRegistry
+from app.registries.repositories_registry_abc import RepositoriesRegistryABC
 from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError, 
@@ -11,7 +11,7 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisSetError,
     RedisNotFoundError
     )
-import redis
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.postgres.session.get_session import get_session
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
@@ -40,8 +40,8 @@ http_bearer = HTTPBearer()
 async def create_external_business_entity(
     new_external_business_entity: CreateExternalBusinessEntityModel,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -97,8 +97,8 @@ async def create_external_business_entity(
 async def get_external_business_entity(
     external_business_entity_id: str,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -139,8 +139,8 @@ async def get_all_external_business_entities(
     street: Optional[str] = None,
     nip: Optional[str] = None,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -183,8 +183,8 @@ async def get_all_external_business_entities(
 async def update_external_business_entity(
     update_external_business_entity: UpdateExternalBusinessEntityModel,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -228,8 +228,8 @@ async def update_external_business_entity(
 async def remove_external_business_entity(
     external_business_entity_id: str,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 

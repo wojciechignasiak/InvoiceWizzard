@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.security import HTTPBearer
 from fastapi.encoders import jsonable_encoder
 from app.registries.get_repositories_registry import get_repositories_registry
-from app.registries.repositories_registry import RepositoriesRegistry
+from app.registries.repositories_registry_abc import RepositoriesRegistryABC
 from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError, 
@@ -11,7 +11,7 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisSetError,
     RedisNotFoundError
     )
-import redis
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.postgres.session.get_session import get_session
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
@@ -51,8 +51,8 @@ http_bearer = HTTPBearer()
 async def create_invoice(
     new_invoice: CreateInvoiceModel,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session)
     ):
 
@@ -94,8 +94,8 @@ async def create_invoice(
 async def get_invoice(
     invoice_id: str,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session)
     ):
 
@@ -147,9 +147,10 @@ async def get_all_invoices(
     is_settled: Optional[bool] = None,
     is_accepted: Optional[bool] = None,
     is_issued: Optional[bool] = None,
+    in_trash: bool = False,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -184,6 +185,7 @@ async def get_all_invoices(
             is_settled=is_settled,
             is_accepted=is_accepted,
             is_issued=is_issued,
+            in_trash=in_trash
         )
 
         invoices_model = []
@@ -206,8 +208,8 @@ async def get_all_invoices(
 async def update_invoice(
     update_invoice: UpdateInvoiceModel,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
     try:
@@ -247,8 +249,8 @@ async def update_invoice(
 async def initialize_invoice_removal(
     invoice_id: str,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
     try:
@@ -290,8 +292,8 @@ async def confirm_invoice_removal(
     key_id: str,
     background_tasks: BackgroundTasks,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
     try:
@@ -352,8 +354,8 @@ async def add_file_to_invoice(
     invoice_id: str,
     invoice_file: UploadFile,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
     try:
@@ -427,8 +429,8 @@ async def delete_invoice_pdf(
     invoice_id: str,
     background_tasks: BackgroundTasks,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
     try:
@@ -476,8 +478,8 @@ async def delete_invoice_pdf(
 async def download_invoice_pdf(
     invoice_id: str,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
     try:
@@ -519,8 +521,8 @@ async def download_invoice_pdf(
 async def generate_invoice_pdf(
     invoice_id: str,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
     try:

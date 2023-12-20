@@ -109,7 +109,8 @@ class InvoiceModel(BaseModel):
                 "notes": "This is an example Invoice",
                 "is_settled": False,
                 "is_accepted": True,
-                "is_issued": True
+                "is_issued": True,
+                "in_trash": False
                 }
             }
         )
@@ -127,6 +128,7 @@ class InvoiceModel(BaseModel):
     is_settled: Optional[bool] = None
     is_accepted: Optional[bool] = None
     is_issued: Optional[bool] = None
+    in_trash: Optional[bool] = None
 
     def invoice_schema_to_model(invoice_schema: Invoice) -> "InvoiceModel":
         return InvoiceModel(
@@ -143,5 +145,6 @@ class InvoiceModel(BaseModel):
             notes=invoice_schema.notes,
             is_settled=invoice_schema.is_settled,
             is_accepted=invoice_schema.is_accepted,
-            is_issued=invoice_schema.is_issued
+            is_issued=invoice_schema.is_issued,
+            in_trash=invoice_schema.in_trash
         )

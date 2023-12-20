@@ -13,13 +13,19 @@ from redis.exceptions import (
     ResponseError
 )
 import json
+import datetime
 
 
 class InvoiceRedisRepository(BaseRedisRepository, InvoiceRedisRepositoryABC):
 
     async def initialize_invoice_removal(self, key_id: str, invoice_id: str) -> bool:
         try:
-            is_invoice_removal_initialized = self.redis_client.setex(f"remove_invoice:{key_id}", 60*60*48, json.dumps({"id":f"{invoice_id}"}))
+            expiry_time = datetime.timedelta(days=2)
+            is_invoice_removal_initialized: bool = await self.redis_client.set(
+                name=f"remove_invoice:{key_id}", 
+                value=json.dumps({"id":f"{invoice_id}"}),
+                ex=expiry_time)
+            
             if is_invoice_removal_initialized == False:
                 raise RedisSetError("Error durning initializing invoice removal.")
             return is_invoice_removal_initialized
@@ -29,8 +35,9 @@ class InvoiceRedisRepository(BaseRedisRepository, InvoiceRedisRepositoryABC):
 
     async def retrieve_invoice_removal(self, key_id: str) -> bytes:
         try:
-            invoice_to_remove = self.redis_client.get(f"remove_invoice:{key_id}")
-            if invoice_to_remove == None:
+            await self.redis_client.get(f"remove_invoice:{key_id}")
+            invoice_to_remove = self.redis_client.execute()
+            if invoice_to_remove[-1] == None:
                 raise RedisNotFoundError("Not found invoice to remove in database.")
             return invoice_to_remove
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
@@ -39,7 +46,7 @@ class InvoiceRedisRepository(BaseRedisRepository, InvoiceRedisRepositoryABC):
 
     async def delete_invoice_removal(self, key_id: str) -> bool:
         try:
-            self.redis_client.delete(f"remove_invoice:{key_id}")
+            await self.redis_client.delete(f"remove_invoice:{key_id}")
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
             logger.error(f"InvoiceRedisRepository.delete_invoice_removal() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")

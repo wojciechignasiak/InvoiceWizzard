@@ -66,6 +66,7 @@ class Invoice(Base):
     is_settled: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
     is_accepted: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
     is_issued: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=True)
+    in_trash: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
     invoice_item: Mapped[List["InvoiceItem"]] = relationship(back_populates="invoice")
 
 
@@ -79,3 +80,4 @@ class InvoiceItem(Base):
     number_of_items: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     net_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
     gross_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
+    in_trash: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
