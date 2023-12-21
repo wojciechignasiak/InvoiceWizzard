@@ -113,12 +113,12 @@ class UserPersonalInformationModel(BaseModel):
                 }
             }
         )
-    first_name: str = None
-    last_name: str = None
-    phone_number: str = None
-    city: str = None
-    postal_code: str = None
-    street: str = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+    street: Optional[str] = None
 
 
 class UpdateUserPasswordModel(BaseModel):

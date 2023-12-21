@@ -17,7 +17,6 @@ class CreateInvoiceModel(BaseModel):
                 "payment_deadline": "2023-12-10",
                 "notes": "This is an example Invoice",
                 "is_settled": False,
-                "is_accepted": True,
                 "is_issued": True,
                 }
             }
@@ -30,10 +29,9 @@ class CreateInvoiceModel(BaseModel):
     sale_date: date
     payment_method: str
     payment_deadline: date
-    notes: str
-    is_settled: bool = False
-    is_accepted: bool = True
-    is_issued: bool = True
+    notes: Optional[str] = None
+    is_settled: bool
+    is_issued: bool
 
     @property
     def id(self):
@@ -63,23 +61,21 @@ class UpdateInvoiceModel(BaseModel):
                 "payment_deadline": "2023-12-10",
                 "notes": "This is an example Invoice",
                 "is_settled": False,
-                "is_accepted": True,
                 "is_issued": True
                 }
             }
         )
     id: UUID
-    user_business_entity_id: Optional[UUID] = None
-    external_business_entity_id: Optional[UUID] = None
-    invoice_number: Optional[str] = None
-    issue_date: Optional[date] = None
-    sale_date: Optional[date] = None
-    payment_method: Optional[str] = None
-    payment_deadline: Optional[date] = None
-    notes: str
-    is_settled: Optional[bool] = None
-    is_accepted: Optional[bool] = None
-    is_issued: Optional[bool] = None
+    user_business_entity_id: UUID
+    external_business_entity_id: UUID
+    invoice_number: str
+    issue_date: date
+    sale_date: date
+    payment_method: str
+    payment_deadline: date
+    notes: Optional[str] = None
+    is_settled: bool
+    is_issued: bool
 
     @field_validator("id", "user_business_entity_id", "external_business_entity_id")
     def parse_id(cls, value):
@@ -108,7 +104,6 @@ class InvoiceModel(BaseModel):
                 "payment_deadline": "2023-12-10",
                 "notes": "This is an example Invoice",
                 "is_settled": False,
-                "is_accepted": True,
                 "is_issued": True,
                 "in_trash": False
                 }
@@ -118,17 +113,16 @@ class InvoiceModel(BaseModel):
     user_business_entity_id: str
     external_business_entity_id: str
     invoice_pdf: Optional[str] = None
-    invoice_number: Optional[str] = None
-    issue_date: Optional[str] = None
-    sale_date: Optional[str] = None
-    added_date: Optional[str] = None
-    payment_method: Optional[str] = None
-    payment_deadline: Optional[str] = None
+    invoice_number: str
+    issue_date: str
+    sale_date: str
+    added_date: str
+    payment_method: str
+    payment_deadline: str
     notes: Optional[str] = None
-    is_settled: Optional[bool] = None
-    is_accepted: Optional[bool] = None
-    is_issued: Optional[bool] = None
-    in_trash: Optional[bool] = None
+    is_settled: bool
+    is_issued: bool
+    in_trash: bool
 
     def invoice_schema_to_model(invoice_schema: Invoice) -> "InvoiceModel":
         return InvoiceModel(
@@ -137,14 +131,13 @@ class InvoiceModel(BaseModel):
             external_business_entity_id=str(invoice_schema.external_business_entity_id),
             invoice_pdf=invoice_schema.invoice_pdf,
             invoice_number=invoice_schema.invoice_number,
-            issue_date=str(invoice_schema.issue_date) if invoice_schema.issue_date else None,
-            sale_date=str(invoice_schema.sale_date) if invoice_schema.sale_date else None,
-            added_date=str(invoice_schema.added_date) if invoice_schema.added_date else None,
+            issue_date=str(invoice_schema.issue_date),
+            sale_date=str(invoice_schema.sale_date),
+            added_date=str(invoice_schema.added_date),
             payment_method=invoice_schema.payment_method,
-            payment_deadline=str(invoice_schema.payment_deadline) if invoice_schema.payment_deadline else None,
+            payment_deadline=str(invoice_schema.payment_deadline),
             notes=invoice_schema.notes,
             is_settled=invoice_schema.is_settled,
-            is_accepted=invoice_schema.is_accepted,
             is_issued=invoice_schema.is_issued,
             in_trash=invoice_schema.in_trash
         )

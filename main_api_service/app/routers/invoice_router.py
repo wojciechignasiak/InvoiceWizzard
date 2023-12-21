@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, BackgroundTasks
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile
 from fastapi.responses import JSONResponse, FileResponse
+from fastapi.encoders import jsonable_encoder
 from fastapi.security import HTTPBearer
 from fastapi.encoders import jsonable_encoder
 from app.registries.get_repositories_registry import get_repositories_registry
@@ -10,7 +11,7 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisJWTNotFoundError,
     RedisSetError,
     RedisNotFoundError
-    )
+)
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.postgres.session.get_session import get_session
@@ -27,7 +28,10 @@ from app.models.invoice_model import (
     CreateInvoiceModel,
     UpdateInvoiceModel
 )
-from app.models.invoice_item_model import InvoiceItemModel
+from app.models.invoice_item_model import (
+    InvoiceItemModel,
+    CreateInvoiceItemModel
+)
 from app.models.user_business_entity_model import UserBusinessEntityModel
 from app.models.external_business_entity_model import ExternalBusinessEntityModel
 from app.schema.schema import Invoice, InvoiceItem, UserBusinessEntity, ExternalBusinessEntity
@@ -42,14 +46,15 @@ import shutil
 from pathlib import Path
 from app.utils.invoice_generator import invoice_generator
 from app.utils.invoice_html_to_pdf import invoice_html_to_pdf
-from typing import Optional
+from typing import Optional, List
 
 router = APIRouter()
 http_bearer = HTTPBearer()
 
-@router.post("/invoice-module/create-invoice/", response_model=InvoiceModel)
+@router.post("/invoice-module/create-invoice/")
 async def create_invoice(
     new_invoice: CreateInvoiceModel,
+    invoice_items: List[CreateInvoiceItemModel],
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
     redis_client: Redis = Depends(get_redis_client),
@@ -59,6 +64,7 @@ async def create_invoice(
     try:
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+        invoice_item_postgres_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -80,7 +86,23 @@ async def create_invoice(
 
         invoice_model: InvoiceModel = InvoiceModel.invoice_schema_to_model(invoice)
 
-        return JSONResponse(status_code=status.HTTP_201_CREATED, content=invoice_model.model_dump())
+        invoice_items_model: list = []
+        for invoice_item_model in invoice_items:
+            invoice_item: InvoiceItem = await invoice_item_postgres_repository.create_invoice_item(
+                user_id=jwt_payload.id,
+                invoice_id=invoice_model.id,
+                new_invoice_item=invoice_item_model
+            )
+            
+            invoice_item_model: InvoiceItemModel = InvoiceItemModel.invoice_item_schema_to_model(invoice_item)
+            
+            invoice_items_model.append(invoice_item_model)
+        
+        invoice: dict = invoice_model.model_dump()
+
+        invoice["invoice_items"] = invoice_items_model
+
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder(invoice))
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
@@ -145,9 +167,8 @@ async def get_all_invoices(
     start_added_date: Optional[str] = None,
     end_added_date: Optional[str] = None,
     is_settled: Optional[bool] = None,
-    is_accepted: Optional[bool] = None,
     is_issued: Optional[bool] = None,
-    in_trash: bool = False,
+    in_trash: Optional[bool] = None,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
     redis_client: Redis = Depends(get_redis_client),
@@ -183,7 +204,6 @@ async def get_all_invoices(
             start_added_date=start_added_date,
             end_added_date=end_added_date,
             is_settled=is_settled,
-            is_accepted=is_accepted,
             is_issued=is_issued,
             in_trash=in_trash
         )
@@ -244,6 +264,48 @@ async def update_invoice(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@router.patch("/invoice-module/update-invoice-in-trash-status/")
+async def update_invoice_in_trash_status(
+    invoice_id: str,
+    in_trash: bool,
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    ):
+    try:
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+        invoice_item_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        await invoice_postgres_repository.update_invoice_in_trash_status(
+            user_id=jwt_payload.id,
+            invoice_id=invoice_id,
+            in_trash=in_trash
+        )
+        
+        await invoice_item_repository.update_all_invoice_items_in_trash_status_by_invoice_id(
+            user_id=jwt_payload.id,
+            invoice_id=invoice_id,
+            in_trash=in_trash
+        )
+
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"details": "Invoice and it's items in trash status updated."})
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.put("/invoice-module/initialize-invoice-removal/")
 async def initialize_invoice_removal(
@@ -290,7 +352,6 @@ async def initialize_invoice_removal(
 @router.delete("/invoice-module/confirm-invoice-removal/")
 async def confirm_invoice_removal(
     key_id: str,
-    background_tasks: BackgroundTasks,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
     redis_client: Redis = Depends(get_redis_client),
@@ -327,15 +388,11 @@ async def confirm_invoice_removal(
             invoice_id=invoice_id
         )
         if invoice_model.invoice_pdf != None:
-            background_tasks.add_task(
-                shutil.rmtree,
-                f"/usr/app/invoice/{jwt_payload.id}/{invoice_model.id}"
-            )
+            shutil.rmtree(f"/usr/app/invoice/{jwt_payload.id}/{invoice_model.id}")
 
-        background_tasks.add_task(
-            invoice_redis_repository.delete_invoice_removal,
-            key_id=key_id
-        )
+            await invoice_redis_repository.delete_invoice_removal(
+                key_id=key_id
+                )
         #add event
 
         return JSONResponse(status_code=status.HTTP_200_OK, content={"details": "Invoice removed succesfully."})
@@ -427,7 +484,6 @@ async def add_file_to_invoice(
 @router.delete("/invoice-module/delete-invoice-pdf/")
 async def delete_invoice_pdf(
     invoice_id: str,
-    background_tasks: BackgroundTasks,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
     redis_client: Redis = Depends(get_redis_client),
@@ -458,10 +514,7 @@ async def delete_invoice_pdf(
             invoice_id=invoice_id
         )
 
-        background_tasks.add_task(
-            shutil.rmtree,
-            f"/usr/app/invoice/{jwt_payload.id}/{invoice_id}"
-        )
+        shutil.rmtree(f"/usr/app/invoice/{jwt_payload.id}/{invoice_id}")
 
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "File has been deleted."})
     except HTTPException as e:

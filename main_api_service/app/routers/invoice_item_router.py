@@ -102,9 +102,45 @@ async def update_invoice_item(
     except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+@router.patch("/invoice-module/update-invoice-item-in-trash-status/")
+async def update_invoice_item_in_trash_status(
+    invoice_item_id: str,
+    in_trash: bool,
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    ):
+    try:
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        invoice_item_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        await invoice_item_repository.update_invoice_item_in_trash_status(
+            user_id=jwt_payload.id,
+            invoice_item_id=invoice_item_id,
+            in_trash=in_trash
+        )
+
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"details": "Invoice item in trash status updated."})
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
 @router.get("/invoice-item-module/get-invoice-items-by-invoice-id/")
 async def get_invoice_items_by_invoice_id(
     invoice_id: str,
+    in_trash: bool,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
     redis_client: Redis = Depends(get_redis_client),
@@ -122,7 +158,8 @@ async def get_invoice_items_by_invoice_id(
 
         invoice_items: list[InvoiceItem] = await invoice_item_postgres_repository.get_invoice_items_by_invoice_id(
             user_id=jwt_payload.id,
-            invoice_id=invoice_id
+            invoice_id=invoice_id,
+            in_trash=in_trash
         )
 
         invoice_items_model_list = []
@@ -139,7 +176,7 @@ async def get_invoice_items_by_invoice_id(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-    
+
 @router.delete("/invoice-item-module/delete-invoice-item/")
 async def delete_invoice_item(
     invoice_item_id: str,
