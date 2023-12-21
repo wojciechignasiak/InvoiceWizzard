@@ -34,12 +34,16 @@ class InvoicePostgresRepositoryABC(ABC):
                                 start_added_date: Optional[str] = None,
                                 end_added_date: Optional[str] = None,
                                 is_settled: Optional[bool] = None,
-                                is_accepted: Optional[bool] = None,
-                                is_issued: Optional[bool] = None) -> list:
+                                is_issued: Optional[bool] = None,
+                                in_trash: Optional[bool] = None) -> list:
         ...
 
     @abstractmethod
     async def update_invoice(self, user_id: str, update_invoice: UpdateInvoiceModel) -> None:
+        ...
+
+    @abstractmethod
+    async def update_invoice_in_trash_status(self, user_id: str, invoice_id: str, in_trash: bool) -> None:
         ...
 
     @abstractmethod

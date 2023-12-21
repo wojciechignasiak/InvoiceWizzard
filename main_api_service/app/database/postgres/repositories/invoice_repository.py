@@ -19,7 +19,6 @@ from sqlalchemy.exc import (
     )
 from typing import Optional
 from app.logging import logger
-from uuid import UUID
 
 
 class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositoryABC):
@@ -30,7 +29,7 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                 insert(Invoice).
                 values(
                     id=new_invoice.id,
-                    user_id=UUID(user_id),
+                    user_id=user_id,
                     user_business_entity_id=new_invoice.user_business_entity_id,
                     external_business_entity_id=new_invoice.external_business_entity_id,
                     invoice_pdf=None,
@@ -42,7 +41,6 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                     notes=new_invoice.notes,
                     added_date=new_invoice.added_date,
                     is_settled=new_invoice.is_settled,
-                    is_accepted=new_invoice.is_accepted,
                     is_issued=new_invoice.is_issued,
                 ). 
                 returning(Invoice)
@@ -93,9 +91,8 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                                 start_added_date: Optional[str] = None,
                                 end_added_date: Optional[str] = None,
                                 is_settled: Optional[bool] = None,
-                                is_accepted: Optional[bool] = None,
                                 is_issued: Optional[bool] = None,
-                                in_trash: bool = False) -> list:
+                                in_trash: Optional[bool] = None) -> list:
         try:
             stmt = (
                 select(Invoice).
@@ -133,9 +130,8 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                             ) if start_added_date else True,
                         ),
                         Invoice.is_settled == is_settled if is_settled is not None else True,
-                        Invoice.is_accepted == is_accepted if is_accepted is not None else True,
                         Invoice.is_issued == is_issued if is_issued is not None else True,
-                        Invoice.in_trash == in_trash
+                        Invoice.in_trash == in_trash if in_trash is not None else False
                     )
                 ).
                 limit(items_per_page).
@@ -168,7 +164,6 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                     payment_deadline=update_invoice.payment_deadline,
                     notes=update_invoice.notes,
                     is_settled=update_invoice.is_settled,
-                    is_accepted=update_invoice.is_accepted,
                     is_issued=update_invoice.is_issued
                 ).
                 returning(Invoice)
@@ -180,13 +175,33 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
             logger.error(f"InvoicePostgresRepository.update_invoice() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
         
+    async def update_invoice_in_trash_status(self, user_id: str, invoice_id: str, in_trash: bool) -> None:
+        try:
+            stmt = (
+                update(Invoice).
+                where(
+                    Invoice.id == invoice_id,
+                    Invoice.user_id == user_id
+                    ).
+                values(
+                in_trash=in_trash
+                ).
+                returning(Invoice)
+            )
+            updated_invoice = await self.session.scalar(stmt)
+            if updated_invoice == None:
+                raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoicePostgresRepository.update_invoice_in_trash_status() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+        
     async def remove_invoice(self, user_id: str, invoice_id: str) -> bool:
         try:
             stmt = (
                 delete(Invoice).
                 where(
-                    Invoice.id == UUID(invoice_id),
-                    Invoice.user_id == UUID(user_id)
+                    Invoice.id == invoice_id,
+                    Invoice.user_id == user_id
                     )
             )
             deleted_invoice = await self.session.execute(stmt)
@@ -209,7 +224,8 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                     (Invoice.user_business_entity_id == new_invoice.user_business_entity_id) & 
                     (Invoice.external_business_entity_id == new_invoice.external_business_entity_id) &
                     (Invoice.invoice_number == new_invoice.invoice_number) &
-                    (Invoice.is_issued == new_invoice.is_issued) 
+                    (Invoice.is_issued == new_invoice.is_issued) &
+                    (Invoice.in_trash == False)
                     )
                 )
             invoice = await self.session.scalar(stmt)
@@ -231,7 +247,8 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                     (Invoice.user_business_entity_id == update_invoice.user_business_entity_id) & 
                     (Invoice.external_business_entity_id == update_invoice.external_business_entity_id) &
                     (Invoice.invoice_number == update_invoice.invoice_number) &
-                    (Invoice.is_issued == update_invoice.is_issued) 
+                    (Invoice.is_issued == update_invoice.is_issued) &
+                    (Invoice.in_trash == False)
                     )
                 )
             invoice = await self.session.scalar(stmt)
@@ -269,8 +286,8 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
             stmt = (
                 update(Invoice).
                 where(
-                    Invoice.id == UUID(invoice_id),
-                    Invoice.user_id == UUID(user_id)
+                    Invoice.id == invoice_id,
+                    Invoice.user_id == user_id
                     ).
                 values(
                     invoice_pdf=None

@@ -56,7 +56,8 @@ class InvoiceItemModel(BaseModel):
             item_description=invoice_item_schema.item_description,
             number_of_items=invoice_item_schema.number_of_items,
             net_value=invoice_item_schema.net_value,
-            gross_value=invoice_item_schema.gross_value
+            gross_value=invoice_item_schema.gross_value,
+            in_trash=invoice_item_schema.in_trash
         )
 
 class UpdateInvoiceItemModel(BaseModel):
@@ -68,15 +69,17 @@ class UpdateInvoiceItemModel(BaseModel):
                 "number_of_items": 1,
                 "net_value": 8.00,
                 "gross_value": 10.00,
+                "in_trash": False
                 }
             }
         )
     id: UUID
     invoice_id: UUID
-    item_description: Optional[str]
-    number_of_items: Optional[int]
-    net_value: Optional[float]
-    gross_value: Optional[float]
+    item_description: str
+    number_of_items: int
+    net_value: float
+    gross_value: float
+    in_trash: bool
 
     @field_validator("id", "invoice_id")
     def parse_id(cls, value):
