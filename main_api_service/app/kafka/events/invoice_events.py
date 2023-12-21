@@ -34,5 +34,27 @@ class InvoiceEvents(KafkaProducerBase, InvoiceEventsABC):
             logger.exception(f"InvoiceEvents.remove_invoice() Error: {e}")
             raise KafkaBaseError("Error related to Kafka occured.")
         
-    async def invoice_removed(self, email_address: str, user_business_entity_name: str):
-        ...
+    async def invoice_removed(
+            self, 
+            id: str, 
+            email_address: str, 
+            invoice_number: str,
+            user_company_name: str,
+            external_company_name: str,
+            is_issued: str):
+        try:
+            message = {
+                "id": id,
+                "email": email_address,
+                "invoice_number": invoice_number,
+                "user_company_name": user_company_name,
+                "external_company_name": external_company_name,
+                "is_issued": is_issued
+            }
+            await self.kafka_producer.send(
+                KafkaTopicsEnum.invoice_removed.value, 
+                json.dumps(message).encode('utf-8')
+                )
+        except KafkaError as e:
+            logger.exception(f"InvoiceEvents.invoice_removed() Error: {e}")
+            raise KafkaBaseError("Error related to Kafka occured.")
