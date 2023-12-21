@@ -32,9 +32,25 @@ from app.models.invoice_item_model import (
     InvoiceItemModel,
     CreateInvoiceItemModel
 )
+from app.models.user_business_entity_model import (
+    UserBusinessEntityModel
+)
+from app.models.external_business_entity_model import (
+    ExternalBusinessEntity
+)
+from aiokafka import AIOKafkaProducer
+from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
+from app.kafka.exceptions.custom_kafka_exceptions import KafkaBaseError
+from app.registries.get_events_registry import get_events_registry
+from app.registries.events_registry_abc import EventsRegistryABC
 from app.models.user_business_entity_model import UserBusinessEntityModel
 from app.models.external_business_entity_model import ExternalBusinessEntityModel
-from app.schema.schema import Invoice, InvoiceItem, UserBusinessEntity, ExternalBusinessEntity
+from app.schema.schema import (
+    Invoice, 
+    InvoiceItem, 
+    UserBusinessEntity, 
+    ExternalBusinessEntity
+)
 import img2pdf
 import os
 from PIL import Image
@@ -312,13 +328,18 @@ async def initialize_invoice_removal(
     invoice_id: str,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
     redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
+    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
     try:
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+        user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
+        external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
         invoice_redis_repository = await repositories_registry.return_invoice_redis_repository(redis_client)
+        invoice_events = await events_registry.return_invoice_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -326,18 +347,42 @@ async def initialize_invoice_removal(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
-        await invoice_postgres_repository.get_invoice(
+        invoice: Invoice = await invoice_postgres_repository.get_invoice(
             user_id=jwt_payload.id,
             invoice_id=invoice_id
         )
         
+        invoice_model: InvoiceModel = InvoiceModel.invoice_schema_to_model(invoice)
+
         key_id = uuid4()
-        await invoice_redis_repository.initialize_invoice_removal(
-            key_id=str(key_id),
-            invoice_id=invoice_id
+
+        user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.get_user_business_entity(
+            user_id=jwt_payload.id,
+            user_business_entity_id=invoice_model.user_business_entity_id
         )
 
-        #add event
+        user_business_entity_model: UserBusinessEntityModel = UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
+
+        external_business_entity: ExternalBusinessEntity = await external_business_entity_postgres_repository.get_external_business_entity(
+            user_id=jwt_payload.id,
+            external_business_entity_id=invoice_model.external_business_entity_id
+        )
+
+        external_business_entity_model: ExternalBusinessEntityModel = ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
+
+        await invoice_redis_repository.initialize_invoice_removal(
+            key_id=str(key_id),
+            invoice_id=invoice_model.id
+        )
+
+        await invoice_events.remove_invoice(
+            id=str(key_id),
+            email_address=jwt_payload.email,
+            invoice_number=invoice_model.invoice_number,
+            user_company_name=user_business_entity_model.company_name,
+            external_company_name=external_business_entity_model.company_name,
+            is_issued=invoice_model.is_issued
+        )
 
         return JSONResponse(status_code=status.HTTP_200_OK, content={"details": "Invoice removal initialized."})
     except HTTPException as e:
@@ -346,7 +391,7 @@ async def initialize_invoice_removal(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     except PostgreSQLNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError, RedisSetError) as e:
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError, RedisSetError, KafkaBaseError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.delete("/invoice-module/confirm-invoice-removal/")
@@ -354,13 +399,18 @@ async def confirm_invoice_removal(
     key_id: str,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
     redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
+    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
     try:
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+        external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+        user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
         invoice_redis_repository = await repositories_registry.return_invoice_redis_repository(redis_client)
+        invoice_events = await events_registry.return_invoice_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -383,6 +433,18 @@ async def confirm_invoice_removal(
         
         invoice_model: InvoiceModel = InvoiceModel.invoice_schema_to_model(invoice)
 
+        external_business_entity: ExternalBusinessEntity = await external_business_entity_postgres_repository.get_external_business_entity(
+            user_id=jwt_payload.id,
+            external_business_entity_id=invoice_model.external_business_entity_id
+        )
+
+        user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.get_user_business_entity(
+            user_id=jwt_payload.id,
+            user_business_entity_id=invoice_model.user_business_entity_id
+        )
+
+        user_business_entity_model: UserBusinessEntityModel = UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
+
         await invoice_postgres_repository.remove_invoice(
             user_id=jwt_payload.id,
             invoice_id=invoice_id
@@ -393,7 +455,15 @@ async def confirm_invoice_removal(
             await invoice_redis_repository.delete_invoice_removal(
                 key_id=key_id
                 )
-        #add event
+        
+        await invoice_events.invoice_removed(
+            id=key_id,
+            email_address=jwt_payload.email,
+            invoice_number=invoice_model.invoice_number,
+            user_company_name=user_business_entity_model.company_name,
+            external_company_name=external_business_entity.company_name,
+            is_issued=invoice_model.is_issued
+        )
 
         return JSONResponse(status_code=status.HTTP_200_OK, content={"details": "Invoice removed succesfully."})
     except HTTPException as e:
@@ -402,7 +472,7 @@ async def confirm_invoice_removal(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     except (PostgreSQLNotFoundError, RedisNotFoundError) as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError, RedisSetError) as e:
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError, RedisSetError, KafkaBaseError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 

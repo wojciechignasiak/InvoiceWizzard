@@ -35,9 +35,9 @@ class InvoiceRedisRepository(BaseRedisRepository, InvoiceRedisRepositoryABC):
 
     async def retrieve_invoice_removal(self, key_id: str) -> bytes:
         try:
-            await self.redis_client.get(f"remove_invoice:{key_id}")
-            invoice_to_remove = self.redis_client.execute()
-            if invoice_to_remove[-1] == None:
+            invoice_to_remove = await self.redis_client.get(f"remove_invoice:{key_id}")
+            
+            if invoice_to_remove == None:
                 raise RedisNotFoundError("Not found invoice to remove in database.")
             return invoice_to_remove
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:

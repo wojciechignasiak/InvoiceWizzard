@@ -16,7 +16,7 @@ class InvoiceEvents(KafkaProducerBase, InvoiceEventsABC):
             invoice_number: str,
             user_company_name: str,
             external_company_name: str,
-            is_issued: str):
+            is_issued: bool):
         try:
             message = {
                 "id": id,
@@ -41,7 +41,7 @@ class InvoiceEvents(KafkaProducerBase, InvoiceEventsABC):
             invoice_number: str,
             user_company_name: str,
             external_company_name: str,
-            is_issued: str):
+            is_issued: bool):
         try:
             message = {
                 "id": id,

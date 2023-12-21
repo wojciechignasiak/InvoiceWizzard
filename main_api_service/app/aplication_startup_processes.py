@@ -20,6 +20,7 @@ from app.database.postgres.repositories.invoice_item_repository import InvoiceIt
 from app.registries.events_registry import EventsRegistry
 from app.kafka.events.user_events import UserEvents
 from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
+from app.kafka.events.invoice_events import InvoiceEvents
 
 class ApplicationStartupProcesses:
 
@@ -130,7 +131,8 @@ class ApplicationStartupProcesses:
                 print("Initializing events registry...")
                 events_registry: EventsRegistry = EventsRegistry(
                     UserEvents,
-                    UserBusinessEntityEvents
+                    UserBusinessEntityEvents,
+                    InvoiceEvents
                     )
                 print("Events registry initialized!")
                 return events_registry
