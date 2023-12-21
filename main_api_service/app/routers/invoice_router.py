@@ -603,7 +603,8 @@ async def generate_invoice_pdf(
         
         invoice_items: list[InvoiceItem] = await invoice_item_postgres_repository.get_invoice_items_by_invoice_id(
             user_id=jwt_payload.id,
-            invoice_id=invoice_model.id
+            invoice_id=invoice_model.id,
+            in_trash=False
         )
 
         invoice_items_model: list = []
