@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 from aiokafka import AIOKafkaProducer
-from app.schema.schema import User, UserBusinessEntity, ExternalBusinessEntity
+from app.schema.schema import User, UserBusinessEntity, ExternalBusinessEntity, InvoiceItem, Invoice
 from app.models.user_model import (
     CreateUserModel, 
     UserPersonalInformationModel, 
@@ -27,6 +27,16 @@ from app.models.external_business_entity_model import (
     ExternalBusinessEntityModel
 )
 from app.models.authentication_model import LogInModel
+from app.models.invoice_model import (
+    CreateInvoiceModel,
+    InvoiceModel,
+    UpdateInvoiceModel
+)
+from app.models.invoice_item_model import (
+    InvoiceItemModel,
+    CreateInvoiceItemModel,
+    UpdateInvoiceItemModel
+)
 from uuid import UUID
 from datetime import datetime, date
 from app.database.redis.repositories.user_repository import UserRedisRepository
@@ -34,6 +44,9 @@ from app.database.redis.repositories.user_business_entity_repository import User
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
 from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
 from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
+from app.database.postgres.repositories.invoice_repository import InvoicePostgresRepository
+from app.database.redis.repositories.invoice_repository import InvoiceRedisRepository
+from app.database.postgres.repositories.invoice_item_repository import InvoiceItemPostgresRepository
 from app.registries.repositories_registry import RepositoriesRegistry
 from app.registries.events_registry import EventsRegistry
 
@@ -101,6 +114,42 @@ def mock_external_business_entity_schema_object():
     return external_business_entity_schema_object
 
 @pytest.fixture
+def mock_invoice_schema_object():
+    invoice_schema_object = Invoice(
+        id=UUID("378cd98c-d144-49bd-8e4f-07613ccd3701"),
+        user_id=UUID("7024353b-aa89-4097-8925-f2855519c0ae"),
+        user_business_entity_id=UUID("c487e563-a0e5-4bf7-ba20-d747db6da205"),
+        external_business_entity_id=UUID("c487e563-a0e5-4bf7-ba20-d747db6da205"),
+        invoice_pdf="/invoice.pdf",
+        invoice_number="12/2023",
+        issue_date="2023-12-05",
+        sale_date="2023-12-05",
+        notes="My Invoice notes",
+        payment_method="Card",
+        payment_deadline="2023-12-05",
+        added_date="2023-12-05",
+        is_settled=True,
+        is_issued=True,
+        in_trash=False
+    )
+    return invoice_schema_object
+
+@pytest.fixture
+def mock_invoice_item_schema_object():
+    invoice_item_schema_object = InvoiceItem(
+        id=UUID("10852ddf-c3f0-4bb4-8cf3-b2ba5566a28b"),
+        user_id=UUID("7024353b-aa89-4097-8925-f2855519c0ae"),
+        invoice_id=UUID("378cd98c-d144-49bd-8e4f-07613ccd3701"),
+        item_description="This is item description",
+        number_of_items=2,
+        net_value=8.0,
+        gross_value=10.0,
+        in_trash=False
+    )
+    return invoice_item_schema_object
+
+
+@pytest.fixture
 def mock_jwt_token():
     jwt_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjcwMjQzNTNiLWFhODktNDA5Ny04OTI1LWYyODU1NTE5YzBhZSIsImVtYWlsIjoiZW1haWxAZXhhbXBsZS5jb20iLCJleHAiOjE1MTYyMzkwMjJ9.bpoXUQdibTb0nltDSQF7ujjSHv-v0nb7qdvhnkXdv4c"
 
@@ -138,6 +187,23 @@ def mock_user_business_entity_redis_repository_object():
 
     return user_business_entity_repository_redis_mock_object
 
+@pytest.fixture
+def mock_invoice_postgres_repository_object():
+    invoice_repository_postgres_mock_object = AsyncMock(spec=InvoicePostgresRepository)
+
+    return invoice_repository_postgres_mock_object
+
+@pytest.fixture
+def mock_invoice_redis_repository_object():
+    invoice_repository_redis_mock_object = AsyncMock(spec=InvoiceRedisRepository)
+
+    return invoice_repository_redis_mock_object
+
+@pytest.fixture
+def mock_invoice_item_postgres_repository_object():
+    invoice_item_repository_postgres_mock_object = AsyncMock(spec=InvoiceItemPostgresRepository)
+
+    return invoice_item_repository_postgres_mock_object
 #MOCKED REGISTRIES
 
 @pytest.fixture
@@ -159,8 +225,7 @@ def mock_create_user_model_object():
     create_user_model_object = CreateUserModel(
         email="email@example.com",
         password="passw0rd!",
-        salt="123456789podwajkdjadsakdjkanw",
-        registration_date=datetime.strptime(str(date.today()), '%Y-%m-%d').strftime('%Y-%m-%d')
+        salt="123456789podwajkdjadsakdjkanw"
     )
 
     return create_user_model_object
@@ -332,3 +397,98 @@ def mock_external_business_entity_model_object():
     )
 
     return external_business_entity_model_object
+
+@pytest.fixture
+def mock_create_invoice_model_object():
+    create_invoice_model_object = CreateInvoiceModel(
+        user_business_entity_id="c487e563-a0e5-4bf7-ba20-d747db6da205",
+        external_business_entity_id="c487e563-a0e5-4bf7-ba20-d747db6da205",
+        invoice_number="12/2023",
+        issue_date="2023-12-05",
+        sale_date="2023-12-05",
+        payment_method="Card",
+        payment_deadline="2023-12-05",
+        notes="My Invoice notes",
+        is_settled=False,
+        is_issued=True,
+    )
+
+    return create_invoice_model_object
+
+@pytest.fixture
+def mock_invoice_model_object():
+    invoice_model_object = InvoiceModel(
+        id="15b8d02b-1f21-4bd3-83c9-a1ebb105aba3",
+        user_business_entity_id="c487e563-a0e5-4bf7-ba20-d747db6da205",
+        external_business_entity_id="c487e563-a0e5-4bf7-ba20-d747db6da205",
+        invoice_number="12/2023",
+        issue_date="2023-12-05",
+        added_date="2023-12-05",
+        sale_date="2023-12-05",
+        payment_method="Card",
+        payment_deadline="2023-12-05",
+        notes="My Invoice notes",
+        is_settled=False,
+        is_issued=True,
+        in_trash=False
+    )
+
+    return invoice_model_object
+
+@pytest.fixture
+def mock_update_invoice_model_object():
+    update_invoice_model_object = UpdateInvoiceModel(
+        id="15b8d02b-1f21-4bd3-83c9-a1ebb105aba3",
+        user_business_entity_id="c487e563-a0e5-4bf7-ba20-d747db6da205",
+        external_business_entity_id="c487e563-a0e5-4bf7-ba20-d747db6da205",
+        invoice_number="12/2023",
+        issue_date="2023-12-05",
+        sale_date="2023-12-05",
+        payment_method="Card",
+        payment_deadline="2023-12-05",
+        notes="My Invoice notes",
+        is_settled=False,
+        is_issued=True
+    )
+
+    return update_invoice_model_object
+
+@pytest.fixture
+def mock_create_invoice_item_model_object():
+    create_invoice_item_model_object = CreateInvoiceItemModel(
+        id="378cd98c-d144-49bd-8e4f-07613ccd3701",
+        item_description="My product/service name",
+        number_of_items=1,
+        net_value=8.00,
+        gross_value=10.00
+    )
+
+    return create_invoice_item_model_object
+
+@pytest.fixture
+def mock_invoice_item_model_object():
+    invoice_item_model_object = InvoiceItemModel(
+        id="378cd98c-d144-49bd-8e4f-07613ccd3701",
+        invoice_id="15b8d02b-1f21-4bd3-83c9-a1ebb105aba3",
+        item_description="My product/service name",
+        number_of_items=1,
+        net_value=8.00,
+        gross_value=10.00,
+        in_trash=False
+    )
+
+    return invoice_item_model_object
+
+@pytest.fixture
+def mock_update_invoice_item_model_object():
+    update_invoice_item_model_object = UpdateInvoiceItemModel(
+        id="378cd98c-d144-49bd-8e4f-07613ccd3701",
+        invoice_id="15b8d02b-1f21-4bd3-83c9-a1ebb105aba3",
+        item_description="My product/service name",
+        number_of_items=1,
+        net_value=8.00,
+        gross_value=10.00,
+        in_trash=False
+    )
+
+    return update_invoice_item_model_object
