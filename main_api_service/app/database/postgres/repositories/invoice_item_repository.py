@@ -75,7 +75,7 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
             invoice_items = await self.session.scalars(stmt)
             if not invoice_items:
                 raise PostgreSQLNotFoundError("Invoice items with provided invoice id not found in database.")
-            return invoice_items.all()
+            return invoice_items
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoiceItemPostgresRepository.get_invoice_items_by_invoice_id() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
@@ -138,7 +138,7 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
             )
             await self.session.execute(stmt)
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"InvoicePostgresRepository.update_invoice_item_in_trash_status() Error: {e}")
+            logger.error(f"InvoicePostgresRepository.update_all_invoice_items_in_trash_status_by_invoice_id() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
         
     async def remove_invoice_item(self, user_id: str, invoice_item_id: str) -> bool:
