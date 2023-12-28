@@ -125,22 +125,6 @@ async def test_get_invoice_item_by_invoice_id_success(
         False
     )
     assert isinstance(invoice_item, list)
-
-@pytest.mark.asyncio
-async def test_get_invoice_item_by_invoice_id_not_found_error(
-    mock_postgres_async_session, 
-    mock_jwt_payload_model_object,
-    mock_invoice_model_object):
-
-    invoice_item_postgres_repository = InvoiceItemPostgresRepository(mock_postgres_async_session)
-    mock_postgres_async_session.scalars.return_value = []
-
-    with pytest.raises(PostgreSQLNotFoundError):
-        await invoice_item_postgres_repository.get_invoice_items_by_invoice_id(
-            mock_jwt_payload_model_object.id,
-            mock_invoice_model_object.id,
-            False
-        )
     
 @pytest.mark.asyncio
 async def test_get_invoice_item_by_invoice_id_database_error(

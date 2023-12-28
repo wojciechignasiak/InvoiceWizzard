@@ -131,7 +131,7 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                         ),
                         Invoice.is_settled == is_settled if is_settled is not None else True,
                         Invoice.is_issued == is_issued if is_issued is not None else True,
-                        Invoice.in_trash == in_trash if in_trash is not None else False
+                        Invoice.in_trash == in_trash if in_trash is not None else True
                     )
                 ).
                 limit(items_per_page).

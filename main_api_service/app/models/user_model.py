@@ -22,7 +22,7 @@ class UserModel(BaseModel):
     email_notification: bool
     push_notification: bool
 
-    def user_schema_to_model(user_schema: User) -> "UserModel":
+    async def user_schema_to_model(user_schema: User) -> "UserModel":
         return UserModel(
             id=str(user_schema.id),
             email=user_schema.email,

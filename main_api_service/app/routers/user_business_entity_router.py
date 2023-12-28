@@ -86,7 +86,7 @@ async def create_user_business_entity(
             new_user_business_entity=new_user_business_entity
             )
         
-        user_business_entity_model: UserBusinessEntityModel = UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
+        user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
 
         return JSONResponse(status_code=status.HTTP_201_CREATED, content=user_business_entity_model.model_dump())
     except HTTPException as e:
@@ -121,7 +121,7 @@ async def get_user_business_entity(
             user_business_entity_id=user_business_entity_id
         )
         
-        user_business_entity_model: UserBusinessEntityModel = UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
+        user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model.model_dump())
     except HTTPException as e:
@@ -170,7 +170,7 @@ async def get_all_user_business_entities(
         )
         user_business_entities_model = []
         for user_business_entity in user_business_entity_list:
-            user_business_entity_model: UserBusinessEntityModel = UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
+            user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
             user_business_entities_model.append(user_business_entity_model)
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(user_business_entities_model))
@@ -215,7 +215,7 @@ async def update_user_business_entity(
             update_user_business_entity=update_user_business_entity
         )
         
-        user_business_entity_model: UserBusinessEntityModel = UserBusinessEntityModel.user_business_entity_schema_to_model(updated_user_business_entity)
+        user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(updated_user_business_entity)
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model.model_dump())
     except HTTPException as e:

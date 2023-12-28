@@ -21,6 +21,7 @@ from app.registries.events_registry import EventsRegistry
 from app.kafka.events.user_events import UserEvents
 from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
 from app.kafka.events.invoice_events import InvoiceEvents
+from app.files.files_repository import FilesRepository
 
 class ApplicationStartupProcesses:
 
@@ -117,7 +118,8 @@ class ApplicationStartupProcesses:
                     ExternalBusinessEntityPostgresRepository,
                     InvoicePostgresRepository,
                     InvoiceRedisRepository,
-                    InvoiceItemPostgresRepository
+                    InvoiceItemPostgresRepository,
+                    FilesRepository
                     )
                 
                 print("Repositories registry initialized!")

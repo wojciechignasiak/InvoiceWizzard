@@ -18,7 +18,7 @@ class CreateInvoiceItemModel(BaseModel):
     number_of_items: int
     net_value: float
     gross_value: float
-
+    
     @property
     def id(self):
         return uuid4()
@@ -49,7 +49,7 @@ class InvoiceItemModel(BaseModel):
     def vat_percent(self):
         return ((self.gross_value - self.net_value) / self.net_value) * 100
     
-    def invoice_item_schema_to_model(invoice_item_schema: InvoiceItem) -> "InvoiceItemModel":
+    async def invoice_item_schema_to_model(invoice_item_schema: InvoiceItem) -> "InvoiceItemModel":
         return InvoiceItemModel(
             id=str(invoice_item_schema.id),
             invoice_id=str(invoice_item_schema.invoice_id),

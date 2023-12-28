@@ -45,7 +45,7 @@ class UpdateUserBusinessEntityModel(BaseModel):
 
 class UserBusinessEntityModel(UpdateUserBusinessEntityModel):
 
-    def user_business_entity_schema_to_model(user_business_entity_schema: UserBusinessEntity) -> "UserBusinessEntityModel":
+    async def user_business_entity_schema_to_model(user_business_entity_schema: UserBusinessEntity) -> "UserBusinessEntityModel":
         return UserBusinessEntityModel(
             id=str(user_business_entity_schema.id),
             company_name=user_business_entity_schema.company_name,

@@ -46,7 +46,7 @@ class UpdateExternalBusinessEntityModel(BaseModel):
 class ExternalBusinessEntityModel(UpdateExternalBusinessEntityModel):
     pass
 
-    def external_business_entity_schema_to_model(external_business_entity_schema: ExternalBusinessEntity) -> "ExternalBusinessEntityModel":
+    async def external_business_entity_schema_to_model(external_business_entity_schema: ExternalBusinessEntity) -> "ExternalBusinessEntityModel":
         return ExternalBusinessEntityModel(
             id=str(external_business_entity_schema.id),
             company_name=external_business_entity_schema.company_name,

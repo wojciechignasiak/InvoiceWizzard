@@ -124,7 +124,7 @@ class InvoiceModel(BaseModel):
     is_issued: bool
     in_trash: bool
 
-    def invoice_schema_to_model(invoice_schema: Invoice) -> "InvoiceModel":
+    async def invoice_schema_to_model(invoice_schema: Invoice) -> "InvoiceModel":
         return InvoiceModel(
             id=str(invoice_schema.id),
             user_business_entity_id=str(invoice_schema.user_business_entity_id),

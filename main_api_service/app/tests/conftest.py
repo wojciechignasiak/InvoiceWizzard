@@ -410,7 +410,7 @@ def mock_create_invoice_model_object():
         payment_deadline="2023-12-05",
         notes="My Invoice notes",
         is_settled=False,
-        is_issued=True,
+        is_issued=True
     )
 
     return create_invoice_model_object
@@ -456,7 +456,6 @@ def mock_update_invoice_model_object():
 @pytest.fixture
 def mock_create_invoice_item_model_object():
     create_invoice_item_model_object = CreateInvoiceItemModel(
-        id="378cd98c-d144-49bd-8e4f-07613ccd3701",
         item_description="My product/service name",
         number_of_items=1,
         net_value=8.00,
