@@ -42,6 +42,7 @@ from pathlib import Path
 from datetime import datetime, date
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.database.redis.repositories.user_business_entity_repository import UserBusinessEntityRedisRepository
+from app.database.redis.repositories.external_business_entity_repository import ExternalBusinessEntityRedisRepository
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
 from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
 from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
@@ -179,16 +180,22 @@ def mock_user_business_entity_postgres_repository_object():
     return user_business_entity_repository_postgres_mock_object
 
 @pytest.fixture
+def mock_user_business_entity_redis_repository_object():
+    user_business_entity_repository_redis_mock_object = AsyncMock(spec=UserBusinessEntityRedisRepository)
+
+    return user_business_entity_repository_redis_mock_object
+
+@pytest.fixture
 def mock_external_business_entity_postgres_repository_object():
     external_business_entity_repository_postgres_mock_object = AsyncMock(spec=ExternalBusinessEntityPostgresRepository)
 
     return external_business_entity_repository_postgres_mock_object
 
 @pytest.fixture
-def mock_user_business_entity_redis_repository_object():
-    user_business_entity_repository_redis_mock_object = AsyncMock(spec=UserBusinessEntityRedisRepository)
+def mock_external_business_entity_redis_repository_object():
+    external_business_entity_repository_redis_mock_object = AsyncMock(spec=ExternalBusinessEntityRedisRepository)
 
-    return user_business_entity_repository_redis_mock_object
+    return external_business_entity_repository_redis_mock_object
 
 @pytest.fixture
 def mock_invoice_postgres_repository_object():

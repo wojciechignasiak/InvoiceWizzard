@@ -21,7 +21,7 @@ class RepositoriesRegistry(RepositoriesRegistryABC):
         'user_business_entity_postgres_repository',
         'user_business_entity_redis_repository',
         'external_business_entity_postgres_repository',
-        'external_business_entity_redis_repository'
+        'external_business_entity_redis_repository',
         'invoice_postgres_repository',
         'invoice_redis_repository',
         'invoice_item_postgres_repository',

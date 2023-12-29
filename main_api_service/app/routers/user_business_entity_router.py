@@ -27,7 +27,7 @@ from app.models.user_business_entity_model import (
     UpdateUserBusinessEntityModel,
     UserBusinessEntityModel
 )
-from app.schema.schema import UserBusinessEntity, Invoice
+from app.schema.schema import UserBusinessEntity
 from uuid import uuid4
 import ast
 from aiokafka import AIOKafkaProducer

@@ -19,7 +19,11 @@ async def startup_topics(kafka_url: str):
             KafkaTopicsEnum.password_changed.value,
             KafkaTopicsEnum.reset_password.value,
             KafkaTopicsEnum.remove_user_business_entity.value,
-            KafkaTopicsEnum.user_business_entity_removed.value
+            KafkaTopicsEnum.user_business_entity_removed.value,
+            KafkaTopicsEnum.remove_external_business_entity.value,
+            KafkaTopicsEnum.external_business_entity_removed.value,
+            KafkaTopicsEnum.remove_invoice.value,
+            KafkaTopicsEnum.invoice_removed.value
         ]
         topic_list = []
         for topic_name in topic_name_list:
