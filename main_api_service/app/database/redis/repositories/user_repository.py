@@ -114,8 +114,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
         
     async def delete_jwt_token(self, user_id: str, token: str):
         try:
-            result = await self.redis_client.delete(f"JWT:{token}:{user_id}")
-            print(result)
+            await self.redis_client.delete(f"JWT:{token}:{user_id}")
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
             logger.error(f"UserRedisRepository.delete_jwt_token() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
