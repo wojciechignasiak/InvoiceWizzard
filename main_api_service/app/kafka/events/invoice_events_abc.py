@@ -10,7 +10,7 @@ class InvoiceEventsABC(ABC):
         email_address: str, 
         invoice_number: str,
         user_company_name: str,
-        external_company_name: str,
+        external_business_entity_name: str,
         is_issued: bool):
         ...
         
@@ -21,6 +21,6 @@ class InvoiceEventsABC(ABC):
         email_address: str, 
         invoice_number: str,
         user_company_name: str,
-        external_company_name: str,
+        external_busines_entity_name: str,
         is_issued: bool):
         ...

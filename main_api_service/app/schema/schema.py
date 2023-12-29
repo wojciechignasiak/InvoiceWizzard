@@ -40,7 +40,7 @@ class ExternalBusinessEntity(Base):
     __tablename__= 'external_business_entity'
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
-    company_name: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
+    name: Mapped[str] = mapped_column(VARCHAR(255), nullable=False)
     city: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)

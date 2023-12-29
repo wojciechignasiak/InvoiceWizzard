@@ -67,7 +67,7 @@ async def create_external_business_entity(
         is_unique_in_user_business_entity: bool = await user_business_entity_postgres_repository.is_user_business_entity_unique(
             user_id=jwt_payload.id,
             new_user_business_entity=CreateUserBusinessEntityModel(
-                company_name=new_external_business_entity.company_name,
+                company_name=new_external_business_entity.name,
                 city=new_external_business_entity.city,
                 postal_code=new_external_business_entity.postal_code,
                 street=new_external_business_entity.street,
@@ -133,7 +133,7 @@ async def get_external_business_entity(
 async def get_all_external_business_entities(
     page: int,
     items_per_page: int,
-    company_name: Optional[str] = None,
+    name: Optional[str] = None,
     city: Optional[str] = None,
     postal_code: Optional[str] = None,
     street: Optional[str] = None,
@@ -158,7 +158,7 @@ async def get_all_external_business_entities(
             user_id=jwt_payload.id,
             page=page,
             items_per_page=items_per_page,
-            company_name=company_name,
+            name=name,
             city=city,
             postal_code=postal_code,
             street=street,

@@ -45,10 +45,10 @@ async def test_create_external_business_entity_success(
         headers={"Authorization": f"Bearer {str(mock_jwt_token)}"},
         json=json)
     
-    assert response.status_code == 201
     data = response.json()
+    assert response.status_code == 201
     assert data["id"] == str(mock_external_business_entity_schema_object.id)
-    assert data["company_name"] == mock_external_business_entity_schema_object.company_name
+    assert data["name"] == mock_external_business_entity_schema_object.name
     assert data["city"] == mock_external_business_entity_schema_object.city
     assert data["postal_code"] == mock_external_business_entity_schema_object.postal_code
     assert data["street"] == mock_external_business_entity_schema_object.street
@@ -204,7 +204,7 @@ async def test_get_external_business_entity_success(
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == str(mock_external_business_entity_schema_object.id)
-    assert data["company_name"] == mock_external_business_entity_schema_object.company_name
+    assert data["name"] == mock_external_business_entity_schema_object.name
     assert data["city"] == mock_external_business_entity_schema_object.city
     assert data["postal_code"] == mock_external_business_entity_schema_object.postal_code
     assert data["street"] == mock_external_business_entity_schema_object.street

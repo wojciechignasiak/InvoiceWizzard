@@ -231,12 +231,17 @@ async def invoice_generator(
         </div>
         """
 
+        if external_business_entity.nip != None:
+            nip = f"""<span class="invoice-client-entry">NIP {external_business_entity.nip}</span>"""
+        else:
+            nip = ""
+            
         buyer_data_container = f"""
         <div class="invoice-client-data">
             <span class="invoice-client-entry-title">Nabywca</span>
-            <span class="invoice-client-entry">{external_business_entity.company_name}</span>
+            <span class="invoice-client-entry">{external_business_entity.name}</span>
             <span class="invoice-client-entry">{external_business_entity.street}; {external_business_entity.postal_code} {external_business_entity.city}</span>
-            <span class="invoice-client-entry">NIP {external_business_entity.nip}</span>
+            {nip}
         </div>
         """
         gross_sum = 0.0

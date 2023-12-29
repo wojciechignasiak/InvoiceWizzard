@@ -5,6 +5,7 @@ from app.database.postgres.repositories.invoice_repository_abc import InvoicePos
 from app.database.postgres.repositories.invoice_item_repository_abc import InvoiceItemPostgresRepositoryABC
 from app.database.redis.repositories.user_repository_abc import UserRedisRepositoryABC
 from app.database.redis.repositories.user_business_entity_repository_abc import UserBusinessEntityRedisRepositoryABC
+from app.database.redis.repositories.external_business_entity_repository_abc import ExternalBusinessEntityRedisRepositoryABC
 from app.database.redis.repositories.invoice_repository_abc import InvoiceRedisRepositoryABC
 from app.files.files_repository_abc import FilesRepositoryABC
 from app.registries.repositories_registry_abc import RepositoriesRegistryABC
@@ -20,6 +21,7 @@ class RepositoriesRegistry(RepositoriesRegistryABC):
         'user_business_entity_postgres_repository',
         'user_business_entity_redis_repository',
         'external_business_entity_postgres_repository',
+        'external_business_entity_redis_repository'
         'invoice_postgres_repository',
         'invoice_redis_repository',
         'invoice_item_postgres_repository',
@@ -32,6 +34,7 @@ class RepositoriesRegistry(RepositoriesRegistryABC):
                 user_business_entity_postgres_repository: UserBusinessEntityPostgresRepositoryABC,
                 user_business_entity_redis_repository: UserBusinessEntityRedisRepositoryABC,
                 external_business_entity_postgres_repository: ExternalBusinessEntityPostgresRepositoryABC,
+                external_business_entity_redis_repository: ExternalBusinessEntityRedisRepositoryABC,
                 invoice_postgres_repository: InvoicePostgresRepositoryABC,
                 invoice_redis_repository: InvoiceRedisRepositoryABC,
                 invoice_item_postgres_repository: InvoiceItemPostgresRepositoryABC,
@@ -42,6 +45,7 @@ class RepositoriesRegistry(RepositoriesRegistryABC):
         self.user_business_entity_postgres_repository = user_business_entity_postgres_repository
         self.user_business_entity_redis_repository = user_business_entity_redis_repository
         self.external_business_entity_postgres_repository = external_business_entity_postgres_repository
+        self.external_business_entity_redis_repository = external_business_entity_redis_repository
         self.invoice_postgres_repository = invoice_postgres_repository
         self.invoice_redis_repository = invoice_redis_repository
         self.invoice_item_postgres_repository = invoice_item_postgres_repository
@@ -62,6 +66,9 @@ class RepositoriesRegistry(RepositoriesRegistryABC):
     
     async def return_external_business_entity_postgres_repository(self, session: AsyncSession) -> ExternalBusinessEntityPostgresRepositoryABC:
         return self.external_business_entity_postgres_repository(session)
+    
+    async def return_external_business_entity_redis_repository(self, redis_client: Redis) -> ExternalBusinessEntityRedisRepositoryABC:
+        return self.external_business_entity_redis_repository(redis_client)
     
     async def return_invoice_postgres_repository(self, session: AsyncSession) -> InvoicePostgresRepositoryABC:
         return self.invoice_postgres_repository(session)
