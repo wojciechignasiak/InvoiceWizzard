@@ -254,7 +254,33 @@ async def log_in(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong email adress or password.")
     except (Exception, RedisDatabaseError, PostgreSQLDatabaseError, RedisSetError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-    
+
+@router.delete("/user-module/log-out/")
+async def log_out(
+    token = Depends(http_bearer),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client)
+    ):
+
+    try:
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        await user_redis_repository.delete_jwt_token(
+            user_id=jwt_payload.id,
+            token=token.credentials
+        )
+
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"detail": "User logged out."})
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except (Exception, RedisDatabaseError, RedisSetError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.patch("/user-module/update-personal-information/")
 async def update_personal_information(
