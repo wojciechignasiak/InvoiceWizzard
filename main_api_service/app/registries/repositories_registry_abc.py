@@ -9,6 +9,7 @@ from app.database.redis.repositories.invoice_repository_abc import InvoiceRedisR
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 from abc import ABC, abstractmethod
+from app.files.files_repository_abc import FilesRepositoryABC
 
 
 class RepositoriesRegistryABC(ABC):
@@ -43,4 +44,8 @@ class RepositoriesRegistryABC(ABC):
     
     @abstractmethod
     async def return_invoice_item_postgres_repository(self, session: AsyncSession) -> InvoiceItemPostgresRepositoryABC:
+        ...
+
+    @abstractmethod
+    async def return_files_repository(self) -> FilesRepositoryABC:
         ...

@@ -57,7 +57,7 @@ async def create_invoice_item(
             new_invoice_item=new_invoice_item
         )
 
-        invoice_item_model: InvoiceItemModel = InvoiceItemModel.invoice_item_schema_to_model(invoice_item)
+        invoice_item_model: InvoiceItemModel = await InvoiceItemModel.invoice_item_schema_to_model(invoice_item)
 
         return JSONResponse(status_code=status.HTTP_201_CREATED, content=invoice_item_model.model_dump())
     except HTTPException as e:
@@ -161,10 +161,11 @@ async def get_invoice_items_by_invoice_id(
             invoice_id=invoice_id,
             in_trash=in_trash
         )
-
+        if not invoice_items:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No invoice item related to provided invoice id.")
         invoice_items_model_list = []
         for invoice_item in invoice_items:
-            invoice_item_model: InvoiceItemModel = InvoiceItemModel.invoice_item_schema_to_model(invoice_item)
+            invoice_item_model: InvoiceItemModel = await InvoiceItemModel.invoice_item_schema_to_model(invoice_item)
             invoice_items_model_list.append(invoice_item_model)
 
         return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(invoice_items_model_list))
@@ -172,8 +173,6 @@ async def get_invoice_items_by_invoice_id(
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
-    except PostgreSQLNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 

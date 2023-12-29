@@ -83,7 +83,7 @@ async def create_external_business_entity(
             new_external_business_entity=new_external_business_entity
             )
         
-        external_business_entity_model: ExternalBusinessEntityModel = ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
+        external_business_entity_model: ExternalBusinessEntityModel = await ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
         
         return JSONResponse(status_code=status.HTTP_201_CREATED, content=external_business_entity_model.model_dump())
     except HTTPException as e:
@@ -117,7 +117,7 @@ async def get_external_business_entity(
             external_business_entity_id=external_business_entity_id
         )
         
-        external_business_entity_model: ExternalBusinessEntityModel = ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
+        external_business_entity_model: ExternalBusinessEntityModel = await ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=external_business_entity_model.model_dump())
     except HTTPException as e:
@@ -166,7 +166,7 @@ async def get_all_external_business_entities(
         )
         external_business_entities_model = []
         for external_business_entity in external_business_entity_list:
-            external_business_entity_model: ExternalBusinessEntityModel = ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
+            external_business_entity_model: ExternalBusinessEntityModel = await ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
             external_business_entities_model.append(external_business_entity_model)
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(external_business_entities_model))
@@ -211,7 +211,7 @@ async def update_external_business_entity(
             update_external_business_entity=update_external_business_entity
         )
         
-        external_business_entity_model: ExternalBusinessEntityModel = ExternalBusinessEntityModel.external_business_entity_schema_to_model(updated_external_business_entity)
+        external_business_entity_model: ExternalBusinessEntityModel = await ExternalBusinessEntityModel.external_business_entity_schema_to_model(updated_external_business_entity)
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=external_business_entity_model.model_dump())
     except HTTPException as e:

@@ -70,7 +70,7 @@ async def get_current_user(
             user_id=jwt_payload.id
             )
 
-        user_model: UserModel = UserModel.user_schema_to_model(user) 
+        user_model: UserModel = await UserModel.user_schema_to_model(user) 
 
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_model.model_dump())
     
