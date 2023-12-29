@@ -650,7 +650,8 @@ async def test_initialize_user_business_entity_removal_success(
     mock_user_business_entity_schema_object,
     mock_jwt_token,
     mock_user_business_entity_model_object,
-    mock_registry_events_object
+    mock_registry_events_object,
+    mock_invoice_postgres_repository_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -659,6 +660,8 @@ async def test_initialize_user_business_entity_removal_success(
     mock_registry_repository_object.return_user_business_entity_postgres_repository.return_value = mock_user_business_entity_postgres_repository_object
     mock_registry_repository_object.return_user_business_entity_redis_repository.return_value = mock_user_business_entity_redis_repository_object
     mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_invoice_postgres_repository_object.count_invoices_related_to_user_business_entity.return_value = 0
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
 
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
@@ -671,6 +674,45 @@ async def test_initialize_user_business_entity_removal_success(
         headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
 
     assert response.status_code == 200
+
+@pytest.mark.asyncio
+async def test_initialize_user_business_entity_removal_invoice_assigned_to_user_business_entity_exists_error(
+    mock_registry_repository_object,
+    mock_user_business_entity_postgres_repository_object,
+    mock_user_business_entity_redis_repository_object,
+    mock_user_redis_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_kafka_producer_client,
+    mock_jwt_payload_model_object,
+    mock_user_business_entity_schema_object,
+    mock_jwt_token,
+    mock_user_business_entity_model_object,
+    mock_registry_events_object,
+    mock_invoice_postgres_repository_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+    mock_user_business_entity_redis_repository_object.initialize_user_business_entity_removal.return_value = True
+    mock_user_business_entity_postgres_repository_object.get_user_business_entity.return_value = mock_user_business_entity_schema_object
+    mock_registry_repository_object.return_user_business_entity_postgres_repository.return_value = mock_user_business_entity_postgres_repository_object
+    mock_registry_repository_object.return_user_business_entity_redis_repository.return_value = mock_user_business_entity_redis_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_invoice_postgres_repository_object.count_invoices_related_to_user_business_entity.return_value = 1
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
+
+    response = client.put(
+        f"/user-business-entity-module/initialize-user-business-entity-removal/?user_business_entity_id={str(mock_user_business_entity_model_object.id)}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+
+    assert response.status_code == 409
+
 
 @pytest.mark.asyncio
 async def test_initialize_user_business_entity_removal_unauthorized_error(
@@ -688,12 +730,13 @@ async def test_initialize_user_business_entity_removal_unauthorized_error(
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.side_effect = RedisJWTNotFoundError()
+    
     mock_user_business_entity_redis_repository_object.initialize_user_business_entity_removal.return_value = True
     mock_user_business_entity_postgres_repository_object.get_user_business_entity.return_value = mock_user_business_entity_schema_object
     mock_registry_repository_object.return_user_business_entity_postgres_repository.return_value = mock_user_business_entity_postgres_repository_object
     mock_registry_repository_object.return_user_business_entity_redis_repository.return_value = mock_user_business_entity_redis_repository_object
     mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
-
+    
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
@@ -719,7 +762,8 @@ async def test_initialize_user_business_entity_removal_redis_database_error(
     mock_jwt_token,
     mock_user_business_entity_model_object,
     mock_jwt_payload_model_object,
-    mock_registry_events_object
+    mock_registry_events_object,
+    mock_invoice_postgres_repository_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -728,6 +772,8 @@ async def test_initialize_user_business_entity_removal_redis_database_error(
     mock_registry_repository_object.return_user_business_entity_postgres_repository.return_value = mock_user_business_entity_postgres_repository_object
     mock_registry_repository_object.return_user_business_entity_redis_repository.return_value = mock_user_business_entity_redis_repository_object
     mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_invoice_postgres_repository_object.count_invoices_related_to_user_business_entity.return_value = 0
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
 
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
@@ -754,7 +800,8 @@ async def test_initialize_user_business_entity_removal_redis_set_error(
     mock_jwt_token,
     mock_user_business_entity_model_object,
     mock_jwt_payload_model_object,
-    mock_registry_events_object
+    mock_registry_events_object,
+    mock_invoice_postgres_repository_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -763,6 +810,8 @@ async def test_initialize_user_business_entity_removal_redis_set_error(
     mock_registry_repository_object.return_user_business_entity_postgres_repository.return_value = mock_user_business_entity_postgres_repository_object
     mock_registry_repository_object.return_user_business_entity_redis_repository.return_value = mock_user_business_entity_redis_repository_object
     mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_invoice_postgres_repository_object.count_invoices_related_to_user_business_entity.return_value = 0
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
 
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client

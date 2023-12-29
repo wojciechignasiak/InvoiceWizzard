@@ -2,7 +2,7 @@ from app.database.postgres.repositories.base_postgres_repository import BasePost
 from app.database.postgres.repositories.invoice_repository_abc import InvoicePostgresRepositoryABC
 from app.models.invoice_model import CreateInvoiceModel, UpdateInvoiceModel
 from app.schema.schema import Invoice
-from sqlalchemy import insert, select, or_, and_, update, delete
+from sqlalchemy import insert, select, or_, and_, update, delete, func
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLDatabaseError,
     PostgreSQLIntegrityError,
@@ -280,7 +280,6 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
             logger.error(f"InvoicePostgresRepository.update_invoice_file() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
     
-    
     async def remove_invoice_file(self, user_id: str, invoice_id: str) -> None:
         try:
             stmt = (
@@ -299,4 +298,36 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                 raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoicePostgresRepository.remove_invoice_file() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+        
+    async def count_invoices_related_to_user_business_entity(self, user_id: str, user_business_entity_id: str) -> int:
+        try:
+            stmt = (
+                select(func.count()).
+                select_from(Invoice).
+                where(
+                    Invoice.user_business_entity_id == user_business_entity_id,
+                    Invoice.user_id == user_id
+                    )
+            )
+            number_of_invoices: int = await self.session.scalar(stmt)
+            return number_of_invoices
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoicePostgresRepository.count_invoices_related_to_user_business_entity() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")
+        
+    async def count_invoices_related_to_external_business_entity(self, user_id: str, external_business_entity_id: str) -> int:
+        try:
+            stmt = (
+                select(func.count()).
+                select_from(Invoice).
+                where(
+                    Invoice.external_business_entity_id == external_business_entity_id,
+                    Invoice.user_id == user_id
+                    )
+            )
+            number_of_invoices: int = await self.session.scalar(stmt)
+            return number_of_invoices
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"InvoicePostgresRepository.count_invoices_related_to_external_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
