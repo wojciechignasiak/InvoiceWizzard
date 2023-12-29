@@ -107,9 +107,17 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
             jwt_token_keys: list = await self.redis_client.keys(f"JWT:*:{user_id}")
             if jwt_token_keys:
                 for token_key in jwt_token_keys:
-                    self.redis_client.delete(token_key)
+                    await self.redis_client.delete(token_key)
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
             logger.error(f"UserRedisRepository.delete_all_jwt_of_user() Error: {e}")
+            raise RedisDatabaseError("Error related to database occurred.")
+        
+    async def delete_jwt_token(self, user_id: str, token: str):
+        try:
+            result = await self.redis_client.delete(f"JWT:{token}:{user_id}")
+            print(result)
+        except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
+            logger.error(f"UserRedisRepository.delete_jwt_token() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
         
     async def save_new_email(self, key_id: str, new_email: ConfirmedUserEmailChangeModel) -> bool:
