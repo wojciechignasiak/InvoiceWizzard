@@ -27,7 +27,7 @@ from app.models.user_business_entity_model import (
     UpdateUserBusinessEntityModel,
     UserBusinessEntityModel
 )
-from app.schema.schema import UserBusinessEntity
+from app.schema.schema import UserBusinessEntity, Invoice
 from uuid import uuid4
 import ast
 from aiokafka import AIOKafkaProducer
@@ -239,10 +239,11 @@ async def initialize_user_business_entity_removal(
     ):
     try:
         user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
+        invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         user_business_entity_redis_repository = await repositories_registry.return_user_business_entity_redis_repository(redis_client)
         user_business_entity_events = await events_registry.return_user_business_events(kafka_producer_client)
-
+        
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
             )
@@ -253,6 +254,16 @@ async def initialize_user_business_entity_removal(
             user_id=jwt_payload.id,
             user_business_entity_id=user_business_entity_id
         )
+        
+        user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
+
+        number_of_invoices: int = await invoice_postgres_repository.count_invoices_related_to_user_business_entity(
+            user_id=jwt_payload.id,
+            user_business_entity_id=user_business_entity_model.id
+        )
+
+        if number_of_invoices != 0:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"There are {number_of_invoices} invoices related to the user business entity. Remove them first.")
         
         key_id = str(uuid4())
 
@@ -290,6 +301,7 @@ async def confirm_user_business_entity_removal(
 
     try:
         user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
+        invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         user_business_entity_redis_repository = await repositories_registry.return_user_business_entity_redis_repository(redis_client)
         user_business_entity_events = await events_registry.return_user_business_events(kafka_producer_client)
@@ -312,6 +324,14 @@ async def confirm_user_business_entity_removal(
             user_id=jwt_payload.id,
             user_business_entity_id=user_business_entity_id
         )
+
+        number_of_invoices: int = await invoice_postgres_repository.count_invoices_related_to_user_business_entity(
+            user_id=jwt_payload.id,
+            user_business_entity_id=user_business_entity_id
+        )
+
+        if not number_of_invoices:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"There are {number_of_invoices} invoices related to the user business entity. Remove them first.")
 
         is_user_business_entity_removed = await user_business_entity_postgres_repository.remove_user_business_entity(
             user_id=jwt_payload.id,

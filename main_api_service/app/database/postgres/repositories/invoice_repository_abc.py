@@ -65,3 +65,11 @@ class InvoicePostgresRepositoryABC(ABC):
     @abstractmethod
     async def remove_invoice_file(self, user_id: str, invoice_id: str) -> None:
         ...
+
+    @abstractmethod
+    async def count_invoices_related_to_user_business_entity(self, user_id: str, user_business_entity_id: str) -> int:
+        ...
+        
+    @abstractmethod
+    async def count_invoices_related_to_external_business_entity(self, user_id: str, external_business_entity_id: str) -> int:
+        ...
