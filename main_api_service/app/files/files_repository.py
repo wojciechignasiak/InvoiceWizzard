@@ -1,10 +1,11 @@
 from app.files.files_repository_abc import FilesRepositoryABC
+from pathlib import Path
+from PIL import Image
+from weasyprint import HTML
 import shutil
-import os
+import imageio
 import img2pdf
 import os
-from PIL import Image
-import imageio
 import io
 
 class FilesRepository(FilesRepositoryABC):
@@ -32,3 +33,18 @@ class FilesRepository(FilesRepositoryABC):
 
         with open(file_path, "wb") as f:
             f.write(img2pdf.convert(file_data))
+
+    async def get_invoice_pdf_file(self, file_path: str):
+        return Path(file_path)
+    
+    async def invoice_html_to_pdf(invoice_html: str, file_path: str):
+
+        directory = os.path.dirname(file_path)
+        
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        pdf_document = HTML(string=invoice_html).write_pdf()
+
+        if len(pdf_document) > 0:
+            with open(file_path, 'wb') as f:
+                f.write(pdf_document)

@@ -38,6 +38,7 @@ from app.models.invoice_item_model import (
     UpdateInvoiceItemModel
 )
 from uuid import UUID
+from pathlib import Path
 from datetime import datetime, date
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.database.redis.repositories.user_business_entity_repository import UserBusinessEntityRedisRepository
@@ -47,8 +48,10 @@ from app.database.postgres.repositories.external_business_entity_repository impo
 from app.database.postgres.repositories.invoice_repository import InvoicePostgresRepository
 from app.database.redis.repositories.invoice_repository import InvoiceRedisRepository
 from app.database.postgres.repositories.invoice_item_repository import InvoiceItemPostgresRepository
+from app.files.files_repository import FilesRepository
 from app.registries.repositories_registry import RepositoriesRegistry
 from app.registries.events_registry import EventsRegistry
+
 
 @pytest_asyncio.fixture
 async def mock_postgres_async_session():
@@ -204,6 +207,11 @@ def mock_invoice_item_postgres_repository_object():
     invoice_item_repository_postgres_mock_object = AsyncMock(spec=InvoiceItemPostgresRepository)
 
     return invoice_item_repository_postgres_mock_object
+
+@pytest.fixture
+def mock_files_repository_object():
+    files_repository_mock_object = AsyncMock(spec=FilesRepository)
+    return files_repository_mock_object
 #MOCKED REGISTRIES
 
 @pytest.fixture
@@ -491,3 +499,9 @@ def mock_update_invoice_item_model_object():
     )
 
     return update_invoice_item_model_object
+
+@pytest.fixture
+def mock_path_file_object():
+    path_file_object = AsyncMock(spec=Path)
+
+    return path_file_object

@@ -1769,3 +1769,595 @@ async def test_add_file_to_invoice_redis_database_error(
         files=file)
     
     assert response.status_code == 500
+
+# invoice_router.delete_invoice_pdf()
+
+@pytest.mark.asyncio
+async def test_delete_invoice_pdf_success(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_payload_model_object,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_invoice_schema_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+
+    mock_invoice_postgres_repository_object.get_invoice.return_value = mock_invoice_schema_object
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.delete(
+        "/invoice-module/delete-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+    assert response.status_code == 200
+
+@pytest.mark.asyncio
+async def test_delete_invoice_pdf_no_file_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_payload_model_object,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_invoice_schema_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+    mock_invoice_schema_object.invoice_pdf = None
+    mock_invoice_postgres_repository_object.get_invoice.return_value = mock_invoice_schema_object
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.delete(
+        "/invoice-module/delete-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+    assert response.status_code == 404
+
+@pytest.mark.asyncio
+async def test_delete_invoice_pdf_unauthorized_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_invoice_schema_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.side_effect = RedisJWTNotFoundError()
+
+    mock_invoice_postgres_repository_object.get_invoice.return_value = mock_invoice_schema_object
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.delete(
+        "/invoice-module/delete-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+    assert response.status_code == 401
+
+@pytest.mark.asyncio
+async def test_delete_invoice_pdf_redis_database_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_invoice_schema_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.side_effect = RedisDatabaseError()
+
+    mock_invoice_postgres_repository_object.get_invoice.return_value = mock_invoice_schema_object
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.delete(
+        "/invoice-module/delete-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+    assert response.status_code == 500
+
+@pytest.mark.asyncio
+async def test_delete_invoice_pdf_postgres_database_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_payload_model_object,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+
+    mock_invoice_postgres_repository_object.get_invoice.side_effect = PostgreSQLDatabaseError()
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.delete(
+        "/invoice-module/delete-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+    assert response.status_code == 500
+
+# invoice_router.download_invoice_pdf()
+
+# @pytest.mark.asyncio
+# async def test_download_invoice_pdf_success(
+#     mock_registry_repository_object,
+#     mock_redis_client,
+#     mock_postgres_async_session,
+#     mock_jwt_payload_model_object,
+#     mock_jwt_token,
+#     mock_user_redis_repository_object,
+#     mock_invoice_postgres_repository_object,
+#     mock_files_repository_object,
+#     mock_invoice_schema_object,
+#     mock_path_file_object
+#     ):
+
+#     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+#     mock_invoice_postgres_repository_object.get_invoice.return_value = mock_invoice_schema_object
+#     file_content = b"example file content"
+#     mock_path_file_object.is_file.return_value = True
+#     mock_path_file_object.name.return_value = "invoice.pdf"
+#     mock_path_file_object.read_bytes.return_value = file_content
+#     mock_files_repository_object.get_invoice_pdf_file.return_value = mock_path_file_object
+
+#     mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+#     mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+#     mock_registry_repository_object.return_files_repository.return_value = mock_files_repository_object
+
+#     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+#     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+#     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+#     response = client.get(
+#         "/invoice-module/download-invoice-pdf/?invoice_id=12345",
+#         headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+#     assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_download_invoice_pdf_unauthorized_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_files_repository_object,
+    mock_invoice_schema_object,
+    mock_path_file_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.side_effect = RedisJWTNotFoundError()
+    mock_invoice_postgres_repository_object.get_invoice.return_value = mock_invoice_schema_object
+    
+    mock_path_file_object.is_file.return_value = True
+    mock_path_file_object.name.return_value = "invoice.pdf"
+    mock_files_repository_object.get_invoice_pdf_file.return_value = mock_path_file_object
+
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_registry_repository_object.return_files_repository.return_value = mock_files_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.get(
+        "/invoice-module/download-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+    assert response.status_code == 401
+
+@pytest.mark.asyncio
+async def test_download_invoice_pdf_redis_database_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_files_repository_object,
+    mock_invoice_schema_object,
+    mock_path_file_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.side_effect = RedisDatabaseError()
+    mock_invoice_postgres_repository_object.get_invoice.return_value = mock_invoice_schema_object
+
+    mock_path_file_object.is_file.return_value = True
+    mock_path_file_object.name.return_value = "invoice.pdf"
+    mock_files_repository_object.get_invoice_pdf_file.return_value = mock_path_file_object
+
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_registry_repository_object.return_files_repository.return_value = mock_files_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.get(
+        "/invoice-module/download-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+    assert response.status_code == 500
+
+@pytest.mark.asyncio
+async def test_download_invoice_pdf_postgres_database_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_payload_model_object,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_files_repository_object,
+    mock_path_file_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+    mock_invoice_postgres_repository_object.get_invoice.side_effect = PostgreSQLDatabaseError()
+
+    mock_path_file_object.is_file.return_value = True
+    mock_path_file_object.name.return_value = "invoice.pdf"
+    mock_files_repository_object.get_invoice_pdf_file.return_value = mock_path_file_object
+
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_registry_repository_object.return_files_repository.return_value = mock_files_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.get(
+        "/invoice-module/download-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+    assert response.status_code == 500
+
+@pytest.mark.asyncio
+async def test_download_invoice_pdf_postgres_not_found_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_payload_model_object,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_files_repository_object,
+    mock_path_file_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+    mock_invoice_postgres_repository_object.get_invoice.side_effect = PostgreSQLNotFoundError()
+
+    mock_path_file_object.is_file.return_value = True
+    mock_path_file_object.name.return_value = "invoice.pdf"
+    mock_files_repository_object.get_invoice_pdf_file.return_value = mock_path_file_object
+
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_registry_repository_object.return_files_repository.return_value = mock_files_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.get(
+        "/invoice-module/download-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+    assert response.status_code == 404
+
+# invoice_router.generate_invoice_pdf()
+
+# @pytest.mark.asyncio
+# async def test_generate_invoice_pdf_success(
+#     mock_registry_repository_object,
+#     mock_redis_client,
+#     mock_postgres_async_session,
+#     mock_jwt_payload_model_object,
+#     mock_jwt_token,
+#     mock_user_redis_repository_object,
+#     mock_invoice_postgres_repository_object,
+#     mock_external_business_entity_postgres_repository_object,
+#     mock_user_business_entity_postgres_repository_object,
+#     mock_invoice_item_postgres_repository_object,
+#     mock_files_repository_object,
+#     mock_invoice_schema_object,
+#     mock_invoice_item_schema_object,
+#     mock_external_business_entity_schema_object,
+#     mock_user_business_entity_schema_object
+#     ):
+
+#     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+#     mock_invoice_schema_object.invoice_pdf = None
+#     mock_invoice_postgres_repository_object.get_invoice.return_value = mock_invoice_schema_object
+#     mock_invoice_item_postgres_repository_object.get_invoice_items_by_invoice_id.return_value = [mock_invoice_item_schema_object]
+#     mock_external_business_entity_postgres_repository_object.get_external_business_entity.return_value = mock_external_business_entity_schema_object
+#     mock_user_business_entity_postgres_repository_object.get_user_business_entity.return_value = mock_user_business_entity_schema_object
+
+
+#     mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+#     mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+#     mock_registry_repository_object.return_files_repository.return_value = mock_files_repository_object
+#     mock_registry_repository_object.return_invoice_item_postgres_repository = mock_invoice_item_postgres_repository_object
+#     mock_registry_repository_object.return_external_business_entity_postgres_repository = mock_external_business_entity_postgres_repository_object
+#     mock_registry_repository_object.return_user_business_entity_postgres_repository = mock_user_business_entity_postgres_repository_object
+
+#     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+#     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+#     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+#     response = client.post(
+#         "/invoice-module/generate-invoice-pdf/?invoice_id={invoice_id}",
+#         headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+#     print(response.json())
+#     assert response.status_code == 200
+
+@pytest.mark.asyncio
+async def test_generate_invoice_pdf_unauthorized_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_external_business_entity_postgres_repository_object,
+    mock_user_business_entity_postgres_repository_object,
+    mock_invoice_item_postgres_repository_object,
+    mock_files_repository_object,
+    mock_invoice_schema_object,
+    mock_invoice_item_schema_object,
+    mock_external_business_entity_schema_object,
+    mock_user_business_entity_schema_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.side_effect = RedisJWTNotFoundError()
+    mock_invoice_postgres_repository_object.get_invoice.return_value = mock_invoice_schema_object
+    mock_invoice_item_postgres_repository_object.get_invoice_items_by_invoice_id.return_value = [mock_invoice_item_schema_object]
+    mock_external_business_entity_postgres_repository_object.get_external_business_entity.return_value = mock_external_business_entity_schema_object
+    mock_user_business_entity_postgres_repository_object.get_user_business_entity.return_value = mock_user_business_entity_schema_object
+
+
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_registry_repository_object.return_files_repository.return_value = mock_files_repository_object
+    mock_registry_repository_object.return_invoice_item_postgres_repository = mock_invoice_item_postgres_repository_object
+    mock_registry_repository_object.return_external_business_entity_postgres_repository = mock_external_business_entity_postgres_repository_object
+    mock_registry_repository_object.return_user_business_entity_postgres_repository = mock_user_business_entity_postgres_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.post(
+        "/invoice-module/generate-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+    assert response.status_code == 401
+
+@pytest.mark.asyncio
+async def test_generate_invoice_pdf_redis_database_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_external_business_entity_postgres_repository_object,
+    mock_user_business_entity_postgres_repository_object,
+    mock_invoice_item_postgres_repository_object,
+    mock_files_repository_object,
+    mock_invoice_schema_object,
+    mock_invoice_item_schema_object,
+    mock_external_business_entity_schema_object,
+    mock_user_business_entity_schema_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.side_effect = RedisDatabaseError()
+    mock_invoice_schema_object.invoice_pdf = None
+    mock_invoice_postgres_repository_object.get_invoice.return_value = mock_invoice_schema_object
+    mock_invoice_item_postgres_repository_object.get_invoice_items_by_invoice_id.return_value = [mock_invoice_item_schema_object]
+    mock_external_business_entity_postgres_repository_object.get_external_business_entity.return_value = mock_external_business_entity_schema_object
+    mock_user_business_entity_postgres_repository_object.get_user_business_entity.return_value = mock_user_business_entity_schema_object
+
+
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_registry_repository_object.return_files_repository.return_value = mock_files_repository_object
+    mock_registry_repository_object.return_invoice_item_postgres_repository = mock_invoice_item_postgres_repository_object
+    mock_registry_repository_object.return_external_business_entity_postgres_repository = mock_external_business_entity_postgres_repository_object
+    mock_registry_repository_object.return_user_business_entity_postgres_repository = mock_user_business_entity_postgres_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.post(
+        "/invoice-module/generate-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+    assert response.status_code == 500
+
+@pytest.mark.asyncio
+async def test_generate_invoice_pdf_postgres_not_found_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_payload_model_object,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_external_business_entity_postgres_repository_object,
+    mock_user_business_entity_postgres_repository_object,
+    mock_invoice_item_postgres_repository_object,
+    mock_files_repository_object,
+    mock_invoice_schema_object,
+    mock_invoice_item_schema_object,
+    mock_external_business_entity_schema_object,
+    mock_user_business_entity_schema_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+    mock_invoice_schema_object.invoice_pdf = None
+    mock_invoice_postgres_repository_object.get_invoice.side_effect = PostgreSQLNotFoundError()
+    mock_invoice_item_postgres_repository_object.get_invoice_items_by_invoice_id.return_value = [mock_invoice_item_schema_object]
+    mock_external_business_entity_postgres_repository_object.get_external_business_entity.return_value = mock_external_business_entity_schema_object
+    mock_user_business_entity_postgres_repository_object.get_user_business_entity.return_value = mock_user_business_entity_schema_object
+
+
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_registry_repository_object.return_files_repository.return_value = mock_files_repository_object
+    mock_registry_repository_object.return_invoice_item_postgres_repository = mock_invoice_item_postgres_repository_object
+    mock_registry_repository_object.return_external_business_entity_postgres_repository = mock_external_business_entity_postgres_repository_object
+    mock_registry_repository_object.return_user_business_entity_postgres_repository = mock_user_business_entity_postgres_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.post(
+        "/invoice-module/generate-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+
+    assert response.status_code == 404
+
+@pytest.mark.asyncio
+async def test_generate_invoice_pdf_postgres_database_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_payload_model_object,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_external_business_entity_postgres_repository_object,
+    mock_user_business_entity_postgres_repository_object,
+    mock_invoice_item_postgres_repository_object,
+    mock_files_repository_object,
+    mock_invoice_schema_object,
+    mock_invoice_item_schema_object,
+    mock_external_business_entity_schema_object,
+    mock_user_business_entity_schema_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+    mock_invoice_schema_object.invoice_pdf = None
+    mock_invoice_postgres_repository_object.get_invoice.side_effect = PostgreSQLDatabaseError()
+    mock_invoice_item_postgres_repository_object.get_invoice_items_by_invoice_id.return_value = [mock_invoice_item_schema_object]
+    mock_external_business_entity_postgres_repository_object.get_external_business_entity.return_value = mock_external_business_entity_schema_object
+    mock_user_business_entity_postgres_repository_object.get_user_business_entity.return_value = mock_user_business_entity_schema_object
+
+
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_registry_repository_object.return_files_repository.return_value = mock_files_repository_object
+    mock_registry_repository_object.return_invoice_item_postgres_repository = mock_invoice_item_postgres_repository_object
+    mock_registry_repository_object.return_external_business_entity_postgres_repository = mock_external_business_entity_postgres_repository_object
+    mock_registry_repository_object.return_user_business_entity_postgres_repository = mock_user_business_entity_postgres_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.post(
+        "/invoice-module/generate-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+
+    assert response.status_code == 500
+
+@pytest.mark.asyncio
+async def test_generate_invoice_pdf_arleady_have_file_error(
+    mock_registry_repository_object,
+    mock_redis_client,
+    mock_postgres_async_session,
+    mock_jwt_payload_model_object,
+    mock_jwt_token,
+    mock_user_redis_repository_object,
+    mock_invoice_postgres_repository_object,
+    mock_external_business_entity_postgres_repository_object,
+    mock_user_business_entity_postgres_repository_object,
+    mock_invoice_item_postgres_repository_object,
+    mock_files_repository_object,
+    mock_invoice_schema_object,
+    mock_invoice_item_schema_object,
+    mock_external_business_entity_schema_object,
+    mock_user_business_entity_schema_object
+    ):
+
+    mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
+    mock_invoice_postgres_repository_object.get_invoice.return_value = mock_invoice_schema_object
+    mock_invoice_item_postgres_repository_object.get_invoice_items_by_invoice_id.return_value = [mock_invoice_item_schema_object]
+    mock_external_business_entity_postgres_repository_object.get_external_business_entity.return_value = mock_external_business_entity_schema_object
+    mock_user_business_entity_postgres_repository_object.get_user_business_entity.return_value = mock_user_business_entity_schema_object
+
+
+    mock_registry_repository_object.return_invoice_postgres_repository.return_value = mock_invoice_postgres_repository_object
+    mock_registry_repository_object.return_user_redis_repository.return_value = mock_user_redis_repository_object
+    mock_registry_repository_object.return_files_repository.return_value = mock_files_repository_object
+    mock_registry_repository_object.return_invoice_item_postgres_repository = mock_invoice_item_postgres_repository_object
+    mock_registry_repository_object.return_external_business_entity_postgres_repository = mock_external_business_entity_postgres_repository_object
+    mock_registry_repository_object.return_user_business_entity_postgres_repository = mock_user_business_entity_postgres_repository_object
+
+    app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
+    app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
+    app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+
+    
+    response = client.post(
+        "/invoice-module/generate-invoice-pdf/?invoice_id={invoice_id}",
+        headers={"Authorization": f"Bearer {str(mock_jwt_token)}"})
+    
+    assert response.status_code == 409

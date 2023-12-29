@@ -54,11 +54,11 @@ from app.schema.schema import (
 
 from uuid import uuid4
 import ast
-import shutil
-from pathlib import Path
 from app.utils.invoice_generator import invoice_generator
 from app.utils.invoice_html_to_pdf import invoice_html_to_pdf
 from typing import Optional, List
+from pathlib import Path
+
 
 
 router = APIRouter()
@@ -564,7 +564,7 @@ async def add_file_to_invoice(
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
         files_repository = await repositories_registry.return_files_repository()
-        
+
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
             )
@@ -630,6 +630,7 @@ async def delete_invoice_pdf(
     try:
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+        files_repository = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -652,9 +653,12 @@ async def delete_invoice_pdf(
             invoice_id=invoice_id
         )
         
-        shutil.rmtree(f"/usr/app/invoice/{jwt_payload.id}/{invoice_id}")
+        await files_repository.remove_invoice_folder(
+            user_id=jwt_payload.id,
+            invoice_id=invoice_model.id
+        )
 
-        return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "File has been deleted."})
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"detail": "File has been deleted."})
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
@@ -676,6 +680,7 @@ async def download_invoice_pdf(
     try:
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+        files_repository = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -693,12 +698,12 @@ async def download_invoice_pdf(
         if invoice_model.invoice_pdf == None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice doesn't have file.")
         
-        file_path = Path(invoice_model.invoice_pdf)
+        file: Path = await files_repository.get_invoice_pdf_file(invoice_model.invoice_pdf)
         
-        if not file_path.is_file():
+        if file.is_file() == False:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
-        return FileResponse(file_path, filename=file_path.name)
+        return FileResponse(path=file, status_code=status.HTTP_200_OK, filename=file.name)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
@@ -722,6 +727,7 @@ async def generate_invoice_pdf(
         invoice_item_postgres_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
         user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
         external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+        files_repository = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -762,7 +768,7 @@ async def generate_invoice_pdf(
             user_id=jwt_payload.id,
             external_business_entity_id=invoice_model.external_business_entity_id
         )
-
+        
         external_business_entity_model: ExternalBusinessEntityModel = await ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
 
         invoice_html = await invoice_generator(
@@ -771,12 +777,13 @@ async def generate_invoice_pdf(
             invoice=invoice_model,
             invoice_items=invoice_items_model
         )
-        file_path = f"/usr/app/invoice/{jwt_payload.id}/{invoice_model.id}/invoice.pdf"
         
-        await invoice_html_to_pdf(
+        file_path = f"/usr/app/invoice/{jwt_payload.id}/{invoice_model.id}/invoice.pdf"
+
+        await files_repository.invoice_html_to_pdf(
             invoice_html=invoice_html,
             file_path=file_path
-            )
+        )
         
         await invoice_postgres_repository.update_invoice_file(
             user_id=jwt_payload.id,
