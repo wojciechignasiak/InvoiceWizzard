@@ -11,18 +11,15 @@ from redis.exceptions import (
 )
 from uuid import uuid4
 
-
 # UserRedisRepository.create_user()
 
 @pytest.mark.asyncio
 async def test_create_user_success(
     mock_redis_client,
     mock_create_user_model_object):
-
     user_redis_repository = UserRedisRepository(mock_redis_client)
-    mock_redis_client.setex.return_value = True
+    mock_redis_client.set.return_value = True
     is_created = await user_redis_repository.create_user(str(uuid4()), mock_create_user_model_object)
-    
     assert isinstance(is_created, bool)
 
 @pytest.mark.asyncio
@@ -31,7 +28,7 @@ async def test_create_user_redis_set_error(
     mock_create_user_model_object):
 
     user_redis_repository = UserRedisRepository(mock_redis_client)
-    mock_redis_client.setex.return_value = False
+    mock_redis_client.set.return_value = False
     
     with pytest.raises(RedisSetError):
         await user_redis_repository.create_user(str(uuid4()), mock_create_user_model_object)
@@ -42,7 +39,7 @@ async def test_create_user_redis_error(
     mock_create_user_model_object):
 
     user_redis_repository = UserRedisRepository(mock_redis_client)
-    mock_redis_client.setex.side_effect = RedisError("Redis error")
+    mock_redis_client.set.side_effect = RedisError("Redis error")
 
     with pytest.raises(RedisDatabaseError):
         await user_redis_repository.create_user(str(uuid4()), mock_create_user_model_object)
@@ -131,7 +128,7 @@ async def test_save_jwt_success(
     mock_jwt_token):
 
     user_redis_repository = UserRedisRepository(mock_redis_client)
-    mock_redis_client.setex.return_value = True
+    mock_redis_client.set.return_value = True
     is_jwt_saved = await user_redis_repository.save_jwt(mock_jwt_token, mock_jwt_payload_model_object)
     
     assert isinstance(is_jwt_saved, bool)
@@ -144,7 +141,7 @@ async def test_save_jwt_redis_set_error(
     mock_jwt_token):
 
     user_redis_repository = UserRedisRepository(mock_redis_client)
-    mock_redis_client.setex.return_value = False
+    mock_redis_client.set.return_value = False
     
     with pytest.raises(RedisSetError):
         await user_redis_repository.save_jwt(mock_jwt_token, mock_jwt_payload_model_object)
@@ -157,7 +154,7 @@ async def test_save_jwt_redis_error(
 
 
     user_redis_repository = UserRedisRepository(mock_redis_client)
-    mock_redis_client.setex.side_effect = RedisError("Redis error")
+    mock_redis_client.set.side_effect = RedisError("Redis error")
     
     with pytest.raises(RedisDatabaseError):
         await user_redis_repository.save_jwt(mock_jwt_token, mock_jwt_payload_model_object)
@@ -207,7 +204,7 @@ async def test_save_new_email_success(
     mock_confirmed_user_email_change_model_object):
 
     user_redis_repository = UserRedisRepository(mock_redis_client)
-    mock_redis_client.setex.return_value = True
+    mock_redis_client.set.return_value = True
     is_new_email_saved = await user_redis_repository.save_new_email(str(uuid4()), mock_confirmed_user_email_change_model_object)
     
     assert isinstance(is_new_email_saved, bool)
@@ -219,7 +216,7 @@ async def test_save_new_email_redis_set_error(
     mock_confirmed_user_email_change_model_object):
 
     user_redis_repository = UserRedisRepository(mock_redis_client)
-    mock_redis_client.setex.return_value = False
+    mock_redis_client.set.return_value = False
     
     with pytest.raises(RedisSetError):
         await user_redis_repository.save_new_email(str(uuid4()), mock_confirmed_user_email_change_model_object)
@@ -230,7 +227,7 @@ async def test_save_new_email_redis_database_error(
     mock_confirmed_user_email_change_model_object):
 
     user_redis_repository = UserRedisRepository(mock_redis_client)
-    mock_redis_client.setex.side_effect = RedisError("Redis error")
+    mock_redis_client.set.side_effect = RedisError("Redis error")
     
     with pytest.raises(RedisDatabaseError):
         await user_redis_repository.save_new_email(str(uuid4()), mock_confirmed_user_email_change_model_object)
@@ -274,7 +271,7 @@ async def test_save_new_password_success(
     mock_confirmed_user_password_change_model_object):
 
     user_redis_repository = UserRedisRepository(mock_redis_client)
-    mock_redis_client.setex.return_value = True
+    mock_redis_client.set.return_value = True
     is_new_password_saved = await user_redis_repository.save_new_password(str(uuid4()), mock_confirmed_user_password_change_model_object)
     
     assert isinstance(is_new_password_saved, bool)
@@ -286,7 +283,7 @@ async def test_save_new_password_redis_set_error(
     mock_confirmed_user_password_change_model_object):
 
     user_redis_repository = UserRedisRepository(mock_redis_client)
-    mock_redis_client.setex.return_value = False
+    mock_redis_client.set.return_value = False
     
     with pytest.raises(RedisSetError):
         await user_redis_repository.save_new_password(str(uuid4()), mock_confirmed_user_password_change_model_object)
@@ -297,7 +294,7 @@ async def test_save_new_password_redis_database_error(
     mock_confirmed_user_password_change_model_object):
 
     user_redis_repository = UserRedisRepository(mock_redis_client)
-    mock_redis_client.setex.side_effect = RedisError("Redis error")
+    mock_redis_client.set.side_effect = RedisError("Redis error")
     
     with pytest.raises(RedisDatabaseError):
         await user_redis_repository.save_new_password(str(uuid4()), mock_confirmed_user_password_change_model_object)

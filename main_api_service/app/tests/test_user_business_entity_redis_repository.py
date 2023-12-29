@@ -18,7 +18,7 @@ async def test_initialize_user_business_entity_removal_success(
     mock_user_business_entity_model_object):
 
     user_business_entity_redis_repository = UserBusinessEntityRedisRepository(mock_redis_client)
-    mock_redis_client.setex.return_value = True
+    mock_redis_client.set.return_value = True
     is_created = await user_business_entity_redis_repository.initialize_user_business_entity_removal(
         'some_unique_id',
         mock_user_business_entity_model_object.id
@@ -33,7 +33,7 @@ async def test_initialize_user_business_entity_removal_error(
     mock_user_business_entity_model_object):
 
     user_business_entity_redis_repository = UserBusinessEntityRedisRepository(mock_redis_client)
-    mock_redis_client.setex.return_value = False
+    mock_redis_client.set.return_value = False
     
     with pytest.raises(RedisSetError):
         await user_business_entity_redis_repository.initialize_user_business_entity_removal(
@@ -47,7 +47,7 @@ async def test_initialize_user_business_entity_removal_database_error(
     mock_user_business_entity_model_object):
 
     user_business_entity_redis_repository = UserBusinessEntityRedisRepository(mock_redis_client)
-    mock_redis_client.setex.side_effect = RedisError()
+    mock_redis_client.set.side_effect = RedisError()
     
     with pytest.raises(RedisDatabaseError):
         await user_business_entity_redis_repository.initialize_user_business_entity_removal(

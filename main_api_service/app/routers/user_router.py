@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
-import redis
-from app.database.get_repositories_registry import get_repositories_registry
-from app.database.repositories_registry import RepositoriesRegistry
+from redis.asyncio import Redis
+from app.registries.get_repositories_registry import get_repositories_registry
+from app.registries.repositories_registry_abc import RepositoriesRegistryABC
 from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisSetError, 
@@ -19,7 +19,8 @@ from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLNotFoundError
     )
 from app.schema.schema import User
-from app.kafka.events.user_events import UserEvents
+from app.registries.get_events_registry import get_events_registry
+from app.registries.events_registry_abc import EventsRegistryABC
 from app.kafka.exceptions.custom_kafka_exceptions import KafkaBaseError
 from app.models.jwt_model import (
     JWTDataModel, 
@@ -27,7 +28,7 @@ from app.models.jwt_model import (
 )
 from app.models.authentication_model import LogInModel
 from app.models.user_model import (
-    ReturnUserModel,
+    UserModel,
     RegisterUserModel, 
     CreateUserModel, 
     UserPersonalInformationModel, 
@@ -40,20 +41,18 @@ from app.models.user_model import (
 from app.utils.user_utils import UserUtils
 from aiokafka import AIOKafkaProducer
 from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
-from datetime import date
 from uuid import uuid4
 import datetime
-import re
 
 
 router = APIRouter()
 http_bearer = HTTPBearer()
 
-@router.get("/user-module/get-current-user/", response_model=ReturnUserModel)
+@router.get("/user-module/get-current-user/", response_model=UserModel)
 async def get_current_user(
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
     token = Depends(http_bearer), 
-    redis_client: redis.Redis = Depends(get_redis_client),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -71,23 +70,9 @@ async def get_current_user(
             user_id=jwt_payload.id
             )
 
-        
-        return_user_model: ReturnUserModel = ReturnUserModel(
-            id=str(user.id),
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            phone_number=user.phone_number,
-            city=user.city,
-            postal_code=user.postal_code,
-            street=user.street,
-            registration_date=str(user.registration_date),
-            last_login=str(user.last_login),
-            email_notification=user.email_notification,
-            push_notification=user.push_notification
-        )
+        user_model: UserModel = await UserModel.user_schema_to_model(user) 
 
-        return JSONResponse(return_user_model.model_dump())
+        return JSONResponse(status_code=status.HTTP_200_OK, content=user_model.model_dump())
     
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
@@ -101,28 +86,18 @@ async def get_current_user(
 @router.post("/user-module/register-account/")
 async def register_account(
     new_user: RegisterUserModel,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
-    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
+    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client),
     ):
 
     try:
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
         user_utils: UserUtils = UserUtils()
-
-        if new_user.email != new_user.repeated_email:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adresses don't match.")
-        if new_user.password != new_user.repeated_password:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided passwords don't match.")
-        if len(new_user.password) < 8:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided password is too short.")
-        if not re.search(r'\d', new_user.password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password needs to contatain at least 1 digit.")
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_user.password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password needs to contatain at least 1 special character.")
         
         is_email_address_arleady_taken: bool = await user_postgres_repository.is_email_address_arleady_taken(
             user_email_adress=new_user.email
@@ -141,8 +116,7 @@ async def register_account(
         new_user_to_redis = CreateUserModel(
             email=new_user.email, 
             password=hashed_password,
-            salt=personal_salt,
-            registration_date=date.today().isoformat()
+            salt=personal_salt
             )
         
         is_user_arleady_registered: bool = await user_redis_repository.is_user_arleady_registered(
@@ -159,10 +133,10 @@ async def register_account(
             new_user=new_user_to_redis
             )
         
-        await event_producer.account_registered_event(
-            id = key_id,
+        await user_events.account_registered_event(
+            id=key_id,
             email_address=new_user.email
-            )
+        )
         
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "Account has been registered. Now confirm your email address."})
     except HTTPException as e:
@@ -175,8 +149,9 @@ async def register_account(
 @router.patch("/user-module/confirm-account/")
 async def confirm_account(
     id: str,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
@@ -184,7 +159,7 @@ async def confirm_account(
     try:
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
 
         user_to_confirm_data: bytes = await user_redis_repository.search_user_by_id(
             key_id=id
@@ -198,9 +173,9 @@ async def confirm_account(
 
         await user_redis_repository.delete_user_by_id(
             key_id=id
-            )
+        )
         
-        await event_producer.account_confirmed_event(
+        await user_events.account_confirmed_event(
             email_address=created_user.email
         )
         
@@ -219,8 +194,8 @@ async def confirm_account(
 @router.post("/user-module/log-in/")
 async def log_in(
     log_in: LogInModel,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session)
     ):
 
@@ -265,7 +240,11 @@ async def log_in(
         await user_redis_repository.save_jwt(
             jwt_token=jwt_token, 
             jwt_payload=jwt_payload
-            )
+        )
+
+        await user_postgres_repository.update_user_last_login(
+            user_id=jwt_payload.id
+        )
 
         return JSONResponse(content={"jwt_token": f"{jwt_token}"})
 
@@ -280,9 +259,9 @@ async def log_in(
 @router.patch("/user-module/update-personal-information/")
 async def update_personal_information(
     user_personal_info: UserPersonalInformationModel,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
     token = Depends(http_bearer), 
-    redis_client: redis.Redis = Depends(get_redis_client),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session)):
 
     try:
@@ -314,9 +293,10 @@ async def update_personal_information(
 @router.put("/user-module/change-email-address/")
 async def change_email_address(
     new_email: UpdateUserEmailModel,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
     token = Depends(http_bearer), 
-    redis_client: redis.Redis = Depends(get_redis_client),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
@@ -324,7 +304,7 @@ async def change_email_address(
     try:
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -335,11 +315,6 @@ async def change_email_address(
         user: User = await user_postgres_repository.get_user_by_id(
             user_id=jwt_payload.id
             )
-
-        if new_email.current_email != user.email:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adress don't match with current email.")
-        if new_email.new_email != new_email.new_repeated_email:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided email adresses don't match.")
 
         is_email_address_arleady_taken: bool = await user_postgres_repository.is_email_address_arleady_taken(
             user_email_adress=new_email.new_email
@@ -358,7 +333,7 @@ async def change_email_address(
             key_id=key_id,
             new_email=new_email_data)
         
-        await event_producer.change_email_event(
+        await user_events.change_email_event(
             id=key_id,
             email_address=user.email
         )
@@ -379,8 +354,9 @@ async def change_email_address(
 @router.patch("/user-module/confirm-email-address-change/")
 async def confirm_email_address_change(
     id: str,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
@@ -388,7 +364,7 @@ async def confirm_email_address_change(
     try:
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
 
         new_email_data: bytes = await user_redis_repository.retrieve_new_email(
             key_id=id
@@ -409,12 +385,13 @@ async def confirm_email_address_change(
         
         await user_redis_repository.delete_all_jwt_tokens_of_user(
             user_id=str(user.id)
-            )
-        
+        )
+
         await user_redis_repository.delete_new_email(
             key_id=id
-            )
-        await event_producer.email_changed_event(
+        )
+        
+        await user_events.email_changed_event(
             email_address=user.email
         )
         
@@ -433,8 +410,9 @@ async def confirm_email_address_change(
 async def change_password(
     new_password: UpdateUserPasswordModel,
     token = Depends(http_bearer),
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     user_utils: UserUtils = Depends(UserUtils),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
@@ -443,7 +421,7 @@ async def change_password(
     try:
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -462,15 +440,8 @@ async def change_password(
             )
 
         if password_match == False:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Wrong current password.")
-        if new_password.new_password != new_password.new_repeated_password:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided new passwords don't match")
-        if len(new_password.new_password) < 8:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided new password is too short")
-        if not re.search(r'\d', new_password.new_password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password needs to contatain at least 1 digit")
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_password.new_password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password needs to contatain at least 1 special character")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong current password.")
+
         
         hashed_new_password: str = await user_utils.hash_password(
             salt=user.salt, 
@@ -489,11 +460,11 @@ async def change_password(
             new_password=new_password_data
             )
 
-        await event_producer.change_password_event(
+        await user_events.change_password_event(
             id=key_id,
             email_address=user.email
             )
-        
+            
         return JSONResponse(content={"message": "New password has been saved. Email message with confirmation link has been send to email address."})
     
     except HTTPException as e:
@@ -508,8 +479,9 @@ async def change_password(
 @router.put("/user-module/reset-password/")
 async def reset_password(
     reset_password: ResetUserPasswordModel,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
@@ -517,16 +489,7 @@ async def reset_password(
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         user_utils: UserUtils = UserUtils()
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
-
-        if reset_password.new_password != reset_password.new_repeated_password:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided passwords don't match")
-        if len(reset_password.new_password) < 8:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provided password is too short")
-        if not re.search(r'\d', reset_password.new_password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password needs to contatain at least 1 digit")
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', reset_password.new_password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password needs to contatain at least 1 special character")
+        user_events = await events_registry.return_user_events(kafka_producer_client)
         
         user: User = await user_postgres_repository.get_user_by_email_address(
             user_email_adress=reset_password.email
@@ -546,7 +509,7 @@ async def reset_password(
             key_id=key_id,
             new_password=new_password_data)
 
-        await event_producer.reset_password_event(
+        await user_events.reset_password_event(
             id=key_id,
             email_address=user.email
         )
@@ -563,15 +526,16 @@ async def reset_password(
 @router.patch("/user-module/confirm-password-change/")
 async def confirm_password_change(
     id: str,
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
     try:
         user_postgres_repository = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        event_producer: UserEvents = UserEvents(kafka_producer_client)
+        user_events = await events_registry.return_user_events(kafka_producer_client)
 
         new_password_data: bytes = await user_redis_repository.retrieve_new_password(
             key_id=id
@@ -585,13 +549,13 @@ async def confirm_password_change(
 
         await user_redis_repository.delete_all_jwt_tokens_of_user(
             user_id=str(user.id)
-            )
-        
+        )
+
         await user_redis_repository.delete_new_password(
             key_id=id
-            )
+        )
 
-        await event_producer.password_changed_event(
+        await user_events.password_changed_event(
             email_address=user.email
         )
 

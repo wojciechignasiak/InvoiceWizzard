@@ -2,7 +2,8 @@ import pytest
 from app.main import app
 from app.database.postgres.session.get_session import get_session
 from app.database.redis.client.get_redis_client import get_redis_client
-from app.database.get_repositories_registry import get_repositories_registry
+from app.registries.get_repositories_registry import get_repositories_registry
+from app.registries.get_events_registry import get_events_registry
 from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
 from fastapi.testclient import TestClient
 from app.database.redis.exceptions.custom_redis_exceptions import (
@@ -175,7 +176,8 @@ async def test_register_account_success(
     mock_redis_client,
     mock_postgres_async_session,
     mock_register_user_model_object,
-    mock_kafka_producer_client
+    mock_kafka_producer_client,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.is_user_arleady_registered.return_value = False
@@ -188,6 +190,7 @@ async def test_register_account_success(
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     headers = {"Content-Type": "application/json"}
     json = mock_register_user_model_object.model_dump()
@@ -205,7 +208,8 @@ async def test_register_account_password_or_email_format_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_register_user_model_object,
-    mock_kafka_producer_client
+    mock_kafka_producer_client,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.is_user_arleady_registered.return_value = False
@@ -218,6 +222,7 @@ async def test_register_account_password_or_email_format_error(
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     mock_register_user_model_object.password = "password"
     headers = {"Content-Type": "application/json"}
@@ -226,7 +231,7 @@ async def test_register_account_password_or_email_format_error(
         "/user-module/register-account/", 
         headers=headers,
         json=json)
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 @pytest.mark.asyncio
 async def test_register_account_email_arleady_taken_error(
@@ -236,7 +241,8 @@ async def test_register_account_email_arleady_taken_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_register_user_model_object,
-    mock_kafka_producer_client
+    mock_kafka_producer_client,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.is_user_arleady_registered.return_value = False
@@ -249,6 +255,7 @@ async def test_register_account_email_arleady_taken_error(
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     headers = {"Content-Type": "application/json"}
     json = mock_register_user_model_object.model_dump()
@@ -266,7 +273,8 @@ async def test_register_account_email_arleady_registered_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_register_user_model_object,
-    mock_kafka_producer_client
+    mock_kafka_producer_client,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.is_user_arleady_registered.return_value = True
@@ -279,6 +287,7 @@ async def test_register_account_email_arleady_registered_error(
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     headers = {"Content-Type": "application/json"}
     json = mock_register_user_model_object.model_dump()
@@ -296,7 +305,8 @@ async def test_register_account_create_user_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_register_user_model_object,
-    mock_kafka_producer_client
+    mock_kafka_producer_client,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.is_user_arleady_registered.return_value = False
@@ -309,6 +319,7 @@ async def test_register_account_create_user_error(
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     headers = {"Content-Type": "application/json"}
     json = mock_register_user_model_object.model_dump()
@@ -326,7 +337,8 @@ async def test_register_account_redis_database_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_register_user_model_object,
-    mock_kafka_producer_client
+    mock_kafka_producer_client,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.is_user_arleady_registered.return_value = False
@@ -339,6 +351,7 @@ async def test_register_account_redis_database_error(
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     headers = {"Content-Type": "application/json"}
     json = mock_register_user_model_object.model_dump()
@@ -356,7 +369,8 @@ async def test_register_account_postgres_database_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_register_user_model_object,
-    mock_kafka_producer_client
+    mock_kafka_producer_client,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.is_user_arleady_registered.return_value = False
@@ -369,6 +383,7 @@ async def test_register_account_postgres_database_error(
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     headers = {"Content-Type": "application/json"}
     json = mock_register_user_model_object.model_dump()
@@ -389,7 +404,8 @@ async def test_confirm_account_success(
     mock_postgres_async_session,
     mock_kafka_producer_client,
     mock_create_user_model_object,
-    mock_user_schema_object
+    mock_user_schema_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.search_user_by_id.return_value = bytes(mock_create_user_model_object.model_dump_json(), "utf-8")
@@ -402,6 +418,7 @@ async def test_confirm_account_success(
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     headers = {"Content-Type": "application/json"}
     response = client.patch(
@@ -417,7 +434,8 @@ async def test_confirm_account_user_not_found_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_kafka_producer_client,
-    mock_user_schema_object
+    mock_user_schema_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.search_user_by_id.side_effect = RedisNotFoundError()
@@ -430,6 +448,7 @@ async def test_confirm_account_user_not_found_error(
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     headers = {"Content-Type": "application/json"}
     response = client.patch(
@@ -448,7 +467,8 @@ async def test_confirm_account_postgres_integrity_error(
     mock_postgres_async_session,
     mock_kafka_producer_client,
     mock_create_user_model_object,
-    mock_user_schema_object
+    mock_user_schema_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.search_user_by_id.return_value = bytes(mock_create_user_model_object.model_dump_json(), "utf-8")
@@ -461,7 +481,8 @@ async def test_confirm_account_postgres_integrity_error(
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
-    
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
+
     headers = {"Content-Type": "application/json"}
     response = client.patch(
         f"/user-module/confirm-account/?id={str(mock_user_schema_object.id)}", 
@@ -477,7 +498,8 @@ async def test_confirm_account_postgres_database_error(
     mock_postgres_async_session,
     mock_kafka_producer_client,
     mock_create_user_model_object,
-    mock_user_schema_object
+    mock_user_schema_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.search_user_by_id.return_value = bytes(mock_create_user_model_object.model_dump_json(), "utf-8")
@@ -490,6 +512,7 @@ async def test_confirm_account_postgres_database_error(
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     headers = {"Content-Type": "application/json"}
     response = client.patch(
@@ -505,7 +528,8 @@ async def test_confirm_account_redis_database_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_kafka_producer_client,
-    mock_user_schema_object
+    mock_user_schema_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.search_user_by_id.side_effect = RedisDatabaseError()
@@ -518,6 +542,7 @@ async def test_confirm_account_redis_database_error(
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
     app.dependency_overrides[get_kafka_producer_client] = lambda:mock_kafka_producer_client
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     headers = {"Content-Type": "application/json"}
     response = client.patch(
@@ -832,7 +857,8 @@ async def test_change_email_address_success(
     mock_user_schema_object,
     mock_jwt_payload_model_object,
     mock_jwt_token,
-    mock_update_user_email_model_object
+    mock_update_user_email_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -844,6 +870,7 @@ async def test_change_email_address_success(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_update_user_email_model_object.model_dump()
     response = client.put(
@@ -862,7 +889,8 @@ async def test_change_email_address_unauthorized_error(
     mock_postgres_async_session,
     mock_user_schema_object,
     mock_jwt_token,
-    mock_update_user_email_model_object
+    mock_update_user_email_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.side_effect = RedisJWTNotFoundError()
@@ -874,6 +902,7 @@ async def test_change_email_address_unauthorized_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_update_user_email_model_object.model_dump()
     response = client.put(
@@ -893,7 +922,8 @@ async def test_change_email_address_new_email_not_saved_error(
     mock_user_schema_object,
     mock_jwt_token,
     mock_update_user_email_model_object,
-    mock_jwt_payload_model_object
+    mock_jwt_payload_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -905,6 +935,7 @@ async def test_change_email_address_new_email_not_saved_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_update_user_email_model_object.model_dump()
     response = client.put(
@@ -923,7 +954,8 @@ async def test_change_email_address_user_not_found_error(
     mock_postgres_async_session,
     mock_jwt_payload_model_object,
     mock_jwt_token,
-    mock_update_user_email_model_object
+    mock_update_user_email_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -935,6 +967,7 @@ async def test_change_email_address_user_not_found_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_update_user_email_model_object.model_dump()
     response = client.put(
@@ -953,7 +986,8 @@ async def test_change_email_address_postgres_database_error(
     mock_postgres_async_session,
     mock_jwt_payload_model_object,
     mock_jwt_token,
-    mock_update_user_email_model_object
+    mock_update_user_email_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -965,6 +999,7 @@ async def test_change_email_address_postgres_database_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_update_user_email_model_object.model_dump()
     response = client.put(
@@ -984,7 +1019,8 @@ async def test_change_email_address_redis_database_error(
     mock_jwt_payload_model_object,
     mock_jwt_token,
     mock_update_user_email_model_object,
-    mock_user_schema_object
+    mock_user_schema_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -996,6 +1032,7 @@ async def test_change_email_address_redis_database_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_update_user_email_model_object.model_dump()
     response = client.put(
@@ -1015,7 +1052,8 @@ async def test_confirm_email_address_change_success(
     mock_redis_client,
     mock_postgres_async_session,
     mock_user_schema_object,
-    mock_confirmed_user_email_change_model_object
+    mock_confirmed_user_email_change_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_new_email.return_value = bytes(mock_confirmed_user_email_change_model_object.model_dump_json(), "utf-8")
@@ -1027,6 +1065,8 @@ async def test_confirm_email_address_change_success(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
+
     redis_key_id = "some-redis-key-id"
     response = client.patch(f"/user-module/confirm-email-address-change/?id={redis_key_id}")
     
@@ -1039,7 +1079,8 @@ async def test_confirm_email_address_change_email_not_found_error(
     mock_user_redis_repository_object,
     mock_redis_client,
     mock_postgres_async_session,
-    mock_user_schema_object
+    mock_user_schema_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_new_email.side_effect = RedisNotFoundError()
@@ -1051,6 +1092,8 @@ async def test_confirm_email_address_change_email_not_found_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
+
     redis_key_id = "some-redis-key-id"
     response = client.patch(f"/user-module/confirm-email-address-change/?id={redis_key_id}")
     
@@ -1064,7 +1107,8 @@ async def test_confirm_email_address_change_email_arleady_in_use_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_user_schema_object,
-    mock_confirmed_user_email_change_model_object
+    mock_confirmed_user_email_change_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_new_email.return_value = bytes(mock_confirmed_user_email_change_model_object.model_dump_json(), "utf-8")
@@ -1076,6 +1120,8 @@ async def test_confirm_email_address_change_email_arleady_in_use_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
+
     redis_key_id = "some-redis-key-id"
     response = client.patch(f"/user-module/confirm-email-address-change/?id={redis_key_id}")
     
@@ -1088,7 +1134,8 @@ async def test_confirm_email_address_change_user_not_found_error(
     mock_user_redis_repository_object,
     mock_redis_client,
     mock_postgres_async_session,
-    mock_confirmed_user_email_change_model_object
+    mock_confirmed_user_email_change_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_new_email.return_value = bytes(mock_confirmed_user_email_change_model_object.model_dump_json(), "utf-8")
@@ -1100,6 +1147,8 @@ async def test_confirm_email_address_change_user_not_found_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
+
     redis_key_id = "some-redis-key-id"
     response = client.patch(f"/user-module/confirm-email-address-change/?id={redis_key_id}")
     
@@ -1112,7 +1161,8 @@ async def test_confirm_email_address_change_redis_database_error(
     mock_user_redis_repository_object,
     mock_redis_client,
     mock_postgres_async_session,
-    mock_user_schema_object
+    mock_user_schema_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_new_email.side_effect = RedisDatabaseError()
@@ -1124,6 +1174,8 @@ async def test_confirm_email_address_change_redis_database_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
+
     redis_key_id = "some-redis-key-id"
     response = client.patch(f"/user-module/confirm-email-address-change/?id={redis_key_id}")
     
@@ -1136,7 +1188,8 @@ async def test_confirm_email_address_change_postgres_database_error(
     mock_user_redis_repository_object,
     mock_redis_client,
     mock_postgres_async_session,
-    mock_confirmed_user_email_change_model_object
+    mock_confirmed_user_email_change_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_new_email.return_value = bytes(mock_confirmed_user_email_change_model_object.model_dump_json(), "utf-8")
@@ -1148,6 +1201,8 @@ async def test_confirm_email_address_change_postgres_database_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
+
     redis_key_id = "some-redis-key-id"
     response = client.patch(f"/user-module/confirm-email-address-change/?id={redis_key_id}")
     
@@ -1165,7 +1220,8 @@ async def test_change_password_success(
     mock_user_schema_object,
     mock_jwt_payload_model_object,
     mock_jwt_token,
-    mock_update_user_password_model_object
+    mock_update_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -1177,6 +1233,7 @@ async def test_change_password_success(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_update_user_password_model_object.model_dump()
     response = client.put(
@@ -1196,7 +1253,8 @@ async def test_change_password_password_format_error(
     mock_user_schema_object,
     mock_jwt_payload_model_object,
     mock_jwt_token,
-    mock_update_user_password_model_object
+    mock_update_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -1208,6 +1266,7 @@ async def test_change_password_password_format_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     mock_update_user_password_model_object.new_password = "password"
     json = mock_update_user_password_model_object.model_dump()
@@ -1216,7 +1275,7 @@ async def test_change_password_password_format_error(
         headers={"Authorization": f"Bearer {str(mock_jwt_token)}"},
         json=json)
     
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 @pytest.mark.asyncio
 async def test_change_password_unauthorized_error(
@@ -1227,7 +1286,8 @@ async def test_change_password_unauthorized_error(
     mock_postgres_async_session,
     mock_user_schema_object,
     mock_jwt_token,
-    mock_update_user_password_model_object
+    mock_update_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.side_effect = RedisJWTNotFoundError()
@@ -1239,6 +1299,7 @@ async def test_change_password_unauthorized_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_update_user_password_model_object.model_dump()
     response = client.put(
@@ -1258,7 +1319,8 @@ async def test_change_password_save_new_password_error(
     mock_user_schema_object,
     mock_jwt_payload_model_object,
     mock_jwt_token,
-    mock_update_user_password_model_object
+    mock_update_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -1270,6 +1332,7 @@ async def test_change_password_save_new_password_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_update_user_password_model_object.model_dump()
     response = client.put(
@@ -1288,7 +1351,8 @@ async def test_change_password_user_not_found_error(
     mock_postgres_async_session,
     mock_jwt_payload_model_object,
     mock_jwt_token,
-    mock_update_user_password_model_object
+    mock_update_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -1300,6 +1364,7 @@ async def test_change_password_user_not_found_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_update_user_password_model_object.model_dump()
     response = client.put(
@@ -1319,7 +1384,8 @@ async def test_change_password_redis_database_error(
     mock_user_schema_object,
     mock_jwt_payload_model_object,
     mock_jwt_token,
-    mock_update_user_password_model_object
+    mock_update_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -1331,6 +1397,7 @@ async def test_change_password_redis_database_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_update_user_password_model_object.model_dump()
     response = client.put(
@@ -1349,7 +1416,8 @@ async def test_change_password_user_postgres_database_error(
     mock_postgres_async_session,
     mock_jwt_payload_model_object,
     mock_jwt_token,
-    mock_update_user_password_model_object
+    mock_update_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_jwt.return_value = bytes(mock_jwt_payload_model_object.model_dump_json(), "utf-8")
@@ -1361,6 +1429,7 @@ async def test_change_password_user_postgres_database_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_update_user_password_model_object.model_dump()
     response = client.put(
@@ -1380,7 +1449,8 @@ async def test_confirm_password_change_success(
     mock_redis_client,
     mock_postgres_async_session,
     mock_user_schema_object,
-    mock_confirmed_user_password_change_model_object
+    mock_confirmed_user_password_change_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_new_password.return_value = bytes(mock_confirmed_user_password_change_model_object.model_dump_json(), "utf-8")
@@ -1391,6 +1461,7 @@ async def test_confirm_password_change_success(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     redis_key_id = "some-redis-key-id"
     response = client.patch(f"/user-module/confirm-password-change/?id={redis_key_id}")
@@ -1404,7 +1475,8 @@ async def test_confirm_password_change_new_password_not_found_error(
     mock_user_redis_repository_object,
     mock_redis_client,
     mock_postgres_async_session,
-    mock_user_schema_object
+    mock_user_schema_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_new_password.side_effect = RedisNotFoundError()
@@ -1415,6 +1487,7 @@ async def test_confirm_password_change_new_password_not_found_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     redis_key_id = "some-redis-key-id"
     response = client.patch(f"/user-module/confirm-password-change/?id={redis_key_id}")
@@ -1428,7 +1501,8 @@ async def test_confirm_password_change_user_not_found_error(
     mock_user_redis_repository_object,
     mock_redis_client,
     mock_postgres_async_session,
-    mock_confirmed_user_password_change_model_object
+    mock_confirmed_user_password_change_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_new_password.return_value = bytes(mock_confirmed_user_password_change_model_object.model_dump_json(), "utf-8")
@@ -1439,6 +1513,7 @@ async def test_confirm_password_change_user_not_found_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     redis_key_id = "some-redis-key-id"
     response = client.patch(f"/user-module/confirm-password-change/?id={redis_key_id}")
@@ -1452,7 +1527,8 @@ async def test_confirm_password_change_redis_database_error(
     mock_user_redis_repository_object,
     mock_redis_client,
     mock_postgres_async_session,
-    mock_user_schema_object
+    mock_user_schema_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_new_password.side_effect = RedisDatabaseError()
@@ -1463,6 +1539,7 @@ async def test_confirm_password_change_redis_database_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     redis_key_id = "some-redis-key-id"
     response = client.patch(f"/user-module/confirm-password-change/?id={redis_key_id}")
@@ -1476,7 +1553,8 @@ async def test_confirm_password_change_postgres_database_error(
     mock_user_redis_repository_object,
     mock_redis_client,
     mock_postgres_async_session,
-    mock_confirmed_user_password_change_model_object
+    mock_confirmed_user_password_change_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.retrieve_new_password.return_value = bytes(mock_confirmed_user_password_change_model_object.model_dump_json(), "utf-8")
@@ -1487,6 +1565,7 @@ async def test_confirm_password_change_postgres_database_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     redis_key_id = "some-redis-key-id"
     response = client.patch(f"/user-module/confirm-password-change/?id={redis_key_id}")
@@ -1503,7 +1582,8 @@ async def test_reset_password_success(
     mock_redis_client,
     mock_postgres_async_session,
     mock_user_schema_object,
-    mock_reset_user_password_model_object
+    mock_reset_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.save_new_password.return_value = True
@@ -1514,6 +1594,7 @@ async def test_reset_password_success(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_reset_user_password_model_object.model_dump()
     response = client.put(
@@ -1530,7 +1611,8 @@ async def test_reset_password_bad_password_format(
     mock_redis_client,
     mock_postgres_async_session,
     mock_user_schema_object,
-    mock_reset_user_password_model_object
+    mock_reset_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.save_new_password.return_value = True
@@ -1541,6 +1623,7 @@ async def test_reset_password_bad_password_format(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     mock_reset_user_password_model_object.new_password = "password"
     json = mock_reset_user_password_model_object.model_dump()
@@ -1548,7 +1631,7 @@ async def test_reset_password_bad_password_format(
         "/user-module/reset-password/",
         json=json)
 
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 @pytest.mark.asyncio
 async def test_reset_password_save_new_password_error(
@@ -1558,7 +1641,8 @@ async def test_reset_password_save_new_password_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_user_schema_object,
-    mock_reset_user_password_model_object
+    mock_reset_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.save_new_password.side_effect = RedisSetError()
@@ -1569,6 +1653,7 @@ async def test_reset_password_save_new_password_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_reset_user_password_model_object.model_dump()
     response = client.put(
@@ -1584,7 +1669,8 @@ async def test_reset_password_user_not_found_error(
     mock_user_redis_repository_object,
     mock_redis_client,
     mock_postgres_async_session,
-    mock_reset_user_password_model_object
+    mock_reset_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.save_new_password.return_value = True
@@ -1595,6 +1681,7 @@ async def test_reset_password_user_not_found_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_reset_user_password_model_object.model_dump()
     response = client.put(
@@ -1611,7 +1698,8 @@ async def test_reset_password_redis_database_error(
     mock_redis_client,
     mock_postgres_async_session,
     mock_user_schema_object,
-    mock_reset_user_password_model_object
+    mock_reset_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.save_new_password.side_effect = RedisDatabaseError()
@@ -1622,6 +1710,7 @@ async def test_reset_password_redis_database_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_reset_user_password_model_object.model_dump()
     response = client.put(
@@ -1637,7 +1726,8 @@ async def test_reset_password_user_postgres_database_error(
     mock_user_redis_repository_object,
     mock_redis_client,
     mock_postgres_async_session,
-    mock_reset_user_password_model_object
+    mock_reset_user_password_model_object,
+    mock_registry_events_object
     ):
 
     mock_user_redis_repository_object.save_new_password.return_value = True
@@ -1648,6 +1738,7 @@ async def test_reset_password_user_postgres_database_error(
     app.dependency_overrides[get_session] = lambda:mock_postgres_async_session
     app.dependency_overrides[get_redis_client] = lambda:mock_redis_client
     app.dependency_overrides[get_repositories_registry] = lambda:mock_registry_repository_object
+    app.dependency_overrides[get_events_registry] = lambda:mock_registry_events_object
     
     json = mock_reset_user_password_model_object.model_dump()
     response = client.put(

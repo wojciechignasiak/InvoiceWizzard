@@ -1,10 +1,13 @@
 from fastapi import Request
+import asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session, async_sessionmaker
 
 async def get_session(request: Request):
         try:
-            yield request.app.state.async_postgres_session
-            await request.app.state.async_postgres_session.commit()
+            session = async_scoped_session(async_sessionmaker(request.app.state.engine, expire_on_commit=False, class_=AsyncSession), scopefunc=asyncio.current_task)
+            yield session
+            await session.commit()
         except Exception:
-            await request.app.state.async_postgres_session.rollback()
+            await session.rollback()
         finally:
-            await request.app.state.async_postgres_session.remove()
+            await session.remove()

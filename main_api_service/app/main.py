@@ -1,31 +1,17 @@
-import os
-import redis
-import asyncio
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from starlette import middleware
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session, async_sessionmaker
-from sqlalchemy import text
-from kafka.errors import KafkaTimeoutError, KafkaError
-from aiokafka import AIOKafkaProducer
-from app.kafka.initialize_topics.startup_topics import startup_topics
+from app.aplication_startup_processes import ApplicationStartupProcesses
 from contextlib import asynccontextmanager
 from app.schema.schema import Base
-from app.database.repositories_registry import RepositoriesRegistry
-from app.database.postgres.repositories.user_repository import UserPostgresRepository
-from app.database.redis.repositories.user_repository import UserRedisRepository
-from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
-from app.database.redis.repositories.user_business_entity_repository import UserBusinessEntityRedisRepository
-from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
+
 from app.routers import (
     user_router,
     user_business_entity_router,
-    external_business_entity_router
+    external_business_entity_router,
+    invoice_router,
+    invoice_item_router
     )
-
 
 middleware = [
     middleware.Middleware(
@@ -36,107 +22,30 @@ middleware = [
         allow_headers=["*"]
     )]
 
-POSTGRES_USERNAME = os.environ.get("POSTGRES_USERNAME")
-POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
-POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
-POSTGRES_PORT = os.environ.get("POSTGRES_PORT")
-POSTGRES_DB = os.environ.get("POSTGRES_DB")
-
-POSTGRES_URL = f"postgresql+asyncpg://{POSTGRES_USERNAME}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
-
-REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
-REDIS_HOST = os.environ.get("REDIS_HOST")
-REDIS_PORT = os.environ.get("REDIS_PORT")
-
-KAFKA_HOST = os.environ.get("KAFKA_HOST")
-KAFKA_PORT = os.environ.get("KAFKA_PORT")
-KAFKA_URL = f"{KAFKA_HOST}:{KAFKA_PORT}"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     ''' Run at startup
         Initialise databases clients.
     '''
-    while True:
-        try:
-            print("Creating PostgreSQL engine...")
-            app.state.engine: AsyncEngine = create_async_engine(
-                                POSTGRES_URL,
-                                echo=False,
-                                future=True
-                            )
-            print("Testing connection to PostgreSQL...")
-            async with app.state.engine.connect() as connection:
-                result = await connection.execute(text("SELECT current_user;"))
-                current_user = result.scalar()
+    application_statup_processes: ApplicationStartupProcesses = ApplicationStartupProcesses()
 
-            if current_user == POSTGRES_USERNAME:
-                print('Connection to PostgreSQL status: Connected')
-            else:
-                print('Connection to PostgreSQL status: Failed. Retrying...')
-                raise SQLAlchemyError
-            print("Creating async scoped session with PostgreSQL engine...")
-            app.state.async_postgres_session = async_scoped_session(async_sessionmaker(app.state.engine, expire_on_commit=False, class_=AsyncSession), scopefunc=asyncio.current_task)
-            print("Async scoped session with PostgreSQL engine created!")
-            break
-        except SQLAlchemyError:
-            await asyncio.sleep(3)
+    app.state.engine = await application_statup_processes.postgres_engine()
 
     async with app.state.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    while True:
-        try:
-            print("Creating Redis client...")
-            app.state.redis_client: redis.Redis = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD)
-            print("Testing connection to Redis...")
-            redis_info = app.state.redis_client.ping()
-            if redis_info:
-                print('Connection to Redis status: Connected')
-            else:
-                print('Connection to Redis status: Failed. Retrying...')
-                raise ConnectionError
-            break
-        except ConnectionError:
-            await asyncio.sleep(3)
+    app.state.redis_pool = await application_statup_processes.redis_pool()
 
-    while True:
-        try:
-            print("Initializing Kafka topics...")
-            await startup_topics(KAFKA_URL)
-            print("Kafka topics initialized!")
-            break
-        except KafkaTimeoutError as e:
-            print(f'Kafka Timeout error durning topic initialization: {e}')
-        except KafkaError as e:
-            print(f'Kafka error durning topic initalization: {e}')
+    await application_statup_processes.kafka_topics_initialization()
 
-    while True:
-        try:
-            print("Initializing repositories registry...")
-            repositories_registry: RepositoriesRegistry = RepositoriesRegistry(
-                UserPostgresRepository, 
-                UserRedisRepository, 
-                UserBusinessEntityPostgresRepository,
-                UserBusinessEntityRedisRepository,
-                ExternalBusinessEntityPostgresRepository
-                )
-            app.state.repositories_registry = repositories_registry
-            print("Repositories registry initialized!")
-            break
-        except Exception as e:
-            print(f'Error occured durning initializing repositories registry: {e}')
+    app.state.kafka_producer = await application_statup_processes.kafka_producer()
+    await app.state.kafka_producer.start()
+    print("Kafka Producer started...")
 
-    while True:
-        try:
-            print("Running Kafka Producer on separate event loop...")
-            loop = asyncio.get_event_loop()
-            app.state.kafka_producer: AIOKafkaProducer = AIOKafkaProducer(loop=loop, bootstrap_servers=KAFKA_URL)
-            await app.state.kafka_producer.start()
-            print("Kafka Producer started...")
-            break
-        except (KafkaError, KafkaTimeoutError) as e:
-            print(f'Error occured durning running Kafka Producer: {e}')
+    app.state.repositories_registry = await application_statup_processes.repositories_registry()
+
+    app.state.events_registry = await application_statup_processes.events_registry()
 
     yield
     ''' Run on shutdown
@@ -154,6 +63,8 @@ def create_application() -> FastAPI:
     application.include_router(user_router.router, tags=["user"])
     application.include_router(user_business_entity_router.router, tags=["user-business-entity"])
     application.include_router(external_business_entity_router.router, tags=["external-business-entity"])
+    application.include_router(invoice_router.router, tags=["invoice"])
+    application.include_router(invoice_item_router.router, tags=["invoice-item"])
     return application
 
 app = create_application()

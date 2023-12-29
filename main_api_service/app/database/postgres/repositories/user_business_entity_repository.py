@@ -31,14 +31,13 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
             stmt = (
                 insert(UserBusinessEntity).
                 values(
-                    id=uuid4(),
+                    id=new_user_business_entity.id,
                     user_id=UUID(user_id),
                     company_name=new_user_business_entity.company_name,
                     city=new_user_business_entity.city,
                     postal_code=new_user_business_entity.postal_code,
                     street=new_user_business_entity.street,
-                    nip=new_user_business_entity.nip,
-                    krs=new_user_business_entity.krs
+                    nip=new_user_business_entity.nip
                     ).
                     returning(UserBusinessEntity)
                 )
@@ -58,8 +57,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                 where(
                         or_(
                             (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.company_name == new_user_business_entity.company_name),
-                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.nip == new_user_business_entity.nip),
-                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.krs == new_user_business_entity.krs)
+                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.nip == new_user_business_entity.nip)
                         )
                     )
                 )
@@ -85,8 +83,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                     city=update_user_business_entity.city,
                     postal_code=update_user_business_entity.postal_code,
                     street=update_user_business_entity.street,
-                    nip=update_user_business_entity.nip,
-                    krs=update_user_business_entity.krs
+                    nip=update_user_business_entity.nip
                 ).
                 returning(UserBusinessEntity)
             )
@@ -105,8 +102,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                 where(
                         or_(
                             (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.company_name == update_user_business_entity.company_name) & (UserBusinessEntity.id != update_user_business_entity.id),
-                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.nip == update_user_business_entity.nip) & (UserBusinessEntity.id != update_user_business_entity.id),
-                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.krs == update_user_business_entity.krs) & (UserBusinessEntity.id != update_user_business_entity.id)
+                            (UserBusinessEntity.user_id == user_id) & (UserBusinessEntity.nip == update_user_business_entity.nip) & (UserBusinessEntity.id != update_user_business_entity.id)
                         )
                     )
                 )
@@ -163,8 +159,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                                             city: Optional[str] = None,
                                             postal_code: Optional[str] = None,
                                             street: Optional[str] = None,
-                                            nip: Optional[str] = None,
-                                            krs: Optional[str] = None) -> list:
+                                            nip: Optional[str] = None) -> list:
         try:
             stmt = (
                 select(UserBusinessEntity).
@@ -174,8 +169,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                     (UserBusinessEntity.city.ilike(f"%{city}%") if city else True) &
                     (UserBusinessEntity.postal_code.ilike(f"%{postal_code}%") if postal_code else True) &
                     (UserBusinessEntity.street.ilike(f"%{street}%") if street else True) &
-                    (UserBusinessEntity.nip.ilike(f"%{nip}%") if nip else True) &
-                    (UserBusinessEntity.krs.ilike(f"%{krs}%") if krs else True)
+                    (UserBusinessEntity.nip.ilike(f"%{nip}%") if nip else True)
                 ).
                 limit(items_per_page).
                 offset((page - 1) * items_per_page)

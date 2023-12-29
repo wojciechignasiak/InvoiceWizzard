@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
-from app.database.get_repositories_registry import get_repositories_registry
-from app.database.repositories_registry import RepositoriesRegistry
+from fastapi.encoders import jsonable_encoder
+from app.registries.get_repositories_registry import get_repositories_registry
+from app.registries.repositories_registry_abc import RepositoriesRegistryABC
 from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError, 
@@ -10,7 +11,7 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisSetError,
     RedisNotFoundError
     )
-import redis
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.postgres.session.get_session import get_session
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
@@ -31,7 +32,8 @@ from uuid import uuid4
 import ast
 from aiokafka import AIOKafkaProducer
 from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
-from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
+from app.registries.events_registry_abc import EventsRegistryABC
+from app.registries.get_events_registry import get_events_registry
 from typing import Optional
 
 router = APIRouter()
@@ -41,8 +43,8 @@ http_bearer = HTTPBearer()
 async def create_user_business_entity(
     new_user_business_entity: CreateUserBusinessEntityModel,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -63,38 +65,29 @@ async def create_user_business_entity(
         )
 
         if is_unique == False:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip/krs arleady exists.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip arleady exists.")
 
         is_unique_in_external_business_entity: bool = await external_business_entity_postgres_repository.is_external_business_entity_unique(
             user_id=jwt_payload.id,
-            new_user_business_entity=CreateUserBusinessEntityModel(
+            new_external_business_entity=CreateUserBusinessEntityModel(
                 company_name=new_user_business_entity.company_name,
                 city=new_user_business_entity.city,
                 postal_code=new_user_business_entity.postal_code,
                 street=new_user_business_entity.street,
-                nip=new_user_business_entity.nip,
-                krs=new_user_business_entity.krs
+                nip=new_user_business_entity.nip
             )
         )
         
         if is_unique_in_external_business_entity == False:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip/krs arleady exists in External Business Entities.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip arleady exists in External Business Entities.")
         
         user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.create_user_business_entity(
             user_id=jwt_payload.id, 
             new_user_business_entity=new_user_business_entity
             )
         
-        user_business_entity_model = UserBusinessEntityModel(
-            id=str(user_business_entity.id),
-            company_name=user_business_entity.company_name,
-            city=user_business_entity.city,
-            postal_code=user_business_entity.postal_code,
-            street=user_business_entity.street,
-            nip=user_business_entity.nip,
-            krs=user_business_entity.krs
-        )
-        
+        user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
+
         return JSONResponse(status_code=status.HTTP_201_CREATED, content=user_business_entity_model.model_dump())
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
@@ -108,8 +101,8 @@ async def create_user_business_entity(
 async def get_user_business_entity(
     user_business_entity_id: str,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -128,15 +121,7 @@ async def get_user_business_entity(
             user_business_entity_id=user_business_entity_id
         )
         
-        user_business_entity_model = UserBusinessEntityModel(
-            id=str(user_business_entity.id),
-            company_name=user_business_entity.company_name,
-            city=user_business_entity.city,
-            postal_code=user_business_entity.postal_code,
-            street=user_business_entity.street,
-            nip=user_business_entity.nip,
-            krs=user_business_entity.krs
-        )
+        user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model.model_dump())
     except HTTPException as e:
@@ -157,10 +142,9 @@ async def get_all_user_business_entities(
     postal_code: Optional[str] = None,
     street: Optional[str] = None,
     nip: Optional[str] = None,
-    krs: Optional[str] = None,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -182,23 +166,14 @@ async def get_all_user_business_entities(
             city=city,
             postal_code=postal_code,
             street=street,
-            nip=nip,
-            krs=krs
+            nip=nip
         )
-        user_business_entity_model_list = []
+        user_business_entities_model = []
         for user_business_entity in user_business_entity_list:
-            user_business_entity_model = UserBusinessEntityModel(
-                id=str(user_business_entity.id),
-                company_name=user_business_entity.company_name,
-                city=user_business_entity.city,
-                postal_code=user_business_entity.postal_code,
-                street=user_business_entity.street,
-                nip=user_business_entity.nip,
-                krs=user_business_entity.krs
-            )
-            user_business_entity_model_list.append(user_business_entity_model.model_dump())
+            user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
+            user_business_entities_model.append(user_business_entity_model)
         
-        return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model_list)
+        return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(user_business_entities_model))
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
@@ -212,8 +187,8 @@ async def get_all_user_business_entities(
 async def update_user_business_entity(
     update_user_business_entity: UpdateUserBusinessEntityModel,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     ):
 
@@ -233,22 +208,14 @@ async def update_user_business_entity(
         )
 
         if is_unique == False:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip/krs arleady exists.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip arleady exists.")
 
         updated_user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.update_user_business_entity(
             user_id=jwt_payload.id,
             update_user_business_entity=update_user_business_entity
         )
         
-        user_business_entity_model = UserBusinessEntityModel(
-            id=str(updated_user_business_entity.id),
-            company_name=updated_user_business_entity.company_name,
-            city=updated_user_business_entity.city,
-            postal_code=updated_user_business_entity.postal_code,
-            street=updated_user_business_entity.street,
-            nip=updated_user_business_entity.nip,
-            krs=updated_user_business_entity.krs
-        )
+        user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(updated_user_business_entity)
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_business_entity_model.model_dump())
     except HTTPException as e:
@@ -264,8 +231,9 @@ async def update_user_business_entity(
 async def initialize_user_business_entity_removal(
     user_business_entity_id: str,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
@@ -273,7 +241,7 @@ async def initialize_user_business_entity_removal(
         user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         user_business_entity_redis_repository = await repositories_registry.return_user_business_entity_redis_repository(redis_client)
-        event_producer: UserBusinessEntityEvents = UserBusinessEntityEvents(kafka_producer_client)
+        user_business_entity_events = await events_registry.return_user_business_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -293,11 +261,11 @@ async def initialize_user_business_entity_removal(
             user_business_entity_id=user_business_entity_id
             )
         
-        await event_producer.remove_user_business_entity(
+        await user_business_entity_events.remove_user_business_entity(
             id=key_id,
             email_address=jwt_payload.email,
             user_business_entity_name=user_business_entity.company_name
-        )
+            )
 
         return JSONResponse(status_code=status.HTTP_200_OK, content={"detail": "User business entity removal process has been initialized. Check your email address."})
     except HTTPException as e:
@@ -313,8 +281,9 @@ async def initialize_user_business_entity_removal(
 async def confirm_user_business_entity_removal(
     id: str,
     token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistry = Depends(get_repositories_registry),
-    redis_client: redis.Redis = Depends(get_redis_client),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
+    redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
@@ -323,7 +292,7 @@ async def confirm_user_business_entity_removal(
         user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         user_business_entity_redis_repository = await repositories_registry.return_user_business_entity_redis_repository(redis_client)
-        event_producer: UserBusinessEntityEvents = UserBusinessEntityEvents(kafka_producer_client)
+        user_business_entity_events = await events_registry.return_user_business_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -355,10 +324,12 @@ async def confirm_user_business_entity_removal(
         await user_business_entity_redis_repository.delete_user_business_entity_removal(
             key_id=id
         )
-        await event_producer.user_business_entity_removed(
+
+        await user_business_entity_events.user_business_entity_removed(
             email_address=jwt_payload.email,
             user_business_entity_name=user_business_entity.company_name
         )
+        
         return JSONResponse(status_code=status.HTTP_200_OK, content={"detail": "User business entity has been removed."})
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

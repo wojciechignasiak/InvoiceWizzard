@@ -2,7 +2,7 @@ import pytest
 from app.main import app
 from app.database.postgres.session.get_session import get_session
 from app.database.redis.client.get_redis_client import get_redis_client
-from app.database.get_repositories_registry import get_repositories_registry
+from app.registries.get_repositories_registry import get_repositories_registry
 from fastapi.testclient import TestClient
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError, 
@@ -53,7 +53,6 @@ async def test_create_external_business_entity_success(
     assert data["postal_code"] == mock_external_business_entity_schema_object.postal_code
     assert data["street"] == mock_external_business_entity_schema_object.street
     assert data["nip"] == mock_external_business_entity_schema_object.nip
-    assert data["krs"] == mock_external_business_entity_schema_object.krs
 
 @pytest.mark.asyncio
 async def test_create_external_business_entity_not_unique_error(
@@ -210,7 +209,6 @@ async def test_get_external_business_entity_success(
     assert data["postal_code"] == mock_external_business_entity_schema_object.postal_code
     assert data["street"] == mock_external_business_entity_schema_object.street
     assert data["nip"] == mock_external_business_entity_schema_object.nip
-    assert data["krs"] == mock_external_business_entity_schema_object.krs
 
 @pytest.mark.asyncio
 async def test_get_external_business_entity_unauthorized_error(

@@ -10,3 +10,5 @@ class KafkaTopicsEnum(str, Enum):
     reset_password = "reset_password"
     remove_user_business_entity = "remove_user_business_entity"
     user_business_entity_removed = "user_business_entity_removed"
+    remove_invoice = "remove_invoice"
+    invoice_removed = "invoice_removed"

@@ -1,15 +1,16 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, VARCHAR, DATE, BOOLEAN, FLOAT, INTEGER, BYTEA
+from sqlalchemy.dialects.postgresql import UUID, VARCHAR, DATE, BOOLEAN, FLOAT, INTEGER
 from typing import Optional, List
-
+from datetime import date
+import uuid
 
 class Base(DeclarativeBase):
     pass
 
 class User(Base):
     __tablename__ = 'user'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
     email: Mapped[str] = mapped_column(VARCHAR(320), nullable=False, unique=True)
     password: Mapped[str] = mapped_column(VARCHAR(255), nullable=False)
     first_name: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
@@ -19,102 +20,63 @@ class User(Base):
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     salt: Mapped[str] = mapped_column(VARCHAR(400), nullable=False)
-    registration_date: Mapped[str] = mapped_column(DATE, nullable=False)
-    last_login: Mapped[str] = mapped_column(DATE, nullable=False)
+    registration_date: Mapped[date] = mapped_column(DATE, nullable=False)
+    last_login: Mapped[date] = mapped_column(DATE, nullable=False)
     email_notification: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=True)
     push_notification: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=True)
 
 class UserBusinessEntity(Base):
     __tablename__ = 'user_business_entity'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False)
-    user_id: Mapped[str] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
-    company_name: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    company_name: Mapped[str] = mapped_column(VARCHAR(255), nullable=False)
     city: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
-    krs: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
-    invoice_issued: Mapped[List["InvoiceIssued"]] = relationship(back_populates="user_business_entity")
-    invoice_recived: Mapped[List["InvoiceRecived"]] = relationship(back_populates="user_business_entity")
+    nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=False)
+    invoice: Mapped[List["Invoice"]] = relationship(back_populates="user_business_entity")
 
 class ExternalBusinessEntity(Base):
     __tablename__= 'external_business_entity'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False)
-    user_id: Mapped[str] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
     company_name: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     city: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
-    krs: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
-    invoice_issued: Mapped[List["InvoiceIssued"]] = relationship(back_populates="external_business_entity")
-    invoice_recived: Mapped[List["InvoiceRecived"]] = relationship(back_populates="external_business_entity")
+    invoice: Mapped[List["Invoice"]] = relationship(back_populates="external_business_entity")
 
-class InvoiceRecived(Base):
-    __tablename__ = 'invoice_recived'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False)
-    user_id: Mapped[str] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
-    user_business_entity_id: Mapped[str] = mapped_column(ForeignKey("user_business_entity.id", ondelete="CASCADE"))
-    user_business_entity: Mapped["UserBusinessEntity"] = relationship(back_populates="invoice_recived")
-    external_business_entity_id: Mapped[str] = mapped_column(ForeignKey("external_business_entity.id", ondelete="CASCADE"))
-    external_business_entity: Mapped["ExternalBusinessEntity"] = relationship(back_populates="invoice_recived")
-    invoice_pdf: Mapped[bytes] = mapped_column(BYTEA, nullable=False)
-    invoice_number: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    issue_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
-    sale_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
-    net_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
-    gross_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
-    currency: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
-    payment_method: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    payment_deadline: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
-    added_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=False)
+class Invoice(Base):
+    __tablename__ = 'invoice'
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    user_business_entity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user_business_entity.id", ondelete="CASCADE"))
+    user_business_entity: Mapped["UserBusinessEntity"] = relationship(back_populates="invoice")
+    external_business_entity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("external_business_entity.id", ondelete="CASCADE"))
+    external_business_entity: Mapped["ExternalBusinessEntity"] = relationship(back_populates="invoice")
+    invoice_pdf: Mapped[Optional[str]] = mapped_column(VARCHAR(500), nullable=True)
+    invoice_number: Mapped[str] = mapped_column(VARCHAR(255), nullable=False)
+    issue_date: Mapped[date] = mapped_column(DATE, nullable=False)
+    sale_date: Mapped[date] = mapped_column(DATE, nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(VARCHAR, nullable=True)
+    payment_method: Mapped[str] = mapped_column(VARCHAR(255), nullable=False)
+    payment_deadline: Mapped[date] = mapped_column(DATE, nullable=False)
+    added_date: Mapped[date] = mapped_column(DATE, nullable=False)
     is_settled: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
-    is_accepted: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
-    invoice_item: Mapped[List["InvoiceRecivedItem"]] = relationship(back_populates="invoice_recived")
+    is_issued: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=True)
+    in_trash: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
+    invoice_item: Mapped[List["InvoiceItem"]] = relationship(back_populates="invoice")
 
 
-class InvoiceRecivedItem(Base):
-    __tablename__ = 'invoice_recived_item'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False)
-    invoice_id: Mapped[str] = mapped_column(ForeignKey("invoice_recived.id", ondelete="CASCADE"), nullable=False)
-    invoice_recived: Mapped["InvoiceRecived"] = relationship(back_populates="invoice_item")
-    ordinal_number: Mapped[int] = mapped_column(INTEGER, nullable=False)
-    item_description: Mapped[Optional[str]] = mapped_column(VARCHAR, nullable=True)
-    net_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
-    gross_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
-    tax_percent: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
-
-
-class InvoiceIssued(Base):
-    __tablename__ = 'invoice_issued'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False)
-    user_id: Mapped[str] = mapped_column(ForeignKey("user.id"))
-    user_business_entity_id: Mapped[str] = mapped_column(ForeignKey("user_business_entity.id", ondelete="CASCADE"), nullable=False)
-    user_business_entity: Mapped["UserBusinessEntity"] = relationship(back_populates="invoice_issued")
-    external_business_entity_id: Mapped[str] = mapped_column(ForeignKey("external_business_entity.id", ondelete="CASCADE"), nullable=False)
-    external_business_entity: Mapped["ExternalBusinessEntity"] = relationship(back_populates="invoice_issued")
-    invoice_pdf: Mapped[bytes] = mapped_column(BYTEA, nullable=False)
-    invoice_number: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    issue_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
-    sale_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
-    net_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
-    gross_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
-    currency: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
-    payment_method: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    payment_deadline: Mapped[Optional[str]] = mapped_column(DATE, nullable=True)
-    added_date: Mapped[Optional[str]] = mapped_column(DATE, nullable=False)
-    is_settled: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
-    is_accepted: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
-    invoice_item: Mapped[List["InvoiceIssuedItem"]] = relationship(back_populates="invoice_issued")
-
-
-class InvoiceIssuedItem(Base):
-    __tablename__ = 'invoice_issued_item'
-    id: Mapped[str] = mapped_column(UUID, primary_key=True, nullable=False)
-    invoice_id: Mapped[str] = mapped_column(ForeignKey("invoice_issued.id", ondelete="CASCADE"), nullable=False)
-    invoice_issued: Mapped["InvoiceIssued"] = relationship(back_populates="invoice_item")
-    ordinal_number: Mapped[int] = mapped_column(INTEGER, nullable=False)
-    item_description: Mapped[Optional[str]] = mapped_column(VARCHAR, nullable=True)
-    net_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
-    gross_value: Mapped[Optional[float]] = mapped_column(FLOAT, nullable=True)
-    tax_percent: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
+class InvoiceItem(Base):
+    __tablename__ = 'invoice_item'
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("invoice.id", ondelete="CASCADE"), nullable=False)
+    invoice: Mapped["Invoice"] = relationship(back_populates="invoice_item")
+    item_description: Mapped[str] = mapped_column(VARCHAR, nullable=False)
+    number_of_items: Mapped[int] = mapped_column(INTEGER, nullable=False)
+    net_value: Mapped[float] = mapped_column(FLOAT, nullable=False)
+    gross_value: Mapped[float] = mapped_column(FLOAT, nullable=False)
+    in_trash: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
