@@ -281,6 +281,32 @@ async def log_out(
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except (Exception, RedisDatabaseError, RedisSetError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@router.delete("/user-module/log-out-from-all-devices/")
+async def log_out_from_all_devices(
+    token = Depends(http_bearer),
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client)
+    ):
+
+    try:
+        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        await user_redis_repository.delete_all_jwt_tokens_of_user(
+            user_id=jwt_payload.id,
+        )
+
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"detail": "User logged out from all devices."})
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except (Exception, RedisDatabaseError, RedisSetError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.patch("/user-module/update-personal-information/")
 async def update_personal_information(
