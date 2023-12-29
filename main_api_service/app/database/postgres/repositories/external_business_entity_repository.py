@@ -33,7 +33,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                 values(
                     id=new_external_business_entity.id,
                     user_id=UUID(user_id),
-                    company_name=new_external_business_entity.company_name,
+                    name=new_external_business_entity.name,
                     city=new_external_business_entity.city,
                     postal_code=new_external_business_entity.postal_code,
                     street=new_external_business_entity.street,
@@ -56,7 +56,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                 select(ExternalBusinessEntity).
                 where(
                         or_(
-                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.company_name == new_external_business_entity.company_name),
+                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.name == new_external_business_entity.name),
                             (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.nip == new_external_business_entity.nip)
                         )
                     )
@@ -79,7 +79,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                     ExternalBusinessEntity.user_id == user_id
                     ).
                 values(
-                    company_name=update_external_business_entity.company_name,
+                    name=update_external_business_entity.name,
                     city=update_external_business_entity.city,
                     postal_code=update_external_business_entity.postal_code,
                     street=update_external_business_entity.street,
@@ -101,7 +101,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                 select(ExternalBusinessEntity).
                 where(
                         or_(
-                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.company_name == update_external_business_entity.company_name) & (ExternalBusinessEntity.id != update_external_business_entity.id),
+                            (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.name == update_external_business_entity.name) & (ExternalBusinessEntity.id != update_external_business_entity.id),
                             (ExternalBusinessEntity.user_id == user_id) & (ExternalBusinessEntity.nip == update_external_business_entity.nip) & (ExternalBusinessEntity.id != update_external_business_entity.id)
                         )
                     )
@@ -136,7 +136,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                                                 user_id: str, 
                                                 page: int = 1, 
                                                 items_per_page: int = 10,
-                                                company_name: Optional[str] = None,
+                                                name: Optional[str] = None,
                                                 city: Optional[str] = None,
                                                 postal_code: Optional[str] = None,
                                                 street: Optional[str] = None,
@@ -146,7 +146,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                 select(ExternalBusinessEntity).
                 where(
                     (ExternalBusinessEntity.user_id == user_id) &
-                    (ExternalBusinessEntity.company_name.ilike(f"%{company_name}%") if company_name else True) &
+                    (ExternalBusinessEntity.name.ilike(f"%{name}%") if name else True) &
                     (ExternalBusinessEntity.city.ilike(f"%{city}%") if city else True) &
                     (ExternalBusinessEntity.postal_code.ilike(f"%{postal_code}%") if postal_code else True) &
                     (ExternalBusinessEntity.street.ilike(f"%{street}%") if street else True) &

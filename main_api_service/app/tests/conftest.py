@@ -42,6 +42,7 @@ from pathlib import Path
 from datetime import datetime, date
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.database.redis.repositories.user_business_entity_repository import UserBusinessEntityRedisRepository
+from app.database.redis.repositories.external_business_entity_repository import ExternalBusinessEntityRedisRepository
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
 from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
 from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
@@ -107,7 +108,7 @@ def mock_external_business_entity_schema_object():
     external_business_entity_schema_object = ExternalBusinessEntity(
         id=UUID("c487e563-a0e5-4bf7-ba20-d747db6da205"),
         user_id=UUID("7024353b-aa89-4097-8925-f2855519c0ae"),
-        company_name="Company Name",
+        name="Name",
         city="Warsaw",
         postal_code="00-000",
         street="ul. Nowa 3/4",
@@ -179,16 +180,22 @@ def mock_user_business_entity_postgres_repository_object():
     return user_business_entity_repository_postgres_mock_object
 
 @pytest.fixture
+def mock_user_business_entity_redis_repository_object():
+    user_business_entity_repository_redis_mock_object = AsyncMock(spec=UserBusinessEntityRedisRepository)
+
+    return user_business_entity_repository_redis_mock_object
+
+@pytest.fixture
 def mock_external_business_entity_postgres_repository_object():
     external_business_entity_repository_postgres_mock_object = AsyncMock(spec=ExternalBusinessEntityPostgresRepository)
 
     return external_business_entity_repository_postgres_mock_object
 
 @pytest.fixture
-def mock_user_business_entity_redis_repository_object():
-    user_business_entity_repository_redis_mock_object = AsyncMock(spec=UserBusinessEntityRedisRepository)
+def mock_external_business_entity_redis_repository_object():
+    external_business_entity_repository_redis_mock_object = AsyncMock(spec=ExternalBusinessEntityRedisRepository)
 
-    return user_business_entity_repository_redis_mock_object
+    return external_business_entity_repository_redis_mock_object
 
 @pytest.fixture
 def mock_invoice_postgres_repository_object():
@@ -323,7 +330,7 @@ def mock_reset_user_password_model_object():
 @pytest.fixture
 def mock_create_user_business_entity_model_object():
     create_user_business_entity_model_object = CreateUserBusinessEntityModel(
-        company_name = "Warsaw",
+        company_name = "Company Name",
         city = "Warsaw",
         postal_code = "00-000",
         street = "ul. Nowa 3/4",
@@ -371,7 +378,7 @@ def mock_log_in_model_object():
 @pytest.fixture
 def mock_create_external_business_entity_model_object():
     create_external_business_entity_model_object = CreateExternalBusinessEntityModel(
-        company_name = "Warsaw",
+        name = "Name/Company Name",
         city = "Warsaw",
         postal_code = "00-000",
         street = "ul. Nowa 3/4",
@@ -384,7 +391,7 @@ def mock_create_external_business_entity_model_object():
 def mock_update_external_business_entity_model_object():
     update_external_business_entity_model_object = UpdateExternalBusinessEntityModel(
         id="c487e563-a0e5-4bf7-ba20-d747db6da205",
-        company_name = "Warsaw",
+        name = "Name/Company Name",
         city = "Warsaw",
         postal_code = "00-000",
         street = "ul. Nowa 3/4",
@@ -397,7 +404,7 @@ def mock_update_external_business_entity_model_object():
 def mock_external_business_entity_model_object():
     external_business_entity_model_object = ExternalBusinessEntityModel(
         id="c487e563-a0e5-4bf7-ba20-d747db6da205",
-        company_name = "Warsaw",
+        name = "Name/Company Name",
         city = "Warsaw",
         postal_code = "00-000",
         street = "ul. Nowa 3/4",

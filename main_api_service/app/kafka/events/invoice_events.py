@@ -15,7 +15,7 @@ class InvoiceEvents(KafkaProducerBase, InvoiceEventsABC):
             email_address: str, 
             invoice_number: str,
             user_company_name: str,
-            external_company_name: str,
+            external_business_entity_name: str,
             is_issued: bool):
         try:
             message = {
@@ -23,7 +23,7 @@ class InvoiceEvents(KafkaProducerBase, InvoiceEventsABC):
                 "email": email_address,
                 "invoice_number": invoice_number,
                 "user_company_name": user_company_name,
-                "external_company_name": external_company_name,
+                "external_business_entity_name": external_business_entity_name,
                 "is_issued": is_issued
             }
             await self.kafka_producer.send(
@@ -40,7 +40,7 @@ class InvoiceEvents(KafkaProducerBase, InvoiceEventsABC):
             email_address: str, 
             invoice_number: str,
             user_company_name: str,
-            external_company_name: str,
+            external_business_entity_name: str,
             is_issued: bool):
         try:
             message = {
@@ -48,7 +48,7 @@ class InvoiceEvents(KafkaProducerBase, InvoiceEventsABC):
                 "email": email_address,
                 "invoice_number": invoice_number,
                 "user_company_name": user_company_name,
-                "external_company_name": external_company_name,
+                "external_business_entity_name": external_business_entity_name,
                 "is_issued": is_issued
             }
             await self.kafka_producer.send(

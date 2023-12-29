@@ -5,6 +5,7 @@ from app.database.postgres.repositories.invoice_repository_abc import InvoicePos
 from app.database.postgres.repositories.invoice_item_repository_abc import InvoiceItemPostgresRepositoryABC
 from app.database.redis.repositories.user_repository_abc import UserRedisRepositoryABC
 from app.database.redis.repositories.user_business_entity_repository_abc import UserBusinessEntityRedisRepositoryABC
+from app.database.redis.repositories.external_business_entity_repository_abc import ExternalBusinessEntityRedisRepositoryABC
 from app.database.redis.repositories.invoice_repository_abc import InvoiceRedisRepositoryABC
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
@@ -32,6 +33,10 @@ class RepositoriesRegistryABC(ABC):
     
     @abstractmethod
     async def return_external_business_entity_postgres_repository(self, session: AsyncSession) -> ExternalBusinessEntityPostgresRepositoryABC:
+        ...
+    
+    @abstractmethod
+    async def return_external_business_entity_redis_repository(self, redis_client: Redis) -> ExternalBusinessEntityRedisRepositoryABC:
         ...
     
     @abstractmethod

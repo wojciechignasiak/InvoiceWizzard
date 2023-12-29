@@ -14,12 +14,14 @@ from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
 from app.database.redis.repositories.user_business_entity_repository import UserBusinessEntityRedisRepository
 from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
+from app.database.redis.repositories.external_business_entity_repository import ExternalBusinessEntityRedisRepository
 from app.database.postgres.repositories.invoice_repository import InvoicePostgresRepository
 from app.database.redis.repositories.invoice_repository import InvoiceRedisRepository
 from app.database.postgres.repositories.invoice_item_repository import InvoiceItemPostgresRepository
 from app.registries.events_registry import EventsRegistry
 from app.kafka.events.user_events import UserEvents
 from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
+from app.kafka.events.external_business_entity_events import ExternalBusinessEntityEvents
 from app.kafka.events.invoice_events import InvoiceEvents
 from app.files.files_repository import FilesRepository
 
@@ -116,6 +118,7 @@ class ApplicationStartupProcesses:
                     UserBusinessEntityPostgresRepository,
                     UserBusinessEntityRedisRepository,
                     ExternalBusinessEntityPostgresRepository,
+                    ExternalBusinessEntityRedisRepository,
                     InvoicePostgresRepository,
                     InvoiceRedisRepository,
                     InvoiceItemPostgresRepository,
@@ -134,6 +137,7 @@ class ApplicationStartupProcesses:
                 events_registry: EventsRegistry = EventsRegistry(
                     UserEvents,
                     UserBusinessEntityEvents,
+                    ExternalBusinessEntityEvents,
                     InvoiceEvents
                     )
                 print("Events registry initialized!")

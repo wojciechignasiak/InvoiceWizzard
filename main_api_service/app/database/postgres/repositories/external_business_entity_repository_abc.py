@@ -32,7 +32,7 @@ class ExternalBusinessEntityPostgresRepositoryABC(ABC):
     async def get_all_external_business_entities(self, user_id: str, 
                                                 page: int = 1, 
                                                 items_per_page: int = 10,
-                                                company_name: Optional[str] = None,
+                                                name: Optional[str] = None,
                                                 city: Optional[str] = None,
                                                 postal_code: Optional[str] = None,
                                                 street: Optional[str] = None,

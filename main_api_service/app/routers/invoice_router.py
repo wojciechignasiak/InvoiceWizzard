@@ -55,7 +55,6 @@ from app.schema.schema import (
 from uuid import uuid4
 import ast
 from app.utils.invoice_generator import invoice_generator
-from app.utils.invoice_html_to_pdf import invoice_html_to_pdf
 from typing import Optional, List
 from pathlib import Path
 
@@ -183,7 +182,7 @@ async def get_invoice(
         )
 
         external_business_entity_model: ExternalBusinessEntityModel = await ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
-        invoice_details["external_business_entity_name"] = external_business_entity_model.company_name
+        invoice_details["external_business_entity_name"] = external_business_entity_model.name
 
         invoice_details["net_value"] = sum_net_value
         invoice_details["gross_value"] = sum_gross_value
@@ -297,7 +296,7 @@ async def get_all_invoices(
                 external_business_entity_model: ExternalBusinessEntityModel = await ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
 
                 invoice_details["user_business_entity_name"] = user_business_entity_model.company_name
-                invoice_details["external_business_entity_name"] = external_business_entity_model.company_name
+                invoice_details["external_business_entity_name"] = external_business_entity_model.name
 
             all_invoices.append(invoice_details)
         
@@ -452,7 +451,7 @@ async def initialize_invoice_removal(
             email_address=jwt_payload.email,
             invoice_number=invoice_model.invoice_number,
             user_company_name=user_business_entity_model.company_name,
-            external_company_name=external_business_entity_model.company_name,
+            external_buisness_entity_name=external_business_entity_model.name,
             is_issued=invoice_model.is_issued
         )
 
@@ -536,7 +535,7 @@ async def confirm_invoice_removal(
             email_address=jwt_payload.email,
             invoice_number=invoice_model.invoice_number,
             user_company_name=user_business_entity_model.company_name,
-            external_company_name=external_business_entity.company_name,
+            external_business_entity_name=external_business_entity.name,
             is_issued=invoice_model.is_issued
         )
 
