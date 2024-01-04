@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from pydantic.functional_validators import field_validator
 from uuid import UUID, uuid4
-from app.schema.schema import AIIsExternalBusinessEntityRecognised
+from app.schema.schema import AIIsExternalBusinessEntityRecognized
 
 class CreateAIIsExternalBusinessEntityRecognizedModel(BaseModel):
     is_recognized: bool
@@ -30,12 +30,12 @@ class AIIsExternalBusinessEntityRecognizedModel(BaseModel):
     external_business_entity_id: Optional[str] | None
 
     async def ai_is_external_business_entity_recognized_schema_to_model(
-            is_external_business_entity_recognized_schema: AIIsExternalBusinessEntityRecognised
+            is_external_business_entity_recognized_schema: AIIsExternalBusinessEntityRecognized
             ) -> "AIIsExternalBusinessEntityRecognizedModel":
         
         return AIIsExternalBusinessEntityRecognizedModel(
             id=str(is_external_business_entity_recognized_schema.id),
             extracted_invoice_id=is_external_business_entity_recognized_schema.extracted_invoice_id,
-            is_recognized=is_external_business_entity_recognized_schema.is_recognised,
+            is_recognized=is_external_business_entity_recognized_schema.is_recognized,
             external_business_entity_id=is_external_business_entity_recognized_schema.external_business_entity_id
         )

@@ -106,7 +106,7 @@ class AIExtractedInvoiceItem(Base):
     net_value: Mapped[float] = mapped_column(FLOAT, nullable=True)
     gross_value: Mapped[float] = mapped_column(FLOAT, nullable=True)
 
-class AIIsExternalBusinessEntityRecognised(Base):
+class AIIsExternalBusinessEntityRecognized(Base):
     __tablename__= 'ai_is_external_business_entity_recognized'
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
@@ -114,7 +114,7 @@ class AIIsExternalBusinessEntityRecognised(Base):
     external_business_entity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("external_business_entity.id", ondelete="CASCADE"))
     is_recognized: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
 
-class AIIsUserBusinessEntityRecognised(Base):
+class AIIsUserBusinessEntityRecognized(Base):
     __tablename__= 'ai_is_user_business_entity_recognized'
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))

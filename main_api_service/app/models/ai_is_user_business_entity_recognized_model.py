@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from pydantic.functional_validators import field_validator
 from uuid import UUID, uuid4
-from app.schema.schema import AIIsUserBusinessEntityRecognised
+from app.schema.schema import AIIsUserBusinessEntityRecognized
 
 class CreateAIIsUserBusinessEntityRecognizedModel(BaseModel):
     is_recognized: bool
@@ -30,7 +30,7 @@ class AIIsUserBusinessEntityRecognizedModel(BaseModel):
     user_business_entity_id: Optional[str] | None
 
     async def ai_is_user_business_entity_recognized_schema_to_model(
-            is_user_business_entity_recognized_schema: AIIsUserBusinessEntityRecognised
+            is_user_business_entity_recognized_schema: AIIsUserBusinessEntityRecognized
             ) -> "AIIsUserBusinessEntityRecognizedModel":
         return AIIsUserBusinessEntityRecognizedModel(
             id=str(is_user_business_entity_recognized_schema.id),
