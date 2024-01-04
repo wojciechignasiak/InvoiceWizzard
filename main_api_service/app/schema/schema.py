@@ -80,3 +80,67 @@ class InvoiceItem(Base):
     net_value: Mapped[float] = mapped_column(FLOAT, nullable=False)
     gross_value: Mapped[float] = mapped_column(FLOAT, nullable=False)
     in_trash: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
+
+
+class AIIsExternalBusinessEntityRecognised(Base):
+    __tablename__= 'ai_is_external_business_entity_recognised'
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    extracted_invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("ai_extracted_invoice.id", ondelete="CASCADE"), nullable=False)
+    external_business_entity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("external_business_entity.id", ondelete="CASCADE"))
+    is_recognized: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
+
+class AIIsUserBusinessEntityRecognised(Base):
+    __tablename__= 'ai_is_user_business_entity_recognised'
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    extracted_invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("ai_extracted_invoice.id", ondelete="CASCADE"), nullable=False)
+    user_business_entity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user_business_entity.id", ondelete="CASCADE"), nullable=True)
+    is_recognized: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
+
+class AIExtractedUserBusinessEntity(Base):
+    __tablename__ = 'ai_extracted_user_business_entity'
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    extracted_invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("ai_extracted_invoice.id", ondelete="CASCADE"), nullable=False)
+    company_name: Mapped[str] = mapped_column(VARCHAR(255), nullable=True)
+    city: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
+    postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
+    street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
+    nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
+
+class AIExtractedExternalBusinessEntity(Base):
+    __tablename__= 'ai_extracted_external_business_entity'
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    extracted_invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("ai_extracted_invoice.id", ondelete="CASCADE"), nullable=False)
+    name: Mapped[str] = mapped_column(VARCHAR(255), nullable=True)
+    city: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
+    postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
+    street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
+    nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
+
+class AIExtractedInvoice(Base):
+    __tablename__ = 'ai_extracted_invoice'
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    invoice_pdf: Mapped[Optional[str]] = mapped_column(VARCHAR(500), nullable=False)
+    invoice_number: Mapped[str] = mapped_column(VARCHAR(255), nullable=True)
+    issue_date: Mapped[date] = mapped_column(DATE, nullable=True)
+    sale_date: Mapped[date] = mapped_column(DATE, nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(VARCHAR, nullable=True)
+    payment_method: Mapped[str] = mapped_column(VARCHAR(255), nullable=True)
+    payment_deadline: Mapped[date] = mapped_column(DATE, nullable=True)
+    added_date: Mapped[date] = mapped_column(DATE, nullable=False)
+    is_issued: Mapped[bool] = mapped_column(BOOLEAN, nullable=True)
+
+class AIExtractedInvoiceItem(Base):
+    __tablename__ = 'ai_extracted_invoice_item'
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    extracted_invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("ai_extracted_invoice.id", ondelete="CASCADE"), nullable=False)
+    ai_extracted_invoice: Mapped["AIExtractedInvoice"] = relationship(back_populates="ai_extracted_invoice_item")
+    item_description: Mapped[str] = mapped_column(VARCHAR, nullable=True)
+    number_of_items: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    net_value: Mapped[float] = mapped_column(FLOAT, nullable=True)
+    gross_value: Mapped[float] = mapped_column(FLOAT, nullable=True)

@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 class FilesRepositoryABC(ABC):
     
     @abstractmethod
-    async def remove_invoice_folder(self, user_id: str, invoice_id: str):
+    async def remove_invoice_folder(self, user_id: str, invoice_id: str, folder: str):
         ...
 
     @abstractmethod

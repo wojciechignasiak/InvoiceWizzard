@@ -10,8 +10,8 @@ import io
 
 class FilesRepository(FilesRepositoryABC):
     
-    async def remove_invoice_folder(self, user_id: str, invoice_id: str):
-        shutil.rmtree(f"/usr/app/invoice/{user_id}/{invoice_id}")
+    async def remove_invoice_folder(self, user_id: str, invoice_id: str, folder: str):
+        shutil.rmtree(f"/usr/app/invoice-files/{folder}/{user_id}/{invoice_id}")
 
     async def save_invoice_file(self, file_path: str, file_data: bytes):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)

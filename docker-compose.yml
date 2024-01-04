@@ -17,7 +17,7 @@ volumes:
   kafka-data-volume:
 
 services:
-######################FastAPI SERVICES - Beginning###########################
+######################Python SERVICES - Beginning###########################
 
   main_api_service:
     container_name: main_api_service
@@ -43,13 +43,13 @@ services:
     restart: always
     volumes:
       - ./main_api_service:/usr/src/main_api_service/
-      - invoice-volume:/usr/app/invoice/
+      - invoice-volume:/usr/app/invoice-files/
     depends_on:
       - postgresql
       - redis
       - kafka
 
-######################FastAPI SERVICES - End###########################
+######################Python SERVICES - End###########################
 
 ######################Databases SERVICES - Beginning###########################
 
@@ -96,7 +96,7 @@ services:
     container_name: redisearch
     image: redislabs/redisearch:2.8.8
     ports:
-      - "6380:6380"
+      - "6380:6379"
     expose:
       - 6380
     networks:

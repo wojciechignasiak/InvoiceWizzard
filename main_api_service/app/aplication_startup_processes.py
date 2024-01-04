@@ -71,7 +71,7 @@ class ApplicationStartupProcesses:
         while True:
             try:
                 print("Creating Redis connection pool...")
-                redis_pool = BlockingConnectionPool(host=self.redis_host, port=self.redis_port, password=self.redis_password)
+                redis_pool = BlockingConnectionPool(max_connections=3000, host=self.redis_host, port=self.redis_port, password=self.redis_password)
                 redis_client: Redis = await Redis(connection_pool=redis_pool)
                 print("Testing connection to Redis...")
                 redis_info = await redis_client.ping()

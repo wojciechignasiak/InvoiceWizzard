@@ -10,8 +10,10 @@ from app.routers import (
     user_business_entity_router,
     external_business_entity_router,
     invoice_router,
-    invoice_item_router
+    invoice_item_router,
+    ai_extracted_data_router
     )
+
 
 middleware = [
     middleware.Middleware(
@@ -65,6 +67,7 @@ def create_application() -> FastAPI:
     application.include_router(external_business_entity_router.router, tags=["external-business-entity"])
     application.include_router(invoice_router.router, tags=["invoice"])
     application.include_router(invoice_item_router.router, tags=["invoice-item"])
+    application.include_router(ai_extracted_data_router.router, tags=["ai-extracted-data"])
     return application
 
 app = create_application()

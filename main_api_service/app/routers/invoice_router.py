@@ -524,7 +524,8 @@ async def confirm_invoice_removal(
         if invoice_model.invoice_pdf != None:
             await files_repository.remove_invoice_folder(
                 user_id=jwt_payload.id, 
-                invoice_id=invoice_model.id)
+                invoice_id=invoice_model.id,
+                folder="invoice")
 
         await invoice_redis_repository.delete_invoice_removal(
             key_id=key_id
@@ -580,7 +581,7 @@ async def add_file_to_invoice(
         if invoice_model.invoice_pdf != None:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The invoice arleady have pdf file. Delete current file first.")
         
-        file_path = f"/usr/app/invoice/{jwt_payload.id}/{invoice_model.id}/invoice.pdf"
+        file_path = f"/usr/app/invoice-files/invoice/{jwt_payload.id}/{invoice_model.id}/invoice.pdf"
 
         file_extension = invoice_file.filename.split(".")[-1]
 
@@ -654,7 +655,8 @@ async def delete_invoice_pdf(
         
         await files_repository.remove_invoice_folder(
             user_id=jwt_payload.id,
-            invoice_id=invoice_model.id
+            invoice_id=invoice_model.id,
+            folder='invoice'
         )
 
         return JSONResponse(status_code=status.HTTP_200_OK, content={"detail": "File has been deleted."})
@@ -777,7 +779,7 @@ async def generate_invoice_pdf(
             invoice_items=invoice_items_model
         )
         
-        file_path = f"/usr/app/invoice/{jwt_payload.id}/{invoice_model.id}/invoice.pdf"
+        file_path = f"/usr/app/invoice-files/invoice/{jwt_payload.id}/{invoice_model.id}/invoice.pdf"
 
         await files_repository.invoice_html_to_pdf(
             invoice_html=invoice_html,
