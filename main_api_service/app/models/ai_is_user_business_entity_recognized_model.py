@@ -15,7 +15,7 @@ class CreateAIIsUserBusinessEntityRecognizedModel(BaseModel):
 class UpdateAIIsUserBusinessEntityRecognizedModel(BaseModel):
     extracted_invoice_id: UUID
     is_recognized: bool
-    user_business_entity_id: UUID
+    user_business_entity_id: Optional[UUID] | None
 
     @field_validator("extracted_invoice_id", "user_business_entity_id")
     def parse_id(cls, value):
