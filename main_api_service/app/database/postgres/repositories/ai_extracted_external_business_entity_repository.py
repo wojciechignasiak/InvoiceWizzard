@@ -25,18 +25,18 @@ class AIExtractedExternalBusinessEntityPostgresRepository(BasePostgresRepository
     async def create_extracted_external_business_entity(self, 
                                                         user_id: str, 
                                                         extracted_invoice_id: str, 
-                                                        ai_extracted_external_business_entity_data: CreateAIExtractedExternalBusinessModel) -> AIExtractedExternalBusinessEntity:
+                                                        ai_extracted_external_business_entity: CreateAIExtractedExternalBusinessModel) -> AIExtractedExternalBusinessEntity:
         try:
             stmt = (
                 insert(AIExtractedExternalBusinessEntity).
                 values(
-                    id=ai_extracted_external_business_entity_data.id,
+                    id=ai_extracted_external_business_entity.id,
                     user_id=user_id,
                     extracted_invoice_id=extracted_invoice_id,
-                    name=ai_extracted_external_business_entity_data.name,
-                    city=ai_extracted_external_business_entity_data.city,
-                    postal_code=ai_extracted_external_business_entity_data.postal_code,
-                    nip=ai_extracted_external_business_entity_data.nip
+                    name=ai_extracted_external_business_entity.name,
+                    city=ai_extracted_external_business_entity.city,
+                    postal_code=ai_extracted_external_business_entity.postal_code,
+                    nip=ai_extracted_external_business_entity.nip
                 ). 
                 returning(AIExtractedExternalBusinessEntity)
             )
@@ -117,5 +117,5 @@ class AIExtractedExternalBusinessEntityPostgresRepository(BasePostgresRepository
             else:
                 return False
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"AIExtractedExternalBusinessEntityPostgresRepository.delete_extracted_invoice() Error: {e}")
+            logger.error(f"AIExtractedExternalBusinessEntityPostgresRepository.delete_extracted_external_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
