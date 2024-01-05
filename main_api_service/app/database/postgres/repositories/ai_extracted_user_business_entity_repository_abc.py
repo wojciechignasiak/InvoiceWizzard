@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from app.models.ai_extracted_user_business_entity_model import CreateAIExtractedUserBusinessModel, UpdateAIExtractedUserBusinessModel
-from app.schema.schema import AIExtractedExternalBusinessEntity
+from app.schema.schema import AIExtractedUserBusinessEntity
 
 class AIExtractedUserBusinessEntityPostgresRepositoryABC(ABC):
 
@@ -8,13 +8,13 @@ class AIExtractedUserBusinessEntityPostgresRepositoryABC(ABC):
     async def create_extracted_user_external_business_entity(self, 
                                                     user_id: str, 
                                                     extracted_invoice_id: str, 
-                                                    ai_extracted_user_business_entity: CreateAIExtractedUserBusinessModel) -> AIExtractedExternalBusinessEntity:
+                                                    ai_extracted_user_business_entity: CreateAIExtractedUserBusinessModel) -> AIExtractedUserBusinessEntity:
         ...
 
     @abstractmethod
     async def get_extracted_user_external_business_entity(self, 
                                                         extracted_invoice_id: str, 
-                                                        user_id: str) -> AIExtractedExternalBusinessEntity:
+                                                        user_id: str) -> AIExtractedUserBusinessEntity:
         ...
 
     @abstractmethod

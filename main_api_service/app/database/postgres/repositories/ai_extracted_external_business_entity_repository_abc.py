@@ -7,7 +7,7 @@ class AIExtractedExternalBusinessEntityPostgresRepositoryABC(ABC):
     async def create_extracted_external_business_entity(self, 
                                                         user_id: str, 
                                                         extracted_invoice_id: str, 
-                                                        ai_extracted_external_business_entity_data: CreateAIExtractedExternalBusinessModel) -> AIExtractedExternalBusinessEntity:
+                                                        ai_extracted_external_business_entity: CreateAIExtractedExternalBusinessModel) -> AIExtractedExternalBusinessEntity:
         ...
 
     @abstractmethod
