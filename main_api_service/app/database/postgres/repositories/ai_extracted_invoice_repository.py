@@ -1,10 +1,9 @@
-from abc import ABC, abstractmethod
 from app.models.ai_extracted_invoice_model import CreateAIExtractedInvoiceModel, UpdateAIExtractedInvoiceModel
 from app.schema.schema import AIExtractedInvoice
 from typing import List
 from app.database.postgres.repositories.ai_extracted_invoice_repository_abc import AIExtractedInvoicePostgresRepositoryABC
 from app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
-from sqlalchemy import insert, select, update, delete, func
+from sqlalchemy import insert, select, update, delete
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLDatabaseError,
     PostgreSQLIntegrityError,
