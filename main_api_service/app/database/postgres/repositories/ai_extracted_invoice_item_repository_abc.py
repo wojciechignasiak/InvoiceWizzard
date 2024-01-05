@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from app.models.ai_extracted_invoice_item_model import CreateAIExtractedInvoiceItemModel
+from app.models.ai_extracted_invoice_item_model import CreateAIExtractedInvoiceItemModel, UpdateAIExtractedInvoiceItemModel
 from app.schema.schema import AIExtractedInvoiceItem
 from typing import List
 
@@ -18,7 +18,7 @@ class AIExtractedInvoiceItemPostgresRepositoryABC(ABC):
         ...
 
     @abstractmethod
-    async def update_extracted_invoice_item(self, user_id: str) -> None:
+    async def update_extracted_invoice_item(self, user_id: str, update_ai_extracted_invoice_item: UpdateAIExtractedInvoiceItemModel) -> None:
         ...
 
     @abstractmethod

@@ -16,13 +16,14 @@ class CreateAIExtractedInvoiceItemModel(BaseModel):
         return uuid4()
 
 class UpdateAIExtractedInvoiceItemModel(BaseModel):
+    id: UUID
     extracted_invoice_id: UUID
     item_description: str
     number_of_items: int
     net_value: float
     gross_value: float
 
-    @field_validator("extracted_invoice_id")
+    @field_validator("id","extracted_invoice_id")
     def parse_id(cls, value):
         if isinstance(value, str):
             return UUID(value)
