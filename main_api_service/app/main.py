@@ -49,6 +49,9 @@ async def lifespan(app: FastAPI):
 
     app.state.events_registry = await application_statup_processes.events_registry()
 
+    app.state.kafka_consumer = await application_statup_processes.kafka_consumer()
+    print("Kafka Consumer started...")
+
     yield
     ''' Run on shutdown
         Close the connection
@@ -56,8 +59,10 @@ async def lifespan(app: FastAPI):
     '''
     print("Disposing PostgreSQL engine...")
     await app.state.engine.dispose()
-    print("Stopping Kafka producer...")
+    print("Stopping Kafka Producer...")
     await app.state.kafka_producer.stop()
+    print("Stopping Kafka Consumer...")
+    await app.state.kafka_consumer.stop()
     
 
 def create_application() -> FastAPI:

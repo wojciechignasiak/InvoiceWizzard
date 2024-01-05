@@ -6,7 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 from redis.asyncio import Redis, BlockingConnectionPool
 from kafka.errors import KafkaTimeoutError, KafkaError
-from aiokafka import AIOKafkaProducer
+from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
 from app.kafka.initialize_topics.startup_topics import startup_topics
 from app.registries.repositories_registry import RepositoriesRegistry
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
@@ -107,6 +107,16 @@ class ApplicationStartupProcesses:
                 return kafka_producer
             except (KafkaError, KafkaTimeoutError) as e:
                 print(f'Error occured durning running Kafka Producer: {e}')
+
+    async def kafka_consumer(self) -> AIOKafkaConsumer:
+        while True:
+            try:
+                print("Running Kafka Consumer on separate event loop...")
+                loop = asyncio.get_event_loop()
+                kafka_consumer: AIOKafkaConsumer = AIOKafkaProducer(loop=loop, bootstrap_servers=self.kafka_url)
+                return kafka_consumer
+            except (KafkaError, KafkaTimeoutError) as e:
+                print(f'Error occured durning running Kafka Consumer: {e}')
 
     async def repositories_registry(self) -> RepositoriesRegistry:
         while True:
