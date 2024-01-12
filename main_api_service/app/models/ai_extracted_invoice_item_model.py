@@ -14,6 +14,13 @@ class CreateAIExtractedInvoiceItemModel(BaseModel):
     @property
     def id(self):
         return uuid4()
+    
+class CreateManuallyAIExtractedInvoiceItemModel(BaseModel):
+    extracted_invoice_id: UUID
+    item_description: str
+    number_of_items: int
+    net_value: float
+    gross_value: float
 
 class UpdateAIExtractedInvoiceItemModel(BaseModel):
     id: UUID
