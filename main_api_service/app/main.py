@@ -11,7 +11,8 @@ from app.routers import (
     external_business_entity_router,
     invoice_router,
     invoice_item_router,
-    ai_extracted_invoice_router
+    ai_extracted_invoice_router,
+    ai_extracted_invoice_item_router
     )
 
 
@@ -75,6 +76,7 @@ def create_application() -> FastAPI:
     application.include_router(invoice_router.router, tags=["invoice"])
     application.include_router(invoice_item_router.router, tags=["invoice-item"])
     application.include_router(ai_extracted_invoice_router.router, tags=["ai-extracted-invoice"])
+    application.include_router(ai_extracted_invoice_item_router.router, tags=["ai-extracted-invoice-item"])
     return application
 
 app = create_application()
