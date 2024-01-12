@@ -17,7 +17,6 @@ class AIExtractedInvoicePostgresRepositoryABC(ABC):
 
     @abstractmethod
     async def get_all_extracted_invoices(self, 
-                                        extracted_invoice_id: str,
                                         user_id: str,
                                         page: int = 1, 
                                         items_per_page: int = 10) -> List[AIExtractedInvoice]:
