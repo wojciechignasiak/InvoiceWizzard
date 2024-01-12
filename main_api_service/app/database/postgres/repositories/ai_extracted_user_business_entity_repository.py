@@ -22,7 +22,7 @@ from app.logging import logger
 
 class AIExtractedUserBusinessEntityPostgresRepository(BasePostgresRepository, AIExtractedUserBusinessEntityPostgresRepositoryABC):
 
-    async def create_extracted_user_external_business_entity(self, 
+    async def create_extracted_user_business_entity(self, 
                                                     user_id: str, 
                                                     extracted_invoice_id: str, 
                                                     ai_extracted_user_business_entity: CreateAIExtractedUserBusinessModel) -> AIExtractedUserBusinessEntity:
@@ -49,7 +49,7 @@ class AIExtractedUserBusinessEntityPostgresRepository(BasePostgresRepository, AI
             logger.error(f"AIExtractedUserBusinessEntityPostgresRepository.create_extracted_user_external_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def get_extracted_user_external_business_entity(self, 
+    async def get_extracted_user_business_entity(self, 
                                                         extracted_invoice_id: str, 
                                                         user_id: str) -> AIExtractedUserBusinessEntity:
         try:
@@ -68,7 +68,7 @@ class AIExtractedUserBusinessEntityPostgresRepository(BasePostgresRepository, AI
             logger.error(f"AIExtractedUserBusinessEntityPostgresRepository.get_extracted_user_external_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def update_extracted_user_external_business_entity(self, 
+    async def update_extracted_user_business_entity(self, 
                                                             update_ai_extracted_user_business_entity: UpdateAIExtractedUserBusinessModel, 
                                                             user_id: str) -> None:
         try:
@@ -95,7 +95,7 @@ class AIExtractedUserBusinessEntityPostgresRepository(BasePostgresRepository, AI
             logger.error(f"AIExtractedUserBusinessEntityPostgresRepository.update_extracted_user_external_business_entity() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
 
-    async def delete_extracted_user_external_business_entity(self, 
+    async def delete_extracted_user_business_entity(self, 
                                                             extracted_invoice_id: str, 
                                                             user_id: str) -> bool:
         try:

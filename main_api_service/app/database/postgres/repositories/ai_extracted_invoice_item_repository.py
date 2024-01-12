@@ -112,3 +112,23 @@ class AIExtractedInvoiceItemPostgresRepository(BasePostgresRepository, AIExtract
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"AIExtractedInvoiceItemPostgresRepository.delete_extracted_invoice_item() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
+        
+    async def delete_extracted_invoice_items(self, extracted_invoice_id: str, user_id: str) -> bool:
+        try:
+            stmt = (
+                delete(AIExtractedInvoiceItem).
+                where(
+                    AIExtractedInvoiceItem.id == extracted_invoice_id,
+                    AIExtractedInvoiceItem.user_id == user_id
+                )
+            )
+            deleted_extracted_invoice_item = await self.session.execute(stmt)
+            rows_after_delete = deleted_extracted_invoice_item.rowcount
+
+            if rows_after_delete >= 0:
+                return True
+            else:
+                return False
+        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
+            logger.error(f"AIExtractedInvoiceItemPostgresRepository.delete_extracted_invoice_items() Error: {e}")
+            raise PostgreSQLDatabaseError("Error related to database occured.")

@@ -11,7 +11,7 @@ from app.routers import (
     external_business_entity_router,
     invoice_router,
     invoice_item_router,
-    ai_extracted_data_router
+    ai_extracted_invoice_router
     )
 
 
@@ -45,12 +45,14 @@ async def lifespan(app: FastAPI):
     await app.state.kafka_producer.start()
     print("Kafka Producer started...")
 
+    app.state.kafka_consumer = await application_statup_processes.kafka_consumer()
+    print("Kafka Consumer started...")
+
     app.state.repositories_registry = await application_statup_processes.repositories_registry()
 
     app.state.events_registry = await application_statup_processes.events_registry()
 
-    app.state.kafka_consumer = await application_statup_processes.kafka_consumer()
-    print("Kafka Consumer started...")
+    
 
     yield
     ''' Run on shutdown
@@ -72,7 +74,7 @@ def create_application() -> FastAPI:
     application.include_router(external_business_entity_router.router, tags=["external-business-entity"])
     application.include_router(invoice_router.router, tags=["invoice"])
     application.include_router(invoice_item_router.router, tags=["invoice-item"])
-    application.include_router(ai_extracted_data_router.router, tags=["ai-extracted-data"])
+    application.include_router(ai_extracted_invoice_router.router, tags=["ai-extracted-invoice"])
     return application
 
 app = create_application()

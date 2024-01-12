@@ -5,26 +5,26 @@ from app.schema.schema import AIExtractedUserBusinessEntity
 class AIExtractedUserBusinessEntityPostgresRepositoryABC(ABC):
 
     @abstractmethod
-    async def create_extracted_user_external_business_entity(self, 
+    async def create_extracted_user_business_entity(self, 
                                                     user_id: str, 
                                                     extracted_invoice_id: str, 
                                                     ai_extracted_user_business_entity: CreateAIExtractedUserBusinessModel) -> AIExtractedUserBusinessEntity:
         ...
 
     @abstractmethod
-    async def get_extracted_user_external_business_entity(self, 
+    async def get_extracted_user_business_entity(self, 
                                                         extracted_invoice_id: str, 
                                                         user_id: str) -> AIExtractedUserBusinessEntity:
         ...
 
     @abstractmethod
-    async def update_extracted_user_external_business_entity(self, 
+    async def update_extracted_user_business_entity(self, 
                                                             update_extracted_user_external_business_entity: UpdateAIExtractedUserBusinessModel, 
                                                             user_id: str) -> None:
         ...
 
     @abstractmethod
-    async def delete_extracted_user_external_business_entity(self, 
+    async def delete_extracted_user_business_entity(self, 
                                                             extracted_invoice_id: str, 
                                                             user_id: str) -> bool:
         ...

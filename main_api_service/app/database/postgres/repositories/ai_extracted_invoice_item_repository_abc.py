@@ -24,3 +24,7 @@ class AIExtractedInvoiceItemPostgresRepositoryABC(ABC):
     @abstractmethod
     async def delete_extracted_invoice_item(self, extracted_invoice_item_id: str, user_id: str) -> bool:
         ...
+
+    @abstractmethod
+    async def delete_extracted_invoice_items(self, extracted_invoice_id: str, user_id: str) -> bool:
+        ...
