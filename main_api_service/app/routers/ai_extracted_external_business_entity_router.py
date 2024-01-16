@@ -34,7 +34,6 @@ from app.models.jwt_model import (
     JWTPayloadModel
 )
 from uuid import uuid4
-from typing import List
 
 
 router = APIRouter()
@@ -155,6 +154,14 @@ async def accept_ai_extracted_external_busines_entity(
             street=ai_extracted_external_business_entity_model.street,
             nip=ai_extracted_external_business_entity_model.nip
         )
+
+        is_external_business_entity_unique: bool = await external_business_entity_postgres_repository.is_external_business_entity_unique(
+            user_id=jwt_payload.id,
+            new_external_business_entity=create_extracted_external_business_entity_model
+        )
+
+        if is_external_business_entity_unique == False:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External business entity with provided name/nip arleady exists.")
 
         external_business_entity: ExternalBusinessEntity = await external_business_entity_postgres_repository.create_external_business_entity(
             user_id=jwt_payload.id,
