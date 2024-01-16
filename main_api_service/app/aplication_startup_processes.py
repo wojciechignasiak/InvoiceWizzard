@@ -29,6 +29,7 @@ from app.kafka.events.user_events import UserEvents
 from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
 from app.kafka.events.external_business_entity_events import ExternalBusinessEntityEvents
 from app.kafka.events.invoice_events import InvoiceEvents
+from app.kafka.events.ai_invoice_events import AIInvoiceEvents
 from app.files.files_repository import FilesRepository
 
 class ApplicationStartupProcesses:
@@ -160,7 +161,8 @@ class ApplicationStartupProcesses:
                     UserEvents,
                     UserBusinessEntityEvents,
                     ExternalBusinessEntityEvents,
-                    InvoiceEvents
+                    InvoiceEvents,
+                    AIInvoiceEvents
                     )
                 print("Events registry initialized!")
                 return events_registry

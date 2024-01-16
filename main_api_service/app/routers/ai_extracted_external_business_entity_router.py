@@ -33,7 +33,6 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
 from app.models.jwt_model import (
     JWTPayloadModel
 )
-from uuid import uuid4
 
 
 router = APIRouter()

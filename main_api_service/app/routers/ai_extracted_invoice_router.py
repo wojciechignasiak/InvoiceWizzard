@@ -12,6 +12,11 @@ from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLIntegrityError,
     PostgreSQLNotFoundError
     )
+from aiokafka import AIOKafkaProducer
+from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
+from app.kafka.exceptions.custom_kafka_exceptions import KafkaBaseError
+from app.registries.get_events_registry import get_events_registry
+from app.registries.events_registry_abc import EventsRegistryABC
 from app.models.ai_extracted_invoice_model import AIExtractedInvoiceModel, UpdateAIExtractedInvoiceModel
 from app.models.ai_extracted_invoice_item_model import AIExtractedInvoiceItemModel
 from app.models.ai_extracted_user_business_entity_model import AIExtractedUserBusinessEntityModel
@@ -51,10 +56,14 @@ async def extract_invoice_data_from_file(
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
     redis_client: Redis = Depends(get_redis_client),
+    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client),
+    events_registry: EventsRegistryABC = Depends(get_events_registry),
     ):
     try:
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         files_repository = await repositories_registry.return_files_repository()
+
+        ai_invoice_events = await events_registry.return_ai_invoice_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -85,7 +94,9 @@ async def extract_invoice_data_from_file(
             case _:
                 raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Invoice file in unsupported format. Use PDF or JPG/JPEG/PNG.")
             
-        
+        await ai_invoice_events.extract_invoice_data(
+            file_location=file_path
+        )
 
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "File has been uploaded succesfull. You will be notified when data extraction is complete."})
     except HTTPException as e:
