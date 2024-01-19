@@ -11,14 +11,14 @@ import io
 
 class FilesRepository(FilesRepositoryABC):
     
-    async def remove_invoice_folder(self, user_id: str, invoice_id: str, folder: str):
+    async def remove_invoice_folder(user_id: str, invoice_id: str, folder: str):
         try:
             shutil.rmtree(f"/usr/app/invoice-files/{folder}/{user_id}/{invoice_id}")
         except Exception as e:
             logger.error(f"FilesRepository.remove_invoice_folder() Error: {e}")
             raise Exception("Error durning removing file occured.")
 
-    async def save_invoice_file(self, file_path: str, file_data: bytes):
+    async def save_invoice_file(file_path: str, file_data: bytes):
         try:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, "wb") as f:
@@ -27,7 +27,7 @@ class FilesRepository(FilesRepositoryABC):
             logger.error(f"FilesRepository.save_invoice_file() Error: {e}")
             raise Exception("Error durning removing file occured.")
 
-    async def convert_from_img_to_pdf_and_save_invoice_file(self, file_path: str, file_extension: str, file_data: bytes):
+    async def convert_from_img_to_pdf_and_save_invoice_file(file_path: str, file_extension: str, file_data: bytes):
         try:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
                     
@@ -47,7 +47,7 @@ class FilesRepository(FilesRepositoryABC):
             logger.error(f"FilesRepository.convert_from_img_to_pdf_and_save_invoice_file() Error: {e}")
             raise Exception("Error durning converting img to pdf file occured.")
 
-    async def get_invoice_pdf_file(self, file_path: str):
+    async def get_invoice_pdf_file(file_path: str):
         try:
             return Path(file_path)
         except Exception as e:

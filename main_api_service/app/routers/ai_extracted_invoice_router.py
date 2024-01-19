@@ -25,6 +25,7 @@ from app.models.ai_is_external_business_entity_recognized_model import AIIsExter
 from app.models.ai_is_user_business_entity_recognized_model import AIIsUserBusinessEntityRecognizedModel
 from app.models.invoice_model import CreateInvoiceModel, InvoiceModel
 from app.models.invoice_item_model import CreateInvoiceItemModel
+from app.models.user_business_entity_model import UserBusinessEntityModel
 from app.schema.schema import (
     AIExtractedInvoice,
     AIExtractedInvoiceItem,
@@ -32,7 +33,8 @@ from app.schema.schema import (
     AIExtractedUserBusinessEntity,
     AIIsExternalBusinessEntityRecognized,
     AIIsUserBusinessEntityRecognized,
-    Invoice
+    Invoice,
+    UserBusinessEntity
 )
 from app.database.redis.client.get_redis_client import get_redis_client
 from app.database.redis.exceptions.custom_redis_exceptions import (
@@ -58,11 +60,13 @@ async def extract_invoice_data_from_file(
     redis_client: Redis = Depends(get_redis_client),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client),
     events_registry: EventsRegistryABC = Depends(get_events_registry),
+    postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
         user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
         files_repository = await repositories_registry.return_files_repository()
 
+        user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
         ai_invoice_events = await events_registry.return_ai_invoice_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -94,8 +98,22 @@ async def extract_invoice_data_from_file(
             case _:
                 raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Invoice file in unsupported format. Use PDF or JPG/JPEG/PNG.")
             
+        user_business_entities: List[UserBusinessEntity] = await user_business_entity_postgres_repository.get_all_user_business_entities(
+            user_id=jwt_payload.id,
+            items_per_page=1000
+        )
+
+        user_business_entities_nip: List[str] = []
+
+        for user_business_entity in user_business_entities:
+            user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(
+                user_business_entity_schema=user_business_entity
+            )
+            user_business_entities_nip.append(user_business_entity_model.nip)
+
         await ai_invoice_events.extract_invoice_data(
-            file_location=file_path
+            file_location=file_path,
+            user_business_entities_nip=user_business_entities_nip
         )
 
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "File has been uploaded succesfull. You will be notified when data extraction is complete."})

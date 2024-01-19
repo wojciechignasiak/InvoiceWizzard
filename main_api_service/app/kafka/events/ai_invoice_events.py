@@ -8,10 +8,11 @@ from app.logging import logger
 
 class AIInvoiceEvents(KafkaProducerBase, AIInvoiceEventsABC):
 
-    async def extract_invoice_data(self, file_location: str):
+    async def extract_invoice_data(self, file_location: str, user_business_entities_nip: str):
         try:
             message = {
-                "file_location": file_location
+                "file_location": file_location,
+                "user_business_entities_nip": user_business_entities_nip,
             }
             await self.kafka_producer.send(
                 KafkaTopicsEnum.extract_invoice_data.value, 

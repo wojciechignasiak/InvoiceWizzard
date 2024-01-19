@@ -27,6 +27,7 @@ from app.models.user_business_entity_model import (
     UpdateUserBusinessEntityModel,
     UserBusinessEntityModel
 )
+from app.models.external_business_entity_model import CreateExternalBusinessEntityModel
 from app.schema.schema import UserBusinessEntity
 from uuid import uuid4
 import ast
@@ -63,14 +64,14 @@ async def create_user_business_entity(
             user_id=jwt_payload.id,
             new_user_business_entity=new_user_business_entity
         )
-
+        
         if is_unique == False:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip arleady exists.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided company name/nip arleady exists.")
 
         is_unique_in_external_business_entity: bool = await external_business_entity_postgres_repository.is_external_business_entity_unique(
             user_id=jwt_payload.id,
-            new_external_business_entity=CreateUserBusinessEntityModel(
-                company_name=new_user_business_entity.company_name,
+            new_external_business_entity=CreateExternalBusinessEntityModel(
+                name=new_user_business_entity.company_name,
                 city=new_user_business_entity.city,
                 postal_code=new_user_business_entity.postal_code,
                 street=new_user_business_entity.street,
@@ -80,7 +81,7 @@ async def create_user_business_entity(
         
         if is_unique_in_external_business_entity == False:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User business entity with provided name/nip arleady exists in External Business Entities.")
-        
+
         user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.create_user_business_entity(
             user_id=jwt_payload.id, 
             new_user_business_entity=new_user_business_entity
