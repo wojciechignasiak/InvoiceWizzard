@@ -695,11 +695,13 @@ async def download_invoice_pdf(
         )
 
         invoice_model: InvoiceModel = await InvoiceModel.invoice_schema_to_model(invoice)
-
+        
         if invoice_model.invoice_pdf == None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice doesn't have file.")
         
-        file: Path = await files_repository.get_invoice_pdf_file(invoice_model.invoice_pdf)
+        file: Path = await files_repository.get_invoice_pdf_file(
+            file_path=invoice_model.invoice_pdf
+            )
         
         if file.is_file() == False:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")

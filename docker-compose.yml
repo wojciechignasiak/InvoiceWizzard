@@ -49,8 +49,58 @@ services:
       - redis
       - kafka
 
-######################Python SERVICES - End###########################
+######################FastAPI SERVICES - End###########################
 
+######################AI SERVICES - Beginning###########################
+  ai_service:
+    container_name: ai_service
+    build: ./ai_service
+    image: ghcr.io/wojciechignasiak/ai_service:0.0.1
+    environment:
+      - KAFKA_HOST=${KAFKA_HOST}
+      - KAFKA_PORT=${KAFKA_PORT}
+      - REDISEARCH_HOST=${REDISEARCH_HOST}
+      - REDISEARCH_PORT=${REDISEARCH_PORT}
+      - OLLAMA_HOST=${OLLAMA_HOST}
+      - OLLAMA_PORT=${OLLAMA_PORT}
+    ports:
+      - 8082:80
+    expose:
+      - 80
+    networks:
+      - backend-network
+    restart: always
+    volumes:
+      - ./ai_service:/usr/src/ai_service/
+      - invoice-volume:/usr/app/invoice-files/
+    depends_on:
+      - kafka
+      - ollama
+      - redisearch
+
+  ollama:
+    container_name: ollama
+    image: ollama/ollama
+    environment:
+        - OLLAMA_ORIGINS=http://ai_service:8082
+        # - gpus=all
+    ports:
+        - 11434:11434
+    expose:
+      - 11434
+    networks:
+      - backend-network
+    restart: always
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #       - driver: nvidia
+    #         count: 1
+    #         capabilities: [gpu]
+
+
+######################AI SERVICES - End###########################
 ######################Databases SERVICES - Beginning###########################
 
   postgresql:
@@ -78,7 +128,7 @@ services:
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
-      - "6379:6379"
+      - "6380:6379"
     expose:
       - 6379
     networks:
@@ -96,9 +146,9 @@ services:
     container_name: redisearch
     image: redislabs/redisearch:2.8.8
     ports:
-      - "6380:6379"
+      - "6379:6379"
     expose:
-      - 6380
+      - 6379
     networks:
       - backend-network
     volumes:
