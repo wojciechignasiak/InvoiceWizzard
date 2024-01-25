@@ -2,6 +2,7 @@ from langchain_community.embeddings import OllamaEmbeddings
 from langchain.vectorstores.redis import Redis
 from langchain.chains import RetrievalQA
 from langchain.llms.ollama import Ollama
+from modules.logging.logging import logger
 import os
 
 
@@ -9,8 +10,8 @@ import os
 class OllamaUtility:
 
     def __init__(self) -> None:
-        self.host = os.getenv('OLLAMA_HOST')
-        self.port = os.getenv('OLLAMA_PORT')
+        self.host = os.getenv("OLLAMA_HOST")
+        self.port = os.getenv("OLLAMA_PORT")
         
     def generate_embedding_model(self):
         try:
@@ -18,14 +19,14 @@ class OllamaUtility:
 
             return embedding_model
         except Exception as e:
-            print(e)
+            logger.error(f"OllamaUtility.generate_embedding_model() Error: {e}")
 
-    def generate_llama2(self):
+    def generate_model(self):
         try:
-            llama2: Ollama  = Ollama(base_url=f"http://{self.host}:{self.port}", temperature=0)
-            return llama2
+            model: Ollama  = Ollama(model="openchat", base_url=f"http://{self.host}:{self.port}", temperature=0)
+            return model
         except Exception as e:
-            print(e)
+            logger.error(f"OllamaUtility.generate_model() Error: {e}")
 
     def generate_qa_chain(self, redis: Redis, ollama_model: Ollama):
         try:
@@ -35,6 +36,4 @@ class OllamaUtility:
                 )
             return qa_chain
         except Exception as e:
-            print(e)
-
-            
+            logger.error(f"OllamaUtility.generate_qa_chain() Error: {e}")

@@ -10,6 +10,7 @@ ENV PYTHONUNBUFFERED 1
 
 # install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
 # install Python dependencies
@@ -21,5 +22,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # add app
 COPY . .
+
+# add entrypoint.sh
+COPY ./entrypoint.sh .
+RUN chmod a+x /usr/src/ai_service/entrypoint.sh
+
+# run entrypoint.sh
+ENTRYPOINT ["sh", "/usr/src/ai_service/entrypoint.sh"]
 
 CMD ["python3", "app/__init__.py"]

@@ -1,7 +1,7 @@
 from langchain.document_loaders.pdf import PyPDFLoader
 from typing import List
 from PyPDF2 import PdfReader
-
+from modules.logging.logging import logger
 
 class PdfUtility:
 
@@ -11,11 +11,11 @@ class PdfUtility:
             pdf_pages: List = loader.load_and_split()
             return pdf_pages
         except Exception as e:
-            print({"chunk_pdf_file": f"Error: {e}"})
+            logger.error(f"PdfUtility.chunk_pdf_file() Error: {e}")
 
-    def is_scan(self, filepath: str) -> bool:
+    def is_scan(self, file_location: str) -> bool:
         try:
-            pdf = PdfReader(filepath)
+            pdf = PdfReader(file_location)
             page = pdf.pages[0]
             text = page.extract_text()
 
@@ -24,4 +24,4 @@ class PdfUtility:
             else:
                 return False
         except Exception as e:
-            print(f"is_scan error: Failed to process PDF. {str(e)}")
+            logger.error(f"PdfUtility.is_scan() Error: {e}")

@@ -63,9 +63,6 @@ services:
       - REDISEARCH_PORT=${REDISEARCH_PORT}
       - OLLAMA_HOST=${OLLAMA_HOST}
       - OLLAMA_PORT=${OLLAMA_PORT}
-      - SEPARATE_HOST_FOR_AI=${SEPARATE_HOST_FOR_AI}
-      - SEPARATE_HOST_AI=${SEPARATE_HOST_AI}
-      - SEPARATE_PORT_AI=${SEPARATE_PORT_AI}
     ports:
       - 8082:80
     expose:
@@ -78,6 +75,8 @@ services:
       - invoice-volume:/usr/app/invoice-files/
     depends_on:
       - kafka
+      - ollama
+      - redisearch
 
   ollama:
     container_name: ollama
