@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import Mock
 from app.schema.schema import ExternalBusinessEntity
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLDatabaseError,
@@ -313,11 +314,12 @@ async def test_get_all_external_business_entities_success(
     mock_jwt_payload_model_object):
 
     external_business_entity_postgres_repository = ExternalBusinessEntityPostgresRepository(mock_postgres_async_session)
-    
-    mock_postgres_async_session.scalars.return_value = [
+    scalar_result = Mock()
+    scalar_result.all.return_value = [
         mock_external_business_entity_schema_object,
         mock_external_business_entity_schema_object,
     ]
+    mock_postgres_async_session.scalars.return_value = scalar_result
 
     external_business_entities = await external_business_entity_postgres_repository.get_all_external_business_entities(
         mock_jwt_payload_model_object.id
@@ -331,7 +333,10 @@ async def test_get_all_external_business_entities_not_found_error(
     mock_jwt_payload_model_object):
 
     external_business_entity_postgres_repository = ExternalBusinessEntityPostgresRepository(mock_postgres_async_session)
-    mock_postgres_async_session.scalars.return_value = []
+
+    scalar_result = Mock()
+    scalar_result.all.return_value = []
+    mock_postgres_async_session.scalars.return_value = scalar_result
     
     with pytest.raises(PostgreSQLNotFoundError):
         await external_business_entity_postgres_repository.get_all_external_business_entities(

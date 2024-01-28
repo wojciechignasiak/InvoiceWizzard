@@ -30,6 +30,18 @@ from app.models.external_business_entity_model import (
 from app.models.user_business_entity_model import (
     CreateUserBusinessEntityModel
 )
+from app.types.postgres_repository_abstract_types import (
+    UserBusinessEntityPostgresRepositoryABC,
+    ExternalBusinessEntityPostgresRepositoryABC,
+    InvoicePostgresRepositoryABC
+)
+from app.types.redis_repository_abstract_types import (
+    UserRedisRepositoryABC,
+    ExternalBusinessEntityRedisRepositoryABC
+)
+from app.types.kafka_event_abstract_types import (
+    ExternalBusinessEntityEventsABC
+)
 from app.schema.schema import ExternalBusinessEntity
 from aiokafka import AIOKafkaProducer
 from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
@@ -52,9 +64,9 @@ async def create_external_business_entity(
     ):
 
     try:
-        external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
-        user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        external_business_entity_postgres_repository: ExternalBusinessEntityPostgresRepositoryABC = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+        user_business_entity_postgres_repository: UserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -70,20 +82,21 @@ async def create_external_business_entity(
         if is_unique == False:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External business entity with provided name/nip arleady exists.")
         
-        is_unique_in_user_business_entity: bool = await user_business_entity_postgres_repository.is_user_business_entity_unique(
-            user_id=jwt_payload.id,
-            new_user_business_entity=CreateUserBusinessEntityModel(
-                company_name=new_external_business_entity.name,
-                city=new_external_business_entity.city,
-                postal_code=new_external_business_entity.postal_code,
-                street=new_external_business_entity.street,
-                nip=new_external_business_entity.nip
+        if new_external_business_entity.nip is not None:
+            is_unique_in_user_business_entity: bool = await user_business_entity_postgres_repository.is_user_business_entity_unique(
+                user_id=jwt_payload.id,
+                new_user_business_entity=CreateUserBusinessEntityModel(
+                    company_name=new_external_business_entity.name,
+                    city=new_external_business_entity.city,
+                    postal_code=new_external_business_entity.postal_code,
+                    street=new_external_business_entity.street,
+                    nip=new_external_business_entity.nip
+                )
             )
-        )
         
-        if is_unique_in_user_business_entity == False:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External business entity with provided name/nip arleady exists in User Business Entities.")
-        
+            if is_unique_in_user_business_entity == False:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External business entity with provided name/nip arleady exists in User Business Entities.")
+            
         external_business_entity: ExternalBusinessEntity = await external_business_entity_postgres_repository.create_external_business_entity(
             user_id=jwt_payload.id, 
             new_external_business_entity=new_external_business_entity
@@ -109,8 +122,8 @@ async def get_external_business_entity(
     ):
 
     try:
-        external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        external_business_entity_postgres_repository: ExternalBusinessEntityPostgresRepositoryABC = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -151,8 +164,8 @@ async def get_all_external_business_entities(
     ):
 
     try:
-        external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        external_business_entity_postgres_repository: ExternalBusinessEntityPostgresRepositoryABC = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -195,8 +208,8 @@ async def update_external_business_entity(
     ):
 
     try:
-        external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        external_business_entity_postgres_repository: ExternalBusinessEntityPostgresRepositoryABC = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -241,11 +254,11 @@ async def initialize_external_business_entity_removal(
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
     try:
-        external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
-        invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        external_business_entity_redis_repository = await repositories_registry.return_external_business_entity_redis_repository(redis_client)
-        external_business_entity_events = await events_registry.return_external_business_events(kafka_producer_client)
+        external_business_entity_postgres_repository: ExternalBusinessEntityPostgresRepositoryABC = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+        invoice_postgres_repository: InvoicePostgresRepositoryABC = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        external_business_entity_redis_repository: ExternalBusinessEntityRedisRepositoryABC = await repositories_registry.return_external_business_entity_redis_repository(redis_client)
+        external_business_entity_events: ExternalBusinessEntityEventsABC = await events_registry.return_external_business_events(kafka_producer_client)
         
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -303,11 +316,11 @@ async def confirm_external_business_entity_removal(
     ):
 
     try:
-        external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
-        invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        external_business_entity_redis_repository = await repositories_registry.return_external_business_entity_redis_repository(redis_client)
-        external_business_entity_events = await events_registry.return_external_business_events(kafka_producer_client)
+        external_business_entity_postgres_repository: ExternalBusinessEntityPostgresRepositoryABC = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+        invoice_postgres_repository: InvoicePostgresRepositoryABC = await repositories_registry.return_invoice_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        external_business_entity_redis_repository: ExternalBusinessEntityRedisRepositoryABC = await repositories_registry.return_external_business_entity_redis_repository(redis_client)
+        external_business_entity_events: ExternalBusinessEntityEventsABC = await events_registry.return_external_business_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials

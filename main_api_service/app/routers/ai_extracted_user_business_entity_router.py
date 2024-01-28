@@ -30,10 +30,17 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError,
     RedisJWTNotFoundError
 )
+from app.types.postgres_repository_abstract_types import (
+    AIExtractedUserBusinessEntityPostgresRepositoryABC,
+    AIIsUserBusinessRecognizedPostgresRepositoryABC,
+    UserBusinessEntityPostgresRepositoryABC
+)
+from app.types.redis_repository_abstract_types import (
+    UserRedisRepositoryABC,
+)
 from app.models.jwt_model import (
     JWTPayloadModel
 )
-from uuid import uuid4
 
 
 router = APIRouter()
@@ -49,11 +56,9 @@ async def get_ai_extracted_user_busines_entity(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_user_business_entity_postgres_repository = await repositories_registry.return_ai_extracted_user_business_entity_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_user_business_entity_postgres_repository: AIExtractedUserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_user_business_entity_postgres_repository(postgres_session)
         
-
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
             )
@@ -89,11 +94,9 @@ async def update_ai_extracted_user_busines_entity(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_user_business_entity_postgres_repository = await repositories_registry.return_ai_extracted_user_business_entity_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_user_business_entity_postgres_repository: AIExtractedUserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_user_business_entity_postgres_repository(postgres_session)
         
-
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
             )
@@ -126,11 +129,10 @@ async def accept_ai_extracted_user_busines_entity(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_user_business_entity_postgres_repository = await repositories_registry.return_ai_extracted_user_business_entity_postgres_repository(postgres_session)
-        user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
-        ai_is_user_business_entity_recognized_postgres_repository = await repositories_registry.return_ai_is_user_business_recognized_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_user_business_entity_postgres_repository: AIExtractedUserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_user_business_entity_postgres_repository(postgres_session)
+        user_business_entity_postgres_repository: UserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
+        ai_is_user_business_entity_recognized_postgres_repository: AIIsUserBusinessRecognizedPostgresRepositoryABC = await repositories_registry.return_ai_is_user_business_recognized_postgres_repository(postgres_session)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -150,6 +152,7 @@ async def accept_ai_extracted_user_busines_entity(
         create_extracted_user_business_entity_model: CreateUserBusinessEntityModel(
             company_name=ai_extracted_user_business_entity_model.company_name,
             city=ai_extracted_user_business_entity_model.city,
+            street=ai_extracted_user_business_entity_model.street,
             postal_code=ai_extracted_user_business_entity_model.postal_code,
             street=ai_extracted_user_business_entity_model.street,
             nip=ai_extracted_user_business_entity_model.nip

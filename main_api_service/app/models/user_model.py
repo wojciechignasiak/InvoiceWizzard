@@ -11,12 +11,12 @@ from app.schema.schema import User
 class UserModel(BaseModel):
     id: str
     email: EmailStr
-    first_name: Optional[str]
-    last_name: Optional[str]
-    phone_number: Optional[str]
-    city: Optional[str]
-    postal_code: Optional[str]
-    street: Optional[str]
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+    street: Optional[str] = None
     registration_date: str
     last_login: str
     email_notification: bool

@@ -2,8 +2,10 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from starlette import middleware
 from app.aplication_startup_processes import ApplicationStartupProcesses
+from app.kafka.clients.events_consumer import EventsConsumer
 from contextlib import asynccontextmanager
 from app.schema.schema import Base
+import asyncio
 
 from app.routers import (
     user_router,
@@ -51,13 +53,15 @@ async def lifespan(app: FastAPI):
     print("Kafka Producer started...")
 
     app.state.kafka_consumer = await application_statup_processes.kafka_consumer()
-    print("Kafka Consumer started...")
+    
+    events_consumer: EventsConsumer = EventsConsumer(app.state.kafka_consumer)
+    asyncio.create_task(events_consumer.run_consumer())
 
+    print("Kafka Consumer started...")
+    
     app.state.repositories_registry = await application_statup_processes.repositories_registry()
 
     app.state.events_registry = await application_statup_processes.events_registry()
-
-    
 
     yield
     ''' Run on shutdown

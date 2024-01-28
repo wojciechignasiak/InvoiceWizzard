@@ -1,35 +1,10 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import date
 from typing import Optional, List
-
-class ExtractedInvoiceModel(BaseModel):
-    invoice_number: Optional[str] | None
-    issue_date: Optional[date] | None
-    sale_date: Optional[date] | None
-    payment_method: Optional[str] | None
-    payment_deadline: Optional[date] | None
-    notes: Optional[str] | None
-    invoice_pdf: str
-    is_issued: Optional[bool] | None
-
-
-class ExtractedInvoiceItemModel(BaseModel):
-    item_description: Optional[str] | None
-    number_of_items: Optional[int] | None
-    net_value: Optional[float] | None
-    gross_value: Optional[float] | None
-
-class ExtractedUserBusinessModel(BaseModel):
-    company_name: Optional[str] | None
-    city: Optional[str] | None
-    postal_code: Optional[str] | None
-    nip: Optional[str] | None
-
-class ExtractedExternalBusinessModel(BaseModel):
-    name: Optional[str] | None
-    city: Optional[str] | None
-    postal_code: Optional[str] | None
-    nip: Optional[str] | None
+from app.models.ai_extracted_invoice_model import CreateAIExtractedInvoiceModel
+from app.models.ai_extracted_invoice_item_model import CreateAIExtractedInvoiceItemModel
+from app.models.ai_extracted_user_business_entity_model import CreateAIExtractedUserBusinessModel
+from app.models.ai_extracted_external_business_entity_model import CreateAIExtractedExternalBusinessModel
 
 class AIExtractedDataModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
@@ -80,7 +55,7 @@ class AIExtractedDataModel(BaseModel):
             }
         )
     user_id: str
-    invoice: ExtractedInvoiceModel
-    invoice_items: List[ExtractedInvoiceItemModel]
-    user_business_entity: ExtractedUserBusinessModel
-    external_business_entity: ExtractedExternalBusinessModel
+    invoice: CreateAIExtractedInvoiceModel
+    invoice_items: List[CreateAIExtractedInvoiceItemModel]
+    user_business_entity: CreateAIExtractedUserBusinessModel
+    external_business_entity: CreateAIExtractedExternalBusinessModel

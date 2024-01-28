@@ -5,10 +5,11 @@ from uuid import UUID, uuid4
 from app.schema.schema import AIExtractedUserBusinessEntity
 
 class CreateAIExtractedUserBusinessModel(BaseModel):
-    company_name: Optional[str] | None
-    city: Optional[str] | None
-    postal_code: Optional[str] | None
-    nip: Optional[str] | None
+    company_name: Optional[str] = None
+    city: Optional[str] = None
+    street: Optional[str] = None
+    postal_code: Optional[str] = None
+    nip: Optional[str] = None
 
     @property
     def id(self):
@@ -17,8 +18,9 @@ class CreateAIExtractedUserBusinessModel(BaseModel):
 class UpdateAIExtractedUserBusinessModel(BaseModel):
     extracted_invoice_id: UUID
     company_name: str
-    city: Optional[str]
-    postal_code: Optional[str]
+    city: Optional[str] = None
+    street: Optional[str] = None
+    postal_code: Optional[str] = None
     nip: str
 
     @field_validator("extracted_invoice_id")
@@ -30,10 +32,11 @@ class UpdateAIExtractedUserBusinessModel(BaseModel):
 class AIExtractedUserBusinessEntityModel(BaseModel):
     id: str
     extracted_invoice_id: str
-    company_name: Optional[str] | None
-    city: Optional[str] | None
-    postal_code: Optional[str] | None
-    nip: Optional[str] | None
+    company_name: Optional[str] = None
+    city: Optional[str] = None
+    street: Optional[str] = None
+    postal_code: Optional[str] = None
+    nip: Optional[str] = None
 
     async def ai_extracted_user_business_schema_to_model(
             extracted_user_business_entity_schema: AIExtractedUserBusinessEntity

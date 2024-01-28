@@ -24,6 +24,15 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError,
     RedisJWTNotFoundError
 )
+from app.types.postgres_repository_abstract_types import (
+    AIExtractedInvoiceItemPostgresRepositoryABC
+)
+from app.types.redis_repository_abstract_types import (
+    UserRedisRepositoryABC,
+)
+from app.types.kafka_event_abstract_types import (
+    AIInvoiceEventsABC
+)
 from app.models.jwt_model import (
     JWTPayloadModel
 )
@@ -43,9 +52,8 @@ async def get_ai_extracted_invoice_items_by_ai_extracted_invoice_id(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_invoice_item_postgres_repository = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_invoice_item_postgres_repository: AIExtractedInvoiceItemPostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
         
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -87,9 +95,8 @@ async def update_ai_extracted_invoice_item(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_invoice_item_postgres_repository = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_invoice_item_postgres_repository: AIExtractedInvoiceItemPostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
         
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -122,9 +129,8 @@ async def create_ai_extracted_invoice_item(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_invoice_item_postgres_repository = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_invoice_item_postgres_repository: AIExtractedInvoiceItemPostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
         
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -169,11 +175,9 @@ async def delete_ai_extracted_invoice_item(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_invoice_item_postgres_repository = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_invoice_item_postgres_repository: AIExtractedInvoiceItemPostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
         
-
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
             )

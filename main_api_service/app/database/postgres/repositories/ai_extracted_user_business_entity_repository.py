@@ -33,7 +33,7 @@ class AIExtractedUserBusinessEntityPostgresRepository(BasePostgresRepository, AI
                     id=ai_extracted_user_business_entity.id,
                     user_id=user_id,
                     extracted_invoice_id=extracted_invoice_id,
-                    company_name=ai_extracted_user_business_entity.name,
+                    company_name=ai_extracted_user_business_entity.company_name,
                     city=ai_extracted_user_business_entity.city,
                     postal_code=ai_extracted_user_business_entity.postal_code,
                     nip=ai_extracted_user_business_entity.nip
