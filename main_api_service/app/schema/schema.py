@@ -111,7 +111,7 @@ class AIIsExternalBusinessEntityRecognized(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
     extracted_invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("ai_extracted_invoice.id", ondelete="CASCADE"), nullable=False)
-    external_business_entity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("external_business_entity.id", ondelete="CASCADE"))
+    external_business_entity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("external_business_entity.id", ondelete="CASCADE"), nullable=True)
     is_recognized: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
 
 class AIIsUserBusinessEntityRecognized(Base):

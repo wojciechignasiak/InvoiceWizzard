@@ -30,6 +30,14 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError,
     RedisJWTNotFoundError
 )
+from app.types.postgres_repository_abstract_types import (
+    AIExtractedExternalBusinessEntityPostgresRepositoryABC,
+    AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC,
+    ExternalBusinessEntityPostgresRepositoryABC
+)
+from app.types.redis_repository_abstract_types import (
+    UserRedisRepositoryABC,
+)
 from app.models.jwt_model import (
     JWTPayloadModel
 )
@@ -48,9 +56,8 @@ async def get_ai_extracted_external_busines_entity(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_external_business_entity_postgres_repository = await repositories_registry.return_ai_extracted_external_business_entity_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_external_business_entity_postgres_repository: AIExtractedExternalBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_external_business_entity_postgres_repository(postgres_session)
         
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -88,9 +95,8 @@ async def update_ai_extracted_external_busines_entity(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_external_business_entity_postgres_repository = await repositories_registry.return_ai_extracted_external_business_entity_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_external_business_entity_postgres_repository: AIExtractedExternalBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_external_business_entity_postgres_repository(postgres_session)
         
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -125,11 +131,10 @@ async def accept_ai_extracted_external_busines_entity(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_external_business_entity_postgres_repository = await repositories_registry.return_ai_extracted_external_business_entity_postgres_repository(postgres_session)
-        external_business_entity_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
-        ai_is_external_business_entity_recognized_postgres_repository = await repositories_registry.return_ai_is_external_business_recognized_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_external_business_entity_postgres_repository: AIExtractedExternalBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_external_business_entity_postgres_repository(postgres_session)
+        external_business_entity_postgres_repository: ExternalBusinessEntityPostgresRepositoryABC = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+        ai_is_external_business_entity_recognized_postgres_repository: AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC = await repositories_registry.return_ai_is_external_business_recognized_postgres_repository(postgres_session)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -149,6 +154,7 @@ async def accept_ai_extracted_external_busines_entity(
         create_extracted_external_business_entity_model: CreateExternalBusinessEntityModel(
             name=ai_extracted_external_business_entity_model.name,
             city=ai_extracted_external_business_entity_model.city,
+            street=ai_extracted_external_business_entity_model.street,
             postal_code=ai_extracted_external_business_entity_model.postal_code,
             street=ai_extracted_external_business_entity_model.street,
             nip=ai_extracted_external_business_entity_model.nip

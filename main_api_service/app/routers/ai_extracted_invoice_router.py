@@ -41,6 +41,21 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError,
     RedisJWTNotFoundError
 )
+from app.types.postgres_repository_abstract_types import (
+    AIExtractedUserBusinessEntityPostgresRepositoryABC,
+    AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC,
+    AIExtractedUserBusinessEntityPostgresRepositoryABC,
+    AIIsUserBusinessRecognizedPostgresRepositoryABC,
+    UserBusinessEntityPostgresRepositoryABC,
+    AIExtractedInvoicePostgresRepositoryABC,
+    AIExtractedInvoiceItemPostgresRepositoryABC
+)
+from app.types.redis_repository_abstract_types import (
+    UserRedisRepositoryABC,
+)
+from app.types.kafka_event_abstract_types import (
+    AIInvoiceEventsABC
+)
 from app.models.jwt_model import (
     JWTPayloadModel
 )
@@ -63,11 +78,10 @@ async def extract_invoice_data_from_file(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
         files_repository = await repositories_registry.return_files_repository()
-
-        user_business_entity_postgres_repository = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
-        ai_invoice_events = await events_registry.return_ai_invoice_events(kafka_producer_client)
+        user_business_entity_postgres_repository: UserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
+        ai_invoice_events: AIInvoiceEventsABC = await events_registry.return_ai_invoice_events(kafka_producer_client)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -134,13 +148,13 @@ async def get_ai_extracted_invoice(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        ai_extracted_invoice_postgres_repository = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
-        ai_extracted_invoice_item_postgres_repository = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
-        ai_extracted_user_business_entity_postgres_repository = await repositories_registry.return_ai_extracted_user_business_entity_postgres_repository(postgres_session)
-        ai_is_user_business_recognized_postgres_repository = await repositories_registry.return_ai_is_user_business_recognized_postgres_repository(postgres_session)
-        ai_extracted_external_business_entity_postgres_repository = await repositories_registry.return_ai_extracted_external_business_entity_postgres_repository(postgres_session)
-        ai_is_external_business_recognized_postgres_repository = await repositories_registry.return_ai_is_external_business_recognized_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_invoice_postgres_repository: AIExtractedInvoicePostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
+        ai_extracted_invoice_item_postgres_repository: AIExtractedInvoiceItemPostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
+        ai_extracted_user_business_entity_postgres_repository: AIExtractedUserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_user_business_entity_postgres_repository(postgres_session)
+        ai_is_user_business_recognized_postgres_repository: AIIsUserBusinessRecognizedPostgresRepositoryABC = await repositories_registry.return_ai_is_user_business_recognized_postgres_repository(postgres_session)
+        ai_extracted_external_business_entity_postgres_repository: AIExtractedUserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_external_business_entity_postgres_repository(postgres_session)
+        ai_is_external_business_recognized_postgres_repository: AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC = await repositories_registry.return_ai_is_external_business_recognized_postgres_repository(postgres_session)
 
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -238,9 +252,9 @@ async def get_all_ai_extracted_invoices(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        ai_extracted_invoice_postgres_repository = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
-        ai_extracted_invoice_item_postgres_repository = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_invoice_postgres_repository: AIExtractedInvoicePostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
+        ai_extracted_invoice_item_postgres_repository: AIExtractedInvoiceItemPostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
         
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -303,12 +317,11 @@ async def accept_ai_extracted_invoice(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_invoice_postgres_repository = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
-        ai_extracted_invoice_item_postgres_repository = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
-        ai_is_external_business_recognized_postgres_repository = await repositories_registry.return_ai_is_external_business_recognized_postgres_repository(postgres_session)
-        ai_is_user_business_recognized_postgres_repository = await repositories_registry.return_ai_is_user_business_recognized_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_invoice_postgres_repository: AIExtractedInvoicePostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
+        ai_extracted_invoice_item_postgres_repository: AIExtractedInvoiceItemPostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
+        ai_is_external_business_recognized_postgres_repository: AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC = await repositories_registry.return_ai_is_external_business_recognized_postgres_repository(postgres_session)
+        ai_is_user_business_recognized_postgres_repository: AIIsUserBusinessRecognizedPostgresRepositoryABC = await repositories_registry.return_ai_is_user_business_recognized_postgres_repository(postgres_session)
         
         invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
         invoice_item_postgres_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
@@ -444,14 +457,13 @@ async def delete_ai_extracted_invoice(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_invoice_postgres_repository = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
-        ai_extracted_invoice_item_postgres_repository = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
-        ai_is_external_business_recognized_postgres_repository = await repositories_registry.return_ai_is_external_business_recognized_postgres_repository(postgres_session)
-        ai_is_user_business_recognized_postgres_repository = await repositories_registry.return_ai_is_user_business_recognized_postgres_repository(postgres_session)
-        ai_extracted_user_business_entity_postgres_repository = await repositories_registry.return_ai_extracted_user_business_entity_postgres_repository(postgres_session)
-        ai_extracted_external_business_entity_postgres_repository = await repositories_registry.return_ai_extracted_external_business_entity_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_invoice_postgres_repository: AIExtractedInvoicePostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
+        ai_extracted_invoice_item_postgres_repository: AIExtractedInvoiceItemPostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_item_postgres_repository(postgres_session)
+        ai_is_external_business_recognized_postgres_repository: AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC = await repositories_registry.return_ai_is_external_business_recognized_postgres_repository(postgres_session)
+        ai_is_user_business_recognized_postgres_repository: AIIsUserBusinessRecognizedPostgresRepositoryABC = await repositories_registry.return_ai_is_user_business_recognized_postgres_repository(postgres_session)
+        ai_extracted_user_business_entity_postgres_repository: AIExtractedUserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_user_business_entity_postgres_repository(postgres_session)
+        ai_extracted_external_business_entity_postgres_repository: AIExtractedUserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_external_business_entity_postgres_repository(postgres_session)
 
         files_repository = await repositories_registry.return_files_repository()
 
@@ -518,9 +530,8 @@ async def update_ai_extracted_invoice(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_extracted_invoice_postgres_repository = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_invoice_postgres_repository: AIExtractedInvoicePostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
         
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials

@@ -25,6 +25,8 @@ async def startup_topics(kafka_url: str):
             KafkaTopicsEnum.remove_invoice.value,
             KafkaTopicsEnum.invoice_removed.value,
             KafkaTopicsEnum.extract_invoice_data.value,
+            KafkaTopicsEnum.unable_to_extract_invoice_data.value,
+            KafkaTopicsEnum.extracted_invoice_data.value
         ]
         topic_list = []
         for topic_name in topic_name_list:

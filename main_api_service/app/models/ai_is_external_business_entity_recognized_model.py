@@ -6,7 +6,7 @@ from app.schema.schema import AIIsExternalBusinessEntityRecognized
 
 class CreateAIIsExternalBusinessEntityRecognizedModel(BaseModel):
     is_recognized: bool
-    external_business_entity_id: Optional[str] | None
+    external_business_entity_id: Optional[str] = None
 
     @property
     def id(self):
@@ -27,7 +27,7 @@ class AIIsExternalBusinessEntityRecognizedModel(BaseModel):
     id: str
     extracted_invoice_id: str
     is_recognized: bool
-    external_business_entity_id: Optional[str] | None
+    external_business_entity_id: Optional[str] = None
 
     async def ai_is_external_business_entity_recognized_schema_to_model(
             is_external_business_entity_recognized_schema: AIIsExternalBusinessEntityRecognized

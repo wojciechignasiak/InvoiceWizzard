@@ -25,6 +25,13 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisDatabaseError,
     RedisJWTNotFoundError
 )
+from app.types.postgres_repository_abstract_types import (
+    ExternalBusinessEntityPostgresRepositoryABC,
+    AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC
+)
+from app.types.redis_repository_abstract_types import (
+    UserRedisRepositoryABC,
+)
 from app.models.jwt_model import (
     JWTPayloadModel
 )
@@ -42,9 +49,8 @@ async def get_ai_is_external_business_entity_recognized(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_is_external_business_entity_recognized_postgres_repository = await repositories_registry.return_ai_is_external_business_recognized_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_is_external_business_entity_recognized_postgres_repository: AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC = await repositories_registry.return_ai_is_external_business_recognized_postgres_repository(postgres_session)
         
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
@@ -82,10 +88,9 @@ async def update_ai_is_extracted_external_busines_entity_recognized(
     postgres_session: AsyncSession = Depends(get_session)
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-
-        ai_is_external_business_entity_recognized_postgres_repository = await repositories_registry.return_ai_is_external_business_recognized_postgres_repository(postgres_session)
-        external_business_postgres_repository = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_is_external_business_entity_recognized_postgres_repository: AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC = await repositories_registry.return_ai_is_external_business_recognized_postgres_repository(postgres_session)
+        external_business_postgres_repository: ExternalBusinessEntityPostgresRepositoryABC = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials

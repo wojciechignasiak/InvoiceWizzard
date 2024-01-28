@@ -7,14 +7,14 @@ from datetime import datetime, date
 from app.schema.schema import AIExtractedInvoice
 
 class CreateAIExtractedInvoiceModel(BaseModel):
-    invoice_number: Optional[str] | None
-    issue_date: Optional[date] | None
-    sale_date: Optional[date] | None
-    payment_method: Optional[str] | None
-    payment_deadline: Optional[date] | None
-    notes: Optional[str] | None
+    invoice_number: str
+    issue_date: Optional[date] = None
+    sale_date: Optional[date] = None
+    payment_method: Optional[str] = None
+    payment_deadline: Optional[date] = None
+    notes: Optional[str] = None
     invoice_pdf: str
-    is_issued: Optional[bool] | None
+    is_issued: Optional[bool] = None
     
 
     @property
@@ -38,7 +38,7 @@ class UpdateAIExtractedInvoiceModel(BaseModel):
     sale_date: date
     payment_method: str
     payment_deadline: date
-    notes: str
+    notes: Optional[str] = None
     is_issued: bool
 
     @field_validator("id")
@@ -69,14 +69,14 @@ class AIExtractedInvoiceModel(BaseModel):
             }
         )
     id: str
-    invoice_number: Optional[str] | None
-    issue_date: Optional[date] | None
-    sale_date: Optional[date] | None
-    payment_method: Optional[str] | None
-    payment_deadline: Optional[date] | None
-    notes: Optional[str] | None
+    invoice_number: Optional[str] = None
+    issue_date: Optional[date] = None
+    sale_date: Optional[date] = None
+    payment_method: Optional[str] = None
+    payment_deadline: Optional[date] = None
+    notes: Optional[str] = None
     invoice_pdf: str
-    is_issued: Optional[bool] | None
+    is_issued: Optional[bool] = None
 
     async def ai_extracted_invoice_schema_to_model(
             extracted_invoice_schema: AIExtractedInvoice

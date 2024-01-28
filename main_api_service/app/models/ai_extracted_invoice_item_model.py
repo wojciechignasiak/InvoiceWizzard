@@ -6,10 +6,10 @@ from uuid import UUID, uuid4
 from app.schema.schema import AIExtractedInvoiceItem
 
 class CreateAIExtractedInvoiceItemModel(BaseModel):
-    item_description: Optional[str] | None
-    number_of_items: Optional[int] | None
-    net_value: Optional[float] | None
-    gross_value: Optional[float] | None
+    item_description: Optional[str] = None
+    number_of_items: Optional[int] = None
+    net_value: Optional[float] = None
+    gross_value: Optional[float] = None
 
     @property
     def id(self):
@@ -40,10 +40,10 @@ class UpdateAIExtractedInvoiceItemModel(BaseModel):
 class AIExtractedInvoiceItemModel(BaseModel):
     id: str
     extracted_invoice_id: str
-    item_description: Optional[str] | None
-    number_of_items: Optional[int] | None
-    net_value: Optional[float] | None
-    gross_value: Optional[float] | None
+    item_description: Optional[str] = None
+    number_of_items: Optional[int] = None
+    net_value: Optional[float] = None
+    gross_value: Optional[float] = None
 
     async def ai_extracted_invoice_item_schema_to_model(
             extracted_invoice_item_schema: AIExtractedInvoiceItem

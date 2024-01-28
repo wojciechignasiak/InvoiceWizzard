@@ -22,7 +22,7 @@ from sqlalchemy.exc import (
 from app.logging import logger
 from sqlalchemy import insert, update, delete, select, or_
 from uuid import uuid4, UUID
-from typing import Optional
+from typing import Optional, List
 
 class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessEntityPostgresRepositoryABC):
 
@@ -175,9 +175,10 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                 offset((page - 1) * items_per_page)
             )
             user_business_entities = await self.session.scalars(stmt)
-            if not user_business_entities:
+            user_business_entities_list: List = user_business_entities.all()
+            if not user_business_entities_list:
                 raise PostgreSQLNotFoundError("No User Business Entities found in database.")
-            return user_business_entities
+            return user_business_entities_list
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"UserBusinessEntityPostgresRepository.get_all_user_business_entities() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
