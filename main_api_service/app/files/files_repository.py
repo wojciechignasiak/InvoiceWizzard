@@ -63,7 +63,7 @@ class FilesRepository(FilesRepositoryABC):
                 os.makedirs(directory)
             pdf_document = HTML(string=invoice_html).write_pdf()
 
-            if len(pdf_document) > 0:
+            if pdf_document:
                 with open(file_path, 'wb') as f:
                     f.write(pdf_document)
         except Exception as e:

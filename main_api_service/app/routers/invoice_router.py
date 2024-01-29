@@ -66,8 +66,9 @@ from app.types.kafka_event_abstract_types import (
 )
 from uuid import uuid4
 import ast
-from app.utils.invoice_generator import invoice_generator
-from typing import Optional, List
+from app.utils.invoice_html_builder import InvoiceHTMLBuilder
+from app.utils.invoice_html_builder_abc import InvoiceHTMLBuilderABC
+from typing import Optional, List, Dict
 from pathlib import Path
 
 
@@ -110,7 +111,7 @@ async def create_invoice(
 
         invoice_model: InvoiceModel = await InvoiceModel.invoice_schema_to_model(invoice)
 
-        invoice_items_model: list = []
+        invoice_items_model: List = []
         for invoice_item_model in invoice_items:
             invoice_item: InvoiceItem = await invoice_item_postgres_repository.create_invoice_item(
                 user_id=jwt_payload.id,
@@ -122,7 +123,7 @@ async def create_invoice(
             
             invoice_items_model.append(invoice_item_model)
         
-        invoice: dict = invoice_model.model_dump()
+        invoice: Dict = invoice_model.model_dump()
 
         invoice["invoice_items"] = invoice_items_model
 
@@ -165,7 +166,7 @@ async def get_invoice(
 
         invoice_model: InvoiceModel = await InvoiceModel.invoice_schema_to_model(invoice)
 
-        invoice_items: list = await invoice_item_postgres_repository.get_invoice_items_by_invoice_id(
+        invoice_items: List = await invoice_item_postgres_repository.get_invoice_items_by_invoice_id(
             user_id=jwt_payload.id,
             invoice_id=invoice_model.id,
             in_trash=invoice_model.in_trash
@@ -249,7 +250,7 @@ async def get_all_invoices(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
-        invoices: list[Invoice] = await user_invoice_postgres_repository.get_all_invoices(
+        invoices: List[Invoice] = await user_invoice_postgres_repository.get_all_invoices(
             user_id=jwt_payload.id,
             page=page,
             items_per_page=items_per_page,
@@ -277,7 +278,7 @@ async def get_all_invoices(
             
             invoice_model: InvoiceModel = await InvoiceModel.invoice_schema_to_model(invoice)
 
-            invoice_items: list = await invoice_item_postgres_repository.get_invoice_items_by_invoice_id(
+            invoice_items: List = await invoice_item_postgres_repository.get_invoice_items_by_invoice_id(
             user_id=jwt_payload.id,
             invoice_id=invoice_model.id,
             in_trash=invoice_model.in_trash
@@ -708,7 +709,7 @@ async def download_invoice_pdf(
 
         invoice_model: InvoiceModel = await InvoiceModel.invoice_schema_to_model(invoice)
         
-        if invoice_model.invoice_pdf == None:
+        if invoice_model.invoice_pdf is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice doesn't have file.")
         
         file: Path = await files_repository.get_invoice_pdf_file(
@@ -757,16 +758,16 @@ async def generate_invoice_pdf(
 
         invoice_model: InvoiceModel = await InvoiceModel.invoice_schema_to_model(invoice)
 
-        if invoice_model.invoice_pdf != None:
+        if invoice_model.invoice_pdf:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Invoice arleady have file.")
         
-        invoice_items: list[InvoiceItem] = await invoice_item_postgres_repository.get_invoice_items_by_invoice_id(
+        invoice_items: List[InvoiceItem] = await invoice_item_postgres_repository.get_invoice_items_by_invoice_id(
             user_id=jwt_payload.id,
             invoice_id=invoice_model.id,
             in_trash=False
         )
 
-        invoice_items_model: list = []
+        invoice_items_model: List = []
 
         for invoice_item in invoice_items:
             invoice_item_model: InvoiceItemModel = await InvoiceItemModel.invoice_item_schema_to_model(invoice_item)
@@ -786,12 +787,14 @@ async def generate_invoice_pdf(
         
         external_business_entity_model: ExternalBusinessEntityModel = await ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
 
-        invoice_html = await invoice_generator(
+        invoice_html_builder: InvoiceHTMLBuilderABC = InvoiceHTMLBuilder(
             user_business_entity=user_business_entity_model,
             external_business_entity=external_business_entity_model,
             invoice=invoice_model,
             invoice_items=invoice_items_model
         )
+        
+        invoice_html: str = await invoice_html_builder.create_invoice_html_document()
         
         file_path = f"/usr/app/invoice-files/invoice/{jwt_payload.id}/{invoice_model.id}/invoice.pdf"
 

@@ -26,7 +26,7 @@ class InvoiceRedisRepository(BaseRedisRepository, InvoiceRedisRepositoryABC):
                 value=json.dumps({"id":f"{invoice_id}"}),
                 ex=expiry_time)
             
-            if is_invoice_removal_initialized == False:
+            if is_invoice_removal_initialized is False:
                 raise RedisSetError("Error durning initializing invoice removal.")
             return is_invoice_removal_initialized
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
@@ -37,7 +37,7 @@ class InvoiceRedisRepository(BaseRedisRepository, InvoiceRedisRepositoryABC):
         try:
             invoice_to_remove = await self.redis_client.get(f"remove_invoice:{key_id}")
             
-            if invoice_to_remove == None:
+            if invoice_to_remove is None:
                 raise RedisNotFoundError("Not found invoice to remove in database.")
             return invoice_to_remove
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:

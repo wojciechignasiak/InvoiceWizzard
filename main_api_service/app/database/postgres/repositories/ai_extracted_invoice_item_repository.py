@@ -60,10 +60,12 @@ class AIExtractedInvoiceItemPostgresRepository(BasePostgresRepository, AIExtract
                     AIExtractedInvoiceItem.extracted_invoice_id == extracted_invoice_id
                 )
             )
-            ai_extracted_invoice_items = await self.session.scalar(stmt)
-            if ai_extracted_invoice_items == None:
+            ai_extracted_invoice_items = await self.session.scalars(stmt)
+            ai_extracted_invoice_items_list: List = ai_extracted_invoice_items.all()
+            
+            if not ai_extracted_invoice_items_list:
                 raise PostgreSQLNotFoundError("Extracted invoice items with provided invoice id not found in database.")
-            return ai_extracted_invoice_items
+            return ai_extracted_invoice_items_list
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"AIExtractedInvoiceItemPostgresRepository.get_all_extracted_invoice_item_data_by_extracted_invoice_id() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
@@ -86,7 +88,7 @@ class AIExtractedInvoiceItemPostgresRepository(BasePostgresRepository, AIExtract
                 returning(AIExtractedInvoiceItem)
             )
             ai_extracted_invoice_item = await self.session.scalar(stmt)
-            if ai_extracted_invoice_item == None:
+            if ai_extracted_invoice_item is None:
                 raise PostgreSQLNotFoundError("Extracted invoice item with provided id not found in database.")
             return ai_extracted_invoice_item
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:

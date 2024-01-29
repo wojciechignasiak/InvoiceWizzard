@@ -62,7 +62,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                     )
                 )
             user_business_entity = await self.session.scalar(stmt)
-            if user_business_entity == None:
+            if user_business_entity is None:
                 return True
             else:
                 return False
@@ -88,7 +88,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                 returning(UserBusinessEntity)
             )
             updated_user_business_entity = await self.session.scalar(stmt)
-            if updated_user_business_entity == None:
+            if updated_user_business_entity is None:
                 raise PostgreSQLNotFoundError("User Business Entity with provided id not found in database.")
             return updated_user_business_entity
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
@@ -107,7 +107,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                     )
                 )
             user_business_entity = await self.session.scalar(stmt)
-            if user_business_entity == None:
+            if user_business_entity is None:
                 return True
             else:
                 return False
@@ -144,7 +144,7 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                 )
             )
             user_business_entity = await self.session.scalar(stmt)
-            if user_business_entity == None:
+            if user_business_entity is None:
                 raise PostgreSQLNotFoundError("User Business Entity with provided id not found in database.")
             return user_business_entity
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:

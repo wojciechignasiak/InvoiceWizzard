@@ -32,6 +32,8 @@ from app.types.postgres_repository_abstract_types import (
 from app.types.redis_repository_abstract_types import (
     UserRedisRepositoryABC
 )
+from typing import List
+
 
 
 router = APIRouter()
@@ -162,7 +164,7 @@ async def get_invoice_items_by_invoice_id(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
-        invoice_items: list[InvoiceItem] = await invoice_item_postgres_repository.get_invoice_items_by_invoice_id(
+        invoice_items: List[InvoiceItem] = await invoice_item_postgres_repository.get_invoice_items_by_invoice_id(
             user_id=jwt_payload.id,
             invoice_id=invoice_id,
             in_trash=in_trash

@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from starlette import middleware
 from app.aplication_startup_processes import ApplicationStartupProcesses
+from app.kafka.consumed_events_managers.extracted_invoice_data_event_manager import ExtractedInvoiceDataMenager
+from app.kafka.consumed_events_managers.extracted_invoice_data_event_manager_abc import ExtractedInvoiceDataMenagerABC
 from app.kafka.clients.events_consumer import EventsConsumer
 from contextlib import asynccontextmanager
 from app.schema.schema import Base
@@ -52,16 +54,23 @@ async def lifespan(app: FastAPI):
     await app.state.kafka_producer.start()
     print("Kafka Producer started...")
 
-    app.state.kafka_consumer = await application_statup_processes.kafka_consumer()
-    
-    events_consumer: EventsConsumer = EventsConsumer(app.state.kafka_consumer)
-    asyncio.create_task(events_consumer.run_consumer())
-
-    print("Kafka Consumer started...")
-    
     app.state.repositories_registry = await application_statup_processes.repositories_registry()
 
     app.state.events_registry = await application_statup_processes.events_registry()
+
+    app.state.kafka_consumer = await application_statup_processes.kafka_consumer()
+    
+    extracted_invoice_data_manager: ExtractedInvoiceDataMenagerABC = ExtractedInvoiceDataMenager(
+        repositories_registry=app.state.repositories_registry,
+        postgres_url=application_statup_processes.postgres_url)
+    
+    events_consumer: EventsConsumer = EventsConsumer(
+        kafka_consumer=app.state.kafka_consumer,
+        extracted_invoice_data_event_manager=extracted_invoice_data_manager)
+    
+    asyncio.create_task(events_consumer.run_consumer())
+    
+    print("Kafka Consumer started...")
 
     yield
     ''' Run on shutdown
@@ -74,7 +83,6 @@ async def lifespan(app: FastAPI):
     await app.state.kafka_producer.stop()
     print("Stopping Kafka Consumer...")
     await app.state.kafka_consumer.stop()
-    
 
 def create_application() -> FastAPI:
     application = FastAPI(lifespan=lifespan, openapi_url="/openapi.json", docs_url="/docs", middleware=middleware)

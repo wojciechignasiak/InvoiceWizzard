@@ -58,7 +58,7 @@ class AIIsExternalBusinessEntityRecognizedPostgresRepository(BasePostgresReposit
                 )
             )
             ai_is_external_business_entity_recognized = await self.session.scalar(stmt)
-            if ai_is_external_business_entity_recognized == None:
+            if ai_is_external_business_entity_recognized is None:
                 raise PostgreSQLNotFoundError("Is external business entity recognized with provided invoice id not found in database.")
             return ai_is_external_business_entity_recognized
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
@@ -83,7 +83,7 @@ class AIIsExternalBusinessEntityRecognizedPostgresRepository(BasePostgresReposit
             )
 
             ai_is_external_business_entity = await self.session.scalar(stmt)
-            if ai_is_external_business_entity == None:
+            if ai_is_external_business_entity is None:
                 raise PostgreSQLNotFoundError("Is external business entity recognized with provided invoice id not found in database.")
             return ai_is_external_business_entity
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:

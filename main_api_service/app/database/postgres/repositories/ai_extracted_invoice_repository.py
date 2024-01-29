@@ -63,7 +63,7 @@ class AIExtractedInvoicePostgresRepository(BasePostgresRepository, AIExtractedIn
                 )
             )
             ai_extracted_invoice = await self.session.scalar(stmt)
-            if ai_extracted_invoice == None:
+            if ai_extracted_invoice is None:
                 raise PostgreSQLNotFoundError("Extracted invoice with provided id not found in database.")
             return ai_extracted_invoice
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
@@ -83,10 +83,12 @@ class AIExtractedInvoicePostgresRepository(BasePostgresRepository, AIExtractedIn
                 limit(items_per_page).
                 offset((page - 1) * items_per_page)
             )
-            ai_extracted_invoice = await self.session.scalar(stmt)
-            if ai_extracted_invoice == None:
-                raise PostgreSQLNotFoundError("Extracted invoice with provided id not found in database.")
-            return ai_extracted_invoice
+            ai_extracted_invoice = await self.session.scalars(stmt)
+            ai_extracted_invoice_list: List = ai_extracted_invoice.all()
+
+            if not ai_extracted_invoice_list:
+                raise PostgreSQLNotFoundError("Extracted invoices not found in database.")
+            return ai_extracted_invoice_list
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"AIExtractedInvoicePostgresRepository.get_all_extracted_invoices() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")
@@ -113,7 +115,7 @@ class AIExtractedInvoicePostgresRepository(BasePostgresRepository, AIExtractedIn
                 returning(AIExtractedInvoice)
             )
             ai_extracted_invoice = await self.session.scalar(stmt)
-            if ai_extracted_invoice == None:
+            if ai_extracted_invoice is None:
                 raise PostgreSQLNotFoundError("Extracted invoice with provided id not found in database.")
             return ai_extracted_invoice
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:

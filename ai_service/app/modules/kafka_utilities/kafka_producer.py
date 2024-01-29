@@ -2,13 +2,14 @@ import os
 from aiokafka import AIOKafkaProducer
 from modules.logging.logging import logger
 import asyncio
+from asyncio import AbstractEventLoop
 import json
 
 class KafkaProducer:
-    def __init__(self):
+    def __init__(self, loop: AbstractEventLoop):
         self.host = os.getenv("KAFKA_HOST")
         self.port = os.getenv("KAFKA_PORT")
-        self.producer = AIOKafkaProducer(loop=asyncio.get_event_loop(), bootstrap_servers=f'{self.host}:{self.port}')
+        self.producer = AIOKafkaProducer(loop=loop, bootstrap_servers=f'{self.host}:{self.port}')
 
     async def extracted_invoice_data(self, extracted_data):
         try:

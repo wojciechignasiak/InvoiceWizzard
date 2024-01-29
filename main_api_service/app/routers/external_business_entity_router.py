@@ -47,7 +47,7 @@ from aiokafka import AIOKafkaProducer
 from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
 from app.registries.events_registry_abc import EventsRegistryABC
 from app.registries.get_events_registry import get_events_registry
-from typing import Optional
+from typing import Optional, List
 from uuid import uuid4
 import ast
 
@@ -173,7 +173,7 @@ async def get_all_external_business_entities(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
-        external_business_entity_list: list = await external_business_entity_postgres_repository.get_all_external_business_entities(
+        external_business_entity_list: List = await external_business_entity_postgres_repository.get_all_external_business_entities(
             user_id=jwt_payload.id,
             page=page,
             items_per_page=items_per_page,

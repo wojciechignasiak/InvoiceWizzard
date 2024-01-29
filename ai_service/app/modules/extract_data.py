@@ -6,6 +6,7 @@ from langchain.chains import RetrievalQA
 from typing import List, Dict
 from modules.logging.logging import logger
 from uuid import uuid4
+from asyncio import AbstractEventLoop
 import json
 from modules.prompt_utility.prompt_utility import PromptUtility
 from modules.kafka_utilities.kafka_producer import KafkaProducer
@@ -13,14 +14,16 @@ from modules.kafka_utilities.kafka_producer import KafkaProducer
 
 class ExtractData:
     
-    def __init__(self) -> None:
+    def __init__(self, loop: AbstractEventLoop) -> None:
         self.ollama_utility = OllamaUtility()
         self.pdf_utility = PdfUtility()
         self.prompt_utility = PromptUtility()
         self.redis_repository = RedisearchRepository()
         self.text_embedding_model = self.ollama_utility.generate_embedding_model()
         self.text_extraction_model = self.ollama_utility.generate_model()
-        self.kafka_producer = KafkaProducer()
+        self.kafka_producer = KafkaProducer(
+            loop=loop,
+        )
 
     async def is_scan_or_text(self, message) -> Dict:
         try:
