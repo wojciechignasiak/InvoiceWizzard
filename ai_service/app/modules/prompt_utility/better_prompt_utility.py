@@ -11,7 +11,7 @@ class BetterPromptUtility:
 
         examples = [
             {
-                "user_business_entity_nip_list": "[1166042492, 9651914734]",
+                "user_business_entity_nip_list_and_embeddings": "[1166042492, 9651914734]" "some embedded document",
                 "answer": """{{
                                 "invoice": {{
                                     "invoice_number": "1/2023"
@@ -41,7 +41,7 @@ class BetterPromptUtility:
                             }}"""
             },
             {
-                "user_business_entity_nip_list": "[1166042492, 9651914734]",
+                "user_business_entity_nip_list_and_embeddings": "[1166042492, 9651914734]" "some embedded document",
                 "answer": """{{
                                 "invoice": {{
                                     "invoice_number": "5/2023"
@@ -71,7 +71,7 @@ class BetterPromptUtility:
                             }}"""
             },
             {
-                "user_business_entity_nip_list": "[1166042492, 9651914734]",
+                "user_business_entity_nip_list_and_embeddings": "[1166042492, 9651914734]" "some embedded document",
                 "answer": """{{
                                 "invoice": {{
                                     "invoice_number": "10/A/2023"

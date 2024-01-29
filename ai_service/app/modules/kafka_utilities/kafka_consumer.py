@@ -6,7 +6,7 @@ import asyncio
 import json
 import os
 
-class KafkaSubscriber:
+class KafkaConsumer:
     def __init__(self, topic, loop: AbstractEventLoop):
         self.host = os.getenv("KAFKA_HOST")
         self.port = os.getenv("KAFKA_PORT")
@@ -28,7 +28,7 @@ class KafkaSubscriber:
                 
                 await extract_data.is_scan_or_text(message)
         except Exception as e:
-            logger.error(f"KafkaSubscriber.run_consumer() Error: {e}")
+            logger.error(f"KafkaConsumer.run_consumer() Error: {e}")
         finally:
             await self.consumer.stop()
             event_loop.close()
