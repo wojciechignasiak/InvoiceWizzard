@@ -81,6 +81,7 @@ class AIExtractedUserBusinessEntityPostgresRepository(BasePostgresRepository, AI
                 values(
                     company_name=update_ai_extracted_user_business_entity.company_name,
                     city=update_ai_extracted_user_business_entity.city,
+                    street=update_ai_extracted_user_business_entity.street,
                     postal_code=update_ai_extracted_user_business_entity.postal_code,
                     nip=update_ai_extracted_user_business_entity.nip
                 ).

@@ -464,7 +464,7 @@ async def initialize_invoice_removal(
             email_address=jwt_payload.email,
             invoice_number=invoice_model.invoice_number,
             user_company_name=user_business_entity_model.company_name,
-            external_buisness_entity_name=external_business_entity_model.name,
+            external_business_entity_name=external_business_entity_model.name,
             is_issued=invoice_model.is_issued
         )
 

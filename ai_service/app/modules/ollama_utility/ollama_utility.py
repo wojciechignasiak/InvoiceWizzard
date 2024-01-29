@@ -15,7 +15,7 @@ class OllamaUtility:
         
     def generate_embedding_model(self):
         try:
-            embedding_model: OllamaEmbeddings = OllamaEmbeddings(base_url=f"http://{self.host}:{self.port}")
+            embedding_model: OllamaEmbeddings = OllamaEmbeddings(model="openchat", base_url=f"http://{self.host}:{self.port}")
 
             return embedding_model
         except Exception as e:

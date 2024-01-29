@@ -35,7 +35,7 @@ class AIIsExternalBusinessEntityRecognizedModel(BaseModel):
         
         return AIIsExternalBusinessEntityRecognizedModel(
             id=str(is_external_business_entity_recognized_schema.id),
-            extracted_invoice_id=is_external_business_entity_recognized_schema.extracted_invoice_id,
+            extracted_invoice_id=str(is_external_business_entity_recognized_schema.extracted_invoice_id),
             is_recognized=is_external_business_entity_recognized_schema.is_recognized,
-            external_business_entity_id=is_external_business_entity_recognized_schema.external_business_entity_id
+            external_business_entity_id=str(is_external_business_entity_recognized_schema.external_business_entity_id)
         )

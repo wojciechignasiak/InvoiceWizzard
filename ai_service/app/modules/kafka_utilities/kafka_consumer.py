@@ -10,8 +10,7 @@ class KafkaConsumer:
     def __init__(self, topic, loop: AbstractEventLoop):
         self.host = os.getenv("KAFKA_HOST")
         self.port = os.getenv("KAFKA_PORT")
-        self.loop: AbstractEventLoop = loop
-        self.consumer = AIOKafkaConsumer(topic, loop=self.loop, bootstrap_servers=f'{self.host}:{self.port}')
+        self.consumer = AIOKafkaConsumer(topic, loop=loop, bootstrap_servers=f'{self.host}:{self.port}')
 
     async def run_consumer(self):
         try:

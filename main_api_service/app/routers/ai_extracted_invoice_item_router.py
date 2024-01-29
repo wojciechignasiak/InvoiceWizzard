@@ -140,7 +140,7 @@ async def create_ai_extracted_invoice_item(
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
         create_ai_extracted_invoice_item: CreateAIExtractedInvoiceItemModel = CreateAIExtractedInvoiceItemModel(
-            item_description=create_ai_extracted_invoice_item.item_description,
+            item_description=create_manually_ai_extracted_invoice_item.item_description,
             number_of_items=create_manually_ai_extracted_invoice_item.number_of_items,
             net_value=create_manually_ai_extracted_invoice_item.net_value,
             gross_value=create_manually_ai_extracted_invoice_item.gross_value

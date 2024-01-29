@@ -165,7 +165,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             stmt = (
                 update(User).
                 where(User.id == new_password.id).
-                values(email = new_password.new_password).
+                values(password = new_password.new_password).
                 returning(User)
             )
             user = await self.session.scalar(stmt)

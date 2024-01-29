@@ -28,9 +28,8 @@ class ExtractData:
     async def is_scan_or_text(self, message) -> Dict:
         try:
             is_scan = self.pdf_utility.is_scan(
-                filepath=message["file_location"]
+                file_location=message["file_location"]
                 )
-            
             if is_scan is True:
                 await self.kafka_producer.is_scanned(message)
             else:
@@ -91,5 +90,7 @@ class ExtractData:
             print("Cleaning redis index...")
             self.redis_repository.clean_data_from_index(redis_index, redis)
             print("Cleaning redis index done!")
+
+            return invoice_and_business_entities_json_data
         except Exception as e:
             logger.error(f"ExtractData.extract_data_from_text() Error: {e}")
