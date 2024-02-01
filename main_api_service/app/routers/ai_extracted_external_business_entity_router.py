@@ -151,12 +151,11 @@ async def accept_ai_extracted_external_busines_entity(
             extracted_external_business_entity_schema=ai_extracted_external_business_entity
         )
 
-        create_extracted_external_business_entity_model: CreateExternalBusinessEntityModel(
+        create_extracted_external_business_entity_model: CreateExternalBusinessEntityModel = CreateExternalBusinessEntityModel(
             name=ai_extracted_external_business_entity_model.name,
             city=ai_extracted_external_business_entity_model.city,
             street=ai_extracted_external_business_entity_model.street,
             postal_code=ai_extracted_external_business_entity_model.postal_code,
-            street=ai_extracted_external_business_entity_model.street,
             nip=ai_extracted_external_business_entity_model.nip
         )
 

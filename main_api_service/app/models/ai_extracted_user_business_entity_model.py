@@ -45,6 +45,8 @@ class AIExtractedUserBusinessEntityModel(BaseModel):
             id=str(extracted_user_business_entity_schema.id),
             extracted_invoice_id=str(extracted_user_business_entity_schema.extracted_invoice_id),
             company_name=extracted_user_business_entity_schema.company_name,
+            city=extracted_user_business_entity_schema.city,
+            street=extracted_user_business_entity_schema.street,
             postal_code=extracted_user_business_entity_schema.postal_code,
             nip=extracted_user_business_entity_schema.nip
         )

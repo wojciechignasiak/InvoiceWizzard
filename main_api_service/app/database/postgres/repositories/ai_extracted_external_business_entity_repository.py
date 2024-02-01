@@ -35,6 +35,7 @@ class AIExtractedExternalBusinessEntityPostgresRepository(BasePostgresRepository
                     extracted_invoice_id=extracted_invoice_id,
                     name=ai_extracted_external_business_entity.name,
                     city=ai_extracted_external_business_entity.city,
+                    street=ai_extracted_external_business_entity.street,
                     postal_code=ai_extracted_external_business_entity.postal_code,
                     nip=ai_extracted_external_business_entity.nip
                 ). 
@@ -83,6 +84,7 @@ class AIExtractedExternalBusinessEntityPostgresRepository(BasePostgresRepository
                 values(
                     name=update_ai_extracted_external_business_entity.name,
                     city=update_ai_extracted_external_business_entity.city,
+                    street=update_ai_extracted_external_business_entity.street,
                     postal_code=update_ai_extracted_external_business_entity.postal_code,
                     nip=update_ai_extracted_external_business_entity.nip
                 ).

@@ -110,7 +110,7 @@ async def update_ai_is_extracted_user_busines_entity_recognized(
 
         await ai_is_user_business_entity_recognized_postgres_repository.update_is_user_business_recognized(
             user_id=jwt_payload.id,
-            update_ai_is_user_business_entity_recognized=update_ai_is_user_business_entity_recognized_model
+            update_is_user_business_recognized=update_ai_is_user_business_entity_recognized_model
         )
         
 

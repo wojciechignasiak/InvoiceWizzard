@@ -149,10 +149,9 @@ async def accept_ai_extracted_user_busines_entity(
             extracted_user_business_entity_schema=ai_extracted_user_business_entity
         )
 
-        create_extracted_user_business_entity_model: CreateUserBusinessEntityModel(
+        create_extracted_user_business_entity_model: CreateUserBusinessEntityModel = CreateUserBusinessEntityModel(
             company_name=ai_extracted_user_business_entity_model.company_name,
             city=ai_extracted_user_business_entity_model.city,
-            street=ai_extracted_user_business_entity_model.street,
             postal_code=ai_extracted_user_business_entity_model.postal_code,
             street=ai_extracted_user_business_entity_model.street,
             nip=ai_extracted_user_business_entity_model.nip
@@ -181,9 +180,9 @@ async def accept_ai_extracted_user_busines_entity(
             user_business_entity_id=user_business_entity_model.id
         )
 
-        await ai_is_user_business_entity_recognized_postgres_repository.update_is_user_business_entity_recognized(
+        await ai_is_user_business_entity_recognized_postgres_repository.update_is_user_business_recognized(
             user_id=jwt_payload.id,
-            update_is_user_business_entity_recognized=update_ai_is_user_business_entity_recognized_model
+            update_is_user_business_recognized=update_ai_is_user_business_entity_recognized_model
         )
 
         return JSONResponse(status_code=status.HTTP_200_OK, content={"detail": "Extracted user business entity has been accepted."})
