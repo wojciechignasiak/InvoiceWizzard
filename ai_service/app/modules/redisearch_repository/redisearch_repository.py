@@ -21,9 +21,11 @@ class RedisearchRepository:
             return redis
         except Exception as e:
             logger.error(f"RedisearchRepository.embedding_file() Error: {e}")
+            raise Exception(f"RedisearchRepository.embedding_file() Error: {e}")
 
     def clean_data_from_index(self, index_name: str, redis: Redis):
         try:
             redis.drop_index(index_name, delete_documents=True, redis_url=f"redis://{self.host}:{self.port}")
         except Exception as e:
             logger.error(f"RedisearchRepository.clean_data_from_index() Error: {e}")
+            raise Exception(f"RedisearchRepository.clean_data_from_index() Error: {e}")

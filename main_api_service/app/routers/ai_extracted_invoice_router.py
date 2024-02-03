@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.security import HTTPBearer
 from fastapi.encoders import jsonable_encoder
 from app.registries.get_repositories_registry import get_repositories_registry
@@ -61,6 +61,7 @@ from app.models.jwt_model import (
 )
 from uuid import uuid4
 from typing import List, Dict
+from pathlib import Path
 
 
 router = APIRouter()
@@ -240,6 +241,53 @@ async def get_ai_extracted_invoice(
     except PostgreSQLNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (Exception, RedisDatabaseError, PostgreSQLDatabaseError, PostgreSQLIntegrityError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@router.get("/ai-extracted-invoice-module/download-invoice-pdf/")
+async def download_invoice_pdf(
+    extracted_invoice_id: str,
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    ):
+    try:
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_invoice_postgres_repository: AIExtractedInvoicePostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
+        files_repository = await repositories_registry.return_files_repository()
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        ai_extracted_invoice: AIExtractedInvoice = await ai_extracted_invoice_postgres_repository.get_extracted_invoice(
+            extracted_invoice_id=extracted_invoice_id
+        )
+
+        invoice_model: AIExtractedInvoiceModel = await AIExtractedInvoiceModel.ai_extracted_invoice_schema_to_model(
+            ai_extracted_invoice
+        )
+        
+        if invoice_model.invoice_pdf is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice doesn't have file.")
+        
+        file: Path = await files_repository.get_invoice_pdf_file(
+            file_path=invoice_model.invoice_pdf
+            )
+        
+        if file.is_file() == False:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+
+        return FileResponse(path=file, status_code=status.HTTP_200_OK, filename=file.name)
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.get("/ai-extracted-invoice-module/get-all-ai-extracted-invoices/")

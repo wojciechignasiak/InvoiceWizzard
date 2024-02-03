@@ -28,3 +28,12 @@ class KafkaProducer:
             logger.error(f"KafkaProducer.is_scanned() Error: {e}")
         finally:
             await self.producer.stop()
+
+    async def exception_occured(self, message):
+        try:
+            await self.producer.start()
+            await self.producer.send("unable_to_extract_invoice_data", json.dumps(message).encode('utf-8'))
+        except Exception as e:
+            logger.error(f"KafkaProducer.is_scanned() Error: {e}")
+        finally:
+            await self.producer.stop()

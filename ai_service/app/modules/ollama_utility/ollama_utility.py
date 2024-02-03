@@ -1,9 +1,10 @@
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain.vectorstores.redis import Redis
-from langchain.chains import RetrievalQA
+from langchain.chains import RetrievalQA, create_extraction_chain
 from langchain.llms.ollama import Ollama
 from modules.logging.logging import logger
 import os
+from typing import Dict
 
 
 
@@ -20,6 +21,7 @@ class OllamaUtility:
             return embedding_model
         except Exception as e:
             logger.error(f"OllamaUtility.generate_embedding_model() Error: {e}")
+            raise Exception(f"OllamaUtility.generate_embedding_model() Error: {e}")
 
     def generate_model(self):
         try:
@@ -27,6 +29,7 @@ class OllamaUtility:
             return model
         except Exception as e:
             logger.error(f"OllamaUtility.generate_model() Error: {e}")
+            raise Exception(f"OllamaUtility.generate_model() Error: {e}")
 
     def generate_qa_chain(self, redis: Redis, ollama_model: Ollama):
         try:
@@ -37,3 +40,15 @@ class OllamaUtility:
             return qa_chain
         except Exception as e:
             logger.error(f"OllamaUtility.generate_qa_chain() Error: {e}")
+            raise Exception(f"OllamaUtility.generate_qa_chain() Error: {e}")
+        
+    def generate_extraction_chain(self, schema: Dict, ollama_model: Ollama):
+        try:
+            extraction_chain = create_extraction_chain(
+                schema=schema,
+                llm=ollama_model,
+            )
+            return extraction_chain
+        except Exception as e:
+            logger.error(f"OllamaUtility.generate_extraction_chain() Error: {e}")
+            raise Exception(f"OllamaUtility.generate_extraction_chain() Error: {e}")

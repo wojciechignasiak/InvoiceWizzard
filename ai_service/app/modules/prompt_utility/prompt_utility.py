@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 class PromptUtility:
 
@@ -18,7 +18,7 @@ class PromptUtility:
         START:
         {
             "invoice": {
-                "invoice_number": str,  # It can be referred to as "Invoice number", "Invoice no", "nr faktury", "Numer faktury", "NR Faktury", etc., and will have a format like "1/2023", "1/01/2023", "1/A/2023", "1/CD/2023", "1/CD/02/2023", etc.
+                "invoice_number": str,  # It have a format like "1/2023", "1/01/2023", "1/A/2023", "1/CD/2023", "1/CD/02/2023" or just numbers etc.
                 "issue_date": "date yyyy-mm-dd",
                 "sale_date": "date yyyy-mm-dd",
                 "payment_method": str,
@@ -46,7 +46,7 @@ class PromptUtility:
         """
 
         return str(info + searched_data)
-    
+
     def get_invoice_items_extraction_prompt(self) -> str:
         info = f"""
                 Generate separate JSON structures for invoice items based on the provided embeddings. Each JSON structure should follow the format below:
@@ -69,3 +69,66 @@ class PromptUtility:
                 """
         
         return str(info + searched_data)
+    
+    def schema_for_invoice_and_business_entities(self) -> Dict:
+        schema = {
+                    "properties": {
+                        "invoice": {
+                            "type": "object",
+                            "properties": {
+                                "invoice_number": {"type": "string"},
+                                "issue_date": {"type": "string"},
+                                "sale_date": {"type": "string"},
+                                "payment_method": {"type": "string"},
+                                "payment_deadline": {"type": "string"},
+                                "notes": {"type": "string"},
+                                "is_issued": {"type": "boolean"},
+                            },
+                            "required": [],
+                        },
+                        "user_business_entity": {
+                            "type": "object",
+                            "properties": {
+                                "company_name": {"type": "string"},
+                                "city": {"type": "string"},
+                                "postal_code": {"type": "string"},
+                                "street": {"type": "string"},
+                                "nip": {"type": "string"},
+                            },
+                            "required": [],
+                        },
+                        "external_business_entity": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "city": {"type": "string"},
+                                "postal_code": {"type": "string"},
+                                "street": {"type": "string"},
+                                "nip": {"type": "string"},
+                            },
+                            "required": [],
+                        },
+                    },
+                    "required": ["invoice", "user_business_entity", "external_business_entity"],
+                }
+
+        return str(schema)
+    
+    def schema_for_invoice_items(self) -> Dict:
+        schema = {"invoice_items": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "item_description": {"type": "string"},
+                    "number_of_items": {"type": "integer"},
+                    "net_value": {"type": "number"},
+                    "gross_value": {"type": "number"},
+                },
+                "required": [],
+            },
+        }
+        }
+        return schema
+    
+    
