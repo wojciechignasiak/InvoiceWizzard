@@ -112,7 +112,7 @@ class PromptUtility:
                     "required": ["invoice", "user_business_entity", "external_business_entity"],
                 }
 
-        return str(schema)
+        return schema
     
     def schema_for_invoice_items(self) -> Dict:
         schema = {"invoice_items": {

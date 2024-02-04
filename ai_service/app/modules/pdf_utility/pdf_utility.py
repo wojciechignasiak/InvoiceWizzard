@@ -4,7 +4,6 @@ from typing import List
 from PyPDF2 import PdfReader
 from modules.logging.logging import logger
 from pdf2image import convert_from_path
-from PIL import Image
 import base64
 
 class PdfUtility:
@@ -32,14 +31,14 @@ class PdfUtility:
             logger.error(f"PdfUtility.is_scan() Error: {e}")
             raise Exception(f"PdfUtility.is_scan() Error: {e}")
         
-    def pdf_to_images_and_base64(pdf_path) -> List:
+    def pdf_to_images_and_base64(self, pdf_path: str) -> List:
         try:
             print("Extracting base64 images form pdf...")
             images = convert_from_path(pdf_path)
 
             base64_images = []
 
-            for image in enumerate(images):
+            for idx, image in enumerate(images):
                 img_buffer = BytesIO()
                 image.save(img_buffer, format="JPEG")
                 base64_data = base64.b64encode(img_buffer.getvalue()).decode('utf-8')

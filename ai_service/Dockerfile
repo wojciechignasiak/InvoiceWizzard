@@ -11,6 +11,7 @@ ENV PYTHONUNBUFFERED 1
 # install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-traditional \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # install Python dependencies

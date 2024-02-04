@@ -26,8 +26,8 @@ class ExtractData:
         self.kafka_producer = KafkaProducer(
             loop=loop,
         )
-        self.ollama_host = os.getenv("OLLAMA_HOST")
-        self.ollama_port = os.getenv("OLLAMA_PORT")
+        self.__ollama_host = os.getenv("OLLAMA_HOST")
+        self.__ollama_port = os.getenv("OLLAMA_PORT")
 
     async def is_scan_or_text(self, message) -> Dict:
         try:
@@ -96,7 +96,6 @@ class ExtractData:
 
     def __extract_data_from_image(self, message: Dict):
         try:
-            
             base64_images: List = self.pdf_utility.pdf_to_images_and_base64(
                     pdf_path=message["file_location"]
                     )
@@ -134,14 +133,15 @@ class ExtractData:
             body = {
                 "model": "llava",
                 "prompt": invoice_and_business_entities_prompt,
+                "stream": False,
                 "images": images,
             }
-            result: Dict = requests.post(
+            result = requests.post(
                 f"http://{self.__ollama_host}:{self.__ollama_port}/api/generate", json=body
             )
-            print(result)
+            result = result.json()
             print("Invoice and Business entities extracted!")
-            return result["result"]
+            return result["response"]
         except Exception as e:
             logger.error(f"ExtractData.__extract_invoice_and_business_entities_from_images() Error: {e}")
             raise Exception(f"ExtractData.__extract_invoice_and_business_entities_from_images() Error: {e}")
@@ -153,14 +153,15 @@ class ExtractData:
             body = {
                 "model": "llava",
                 "prompt": invoice_items_prompt,
+                "stream": False,
                 "images": images,
             }
-            result: Dict = requests.post(
+            result = requests.post(
                 f"http://{self.__ollama_host}:{self.__ollama_port}/api/generate", json=body
             )
-            print(result)
+            result = result.json()
             print("Invoice Items extracted!")
-            return result["result"]
+            return result["response"]
         except Exception as e:
             logger.error(f"ExtractData.__extract_invoice_items_from_images() Error: {e}")
             raise Exception(f"ExtractData.__extract_invoice_items_from_images() Error: {e}")
