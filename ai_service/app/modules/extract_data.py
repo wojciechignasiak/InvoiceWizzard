@@ -190,10 +190,10 @@ class ExtractData:
     
     def __extract_invoice_and_business_entities_json_string_from_ai_response(self, ai_response: str) -> str:
         try:
-            schema: Dict = self.prompt_utility.schema_for_invoice_and_business_entities()
-            chain = self.ollama_utility.generate_extraction_chain(schema=schema, ollama_model=self.text_extraction_model)
+            schema: Dict = self.prompt_utility.schema_for_invoice_and_business_entities(ai_response)
+            chain = self.ollama_utility.generate_extraction_qa_chain(ollama_model=self.text_extraction_model)
             print("Extracting Invoice and Business Entities JSON string from AI response...")
-            result = chain.run(ai_response)
+            result = chain.invoke({"query": schema})
             print("Invoice and Business Entities JSON string extracted!")
             return result["result"]
         except Exception as e:
@@ -202,10 +202,10 @@ class ExtractData:
     
     def __extract_invoice_items_json_string_from_ai_response(self, ai_response: str) -> str:
         try:
-            schema: Dict = self.prompt_utility.schema_for_invoice_items()
-            chain = self.ollama_utility.generate_extraction_chain(schema=schema, ollama_model=self.text_extraction_model)
+            schema: str = self.prompt_utility.schema_for_invoice_items(ai_response)
+            chain = self.ollama_utility.generate_extraction_qa_chain(ollama_model=self.text_extraction_model)
             print("Extracting Invoice Items JSON string from AI response...")
-            result = chain.run(ai_response)
+            result = chain.invoke({"query": schema})
             print("Invoice Items JSON string extracted!")
             return result["result"]
         except Exception as e:

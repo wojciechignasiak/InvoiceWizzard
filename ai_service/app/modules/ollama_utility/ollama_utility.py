@@ -1,4 +1,5 @@
 from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.output_parsers.rail_parser import R
 from langchain.vectorstores.redis import Redis
 from langchain.chains import RetrievalQA, create_extraction_chain
 from langchain.llms.ollama import Ollama
@@ -42,12 +43,12 @@ class OllamaUtility:
             logger.error(f"OllamaUtility.generate_qa_chain() Error: {e}")
             raise Exception(f"OllamaUtility.generate_qa_chain() Error: {e}")
         
-    def generate_extraction_chain(self, schema: Dict, ollama_model: Ollama):
+    def generate_extraction_qa_chain(self, ollama_model: Ollama):
         try:
-            extraction_chain = create_extraction_chain(
-                schema=schema,
+            extraction_chain = RetrievalQA.from_chain_type(
                 llm=ollama_model,
             )
+            
             return extraction_chain
         except Exception as e:
             logger.error(f"OllamaUtility.generate_extraction_chain() Error: {e}")

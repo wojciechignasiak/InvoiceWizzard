@@ -70,7 +70,8 @@ class PromptUtility:
         
         return str(info + searched_data)
     
-    def schema_for_invoice_and_business_entities(self) -> Dict:
+    def schema_for_invoice_and_business_entities(self, ai_response: str) -> str:
+        prompt = "Extract data and return it in provided JSON format:"
         schema = {
                     "properties": {
                         "invoice": {
@@ -111,10 +112,11 @@ class PromptUtility:
                     },
                     "required": ["invoice", "user_business_entity", "external_business_entity"],
                 }
-
-        return schema
+        data = f"Data to extract from: {ai_response}"
+        str(prompt + schema + data)
     
-    def schema_for_invoice_items(self) -> Dict:
+    def schema_for_invoice_items(self, ai_response: str) -> str:
+        prompt = "Extract data and return it in provided JSON format:"
         schema = {"invoice_items": {
             "type": "array",
             "items": {
@@ -129,6 +131,7 @@ class PromptUtility:
             },
         }
         }
-        return schema
+        data = f"Data to extract from: {ai_response}"
+        return str(prompt + schema + data)
     
     
