@@ -1,10 +1,15 @@
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 
 class FilesRepositoryABC(ABC):
     
     @abstractmethod
     async def remove_invoice_folder(user_id: str, invoice_id: str, folder: str):
+        ...
+
+    @abstractmethod
+    async def remove_ai_extraction_failure_folder(file_path: str):
         ...
 
     @abstractmethod
@@ -16,7 +21,7 @@ class FilesRepositoryABC(ABC):
         ...
 
     @abstractmethod
-    async def get_invoice_pdf_file(file_path: str):
+    async def get_invoice_pdf_file(file_path: str) -> Path:
         ...
     
     @abstractmethod

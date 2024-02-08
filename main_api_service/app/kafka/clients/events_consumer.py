@@ -12,15 +12,19 @@ class EventsConsumer:
                 extracted_invoice_data_event_manager: ExtractedInvoiceDataMenagerABC):
         self._consumer: AIOKafkaConsumer = kafka_consumer
         self._extracted_invoice_data_event_manager: ExtractedInvoiceDataMenagerABC = extracted_invoice_data_event_manager
+        
 
     async def run_consumer(self):
-        
         try:
             await self._consumer.start()
             async for message in self._consumer:
                 try:
                     match message.topic:
                         case KafkaTopicsEnum.extracted_invoice_data.value:
+                            invoice_data: str = message.value.decode("utf-8")
+                            invoice_data: Dict = json.loads(invoice_data)
+                            await self._extracted_invoice_data_event_manager.create_invoice_data(invoice_data)
+                        case KafkaTopicsEnum.unable_to_extract_invoice_data.value:
                             invoice_data: str = message.value.decode("utf-8")
                             invoice_data: Dict = json.loads(invoice_data)
                             await self._extracted_invoice_data_event_manager.create_invoice_data(invoice_data)

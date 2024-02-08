@@ -7,6 +7,7 @@ WORKDIR /usr/src/main_api_service
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata/
 
 # install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -16,6 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     git \
     netcat-traditional \
+    tesseract-ocr \
+    tesseract-ocr-pol \
+    libtesseract-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # install Python dependencies

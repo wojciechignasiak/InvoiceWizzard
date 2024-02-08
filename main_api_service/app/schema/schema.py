@@ -143,3 +143,10 @@ class AIExtractedExternalBusinessEntity(Base):
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
+
+class AIExtractionFailure(Base):
+    __tablename__= 'ai_extraction_failure'
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    invoice_pdf: Mapped[Optional[str]] = mapped_column(VARCHAR(500), nullable=False)
+    date: Mapped[date] = mapped_column(DATE, nullable=False)

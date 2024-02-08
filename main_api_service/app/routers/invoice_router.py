@@ -64,6 +64,7 @@ from app.types.redis_repository_abstract_types import (
 from app.types.kafka_event_abstract_types import (
     InvoiceEventsABC
 )
+from app.files.files_repository_abc import FilesRepositoryABC
 from uuid import uuid4
 import ast
 from app.utils.invoice_html_builder import InvoiceHTMLBuilder
@@ -495,7 +496,7 @@ async def confirm_invoice_removal(
         user_business_entity_postgres_repository: UserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
         invoice_redis_repository: InvoiceRedisRepositoryABC = await repositories_registry.return_invoice_redis_repository(redis_client)
         invoice_events: InvoiceEventsABC = await events_registry.return_invoice_events(kafka_producer_client)
-        files_repository = await repositories_registry.return_files_repository()
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -576,7 +577,7 @@ async def add_file_to_invoice(
     try:
         user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
         invoice_postgres_repository: InvoicePostgresRepositoryABC = await repositories_registry.return_invoice_postgres_repository(postgres_session)
-        files_repository = await repositories_registry.return_files_repository()
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -643,7 +644,7 @@ async def delete_invoice_pdf(
     try:
         user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
         invoice_postgres_repository: InvoicePostgresRepositoryABC = await repositories_registry.return_invoice_postgres_repository(postgres_session)
-        files_repository = await repositories_registry.return_files_repository()
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -694,7 +695,7 @@ async def download_invoice_pdf(
     try:
         user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
         invoice_postgres_repository: InvoicePostgresRepositoryABC = await repositories_registry.return_invoice_postgres_repository(postgres_session)
-        files_repository = await repositories_registry.return_files_repository()
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -743,7 +744,7 @@ async def generate_invoice_pdf(
         invoice_item_postgres_repository: InvoiceItemPostgresRepositoryABC = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
         user_business_entity_postgres_repository: UserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
         external_business_entity_postgres_repository: ExternalBusinessEntityPostgresRepositoryABC = await repositories_registry.return_external_business_entity_postgres_repository(postgres_session)
-        files_repository = await repositories_registry.return_files_repository()
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials

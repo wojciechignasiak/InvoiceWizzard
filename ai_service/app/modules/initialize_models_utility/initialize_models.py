@@ -14,8 +14,9 @@ class InitializeModels:
         print(f"Initializing models: {self.__ollama_models}")
         arledy_existing_models: Dict = self.__get_models()
         missing_models: List = self.__extract_missing_models(arledy_existing_models)
-        print(f"Missing models: {missing_models}")
         if missing_models:
+            print(f"Missing models: {missing_models}")
+            print("Downloading missing moddels...")
             self.__pull_models()
             print(f"Models initialized: {self.__ollama_models}!")
         else:

@@ -25,6 +25,7 @@ from app.database.postgres.repositories.ai_extracted_external_business_entity_re
 from app.database.postgres.repositories.ai_extracted_user_business_entity_repository import AIExtractedUserBusinessEntityPostgresRepository
 from app.database.postgres.repositories.ai_is_external_business_recognized_repository import AIIsExternalBusinessEntityRecognizedPostgresRepository
 from app.database.postgres.repositories.ai_is_user_business_recognized_repository import AIIsUserBusinessRecognizedPostgresRepository
+from app.database.postgres.repositories.ai_extraction_failure_repository import AIExtractionFailurePostgresRepository
 from app.registries.events_registry import EventsRegistry
 from app.kafka.events.user_events import UserEvents
 from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
@@ -152,7 +153,8 @@ class ApplicationStartupProcesses:
                     AIExtractedExternalBusinessEntityPostgresRepository,
                     AIExtractedUserBusinessEntityPostgresRepository,
                     AIIsExternalBusinessEntityRecognizedPostgresRepository,
-                    AIIsUserBusinessRecognizedPostgresRepository
+                    AIIsUserBusinessRecognizedPostgresRepository,
+                    AIExtractionFailurePostgresRepository
                     )
                 
                 print("Repositories registry initialized!")

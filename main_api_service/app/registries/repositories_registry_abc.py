@@ -1,18 +1,23 @@
-from app.database.postgres.repositories.user_repository_abc import UserPostgresRepositoryABC
-from app.database.postgres.repositories.user_business_entity_repository_abc import UserBusinessEntityPostgresRepositoryABC
-from app.database.postgres.repositories.external_business_entity_repository_abc import ExternalBusinessEntityPostgresRepositoryABC
-from app.database.postgres.repositories.invoice_repository_abc import InvoicePostgresRepositoryABC
-from app.database.postgres.repositories.invoice_item_repository_abc import InvoiceItemPostgresRepositoryABC
-from app.database.postgres.repositories.ai_extracted_external_business_entity_repository_abc import AIExtractedExternalBusinessEntityPostgresRepositoryABC
-from app.database.postgres.repositories.ai_extracted_invoice_item_repository_abc import AIExtractedInvoiceItemPostgresRepositoryABC
-from app.database.postgres.repositories.ai_extracted_invoice_repository_abc import AIExtractedInvoicePostgresRepositoryABC
-from app.database.postgres.repositories.ai_extracted_user_business_entity_repository_abc import AIExtractedUserBusinessEntityPostgresRepositoryABC
-from app.database.postgres.repositories.ai_is_external_business_recognized_repository_abc import AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC
-from app.database.postgres.repositories.ai_is_user_business_recognized_repository_abc import AIIsUserBusinessRecognizedPostgresRepositoryABC
-from app.database.redis.repositories.user_repository_abc import UserRedisRepositoryABC
-from app.database.redis.repositories.user_business_entity_repository_abc import UserBusinessEntityRedisRepositoryABC
-from app.database.redis.repositories.external_business_entity_repository_abc import ExternalBusinessEntityRedisRepositoryABC
-from app.database.redis.repositories.invoice_repository_abc import InvoiceRedisRepositoryABC
+from app.types.postgres_repository_abstract_types import (
+    UserPostgresRepositoryABC,
+    UserBusinessEntityPostgresRepositoryABC,
+    ExternalBusinessEntityPostgresRepositoryABC,
+    InvoicePostgresRepositoryABC,
+    InvoiceItemPostgresRepositoryABC,
+    AIExtractedExternalBusinessEntityPostgresRepositoryABC,
+    AIExtractedInvoiceItemPostgresRepositoryABC,
+    AIExtractedInvoicePostgresRepositoryABC,
+    AIExtractedUserBusinessEntityPostgresRepositoryABC,
+    AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC,
+    AIIsUserBusinessRecognizedPostgresRepositoryABC,
+    AIExtractionFailurePostgresRepositoryABC,
+)
+from app.types.redis_repository_abstract_types import (
+    UserRedisRepositoryABC,
+    UserBusinessEntityRedisRepositoryABC,
+    ExternalBusinessEntityRedisRepositoryABC,
+    InvoiceRedisRepositoryABC,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 from abc import ABC, abstractmethod
@@ -83,4 +88,8 @@ class RepositoriesRegistryABC(ABC):
     
     @abstractmethod
     async def return_ai_is_user_business_recognized_postgres_repository(self, session: AsyncSession) -> AIIsUserBusinessRecognizedPostgresRepositoryABC:
+        ...
+
+    @abstractmethod
+    async def return_ai_extraction_error_postgres_repository(self, session: AsyncSession) -> AIExtractionFailurePostgresRepositoryABC:
         ...

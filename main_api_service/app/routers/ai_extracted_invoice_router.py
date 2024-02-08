@@ -59,6 +59,7 @@ from app.types.kafka_event_abstract_types import (
 from app.models.jwt_model import (
     JWTPayloadModel
 )
+from app.files.files_repository_abc import FilesRepositoryABC
 from uuid import uuid4
 from typing import List, Dict
 from pathlib import Path
@@ -80,7 +81,7 @@ async def extract_invoice_data_from_file(
     ):
     try:
         user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
-        files_repository = await repositories_registry.return_files_repository()
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
         user_business_entity_postgres_repository: UserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
         ai_invoice_events: AIInvoiceEventsABC = await events_registry.return_ai_invoice_events(kafka_producer_client)
 
@@ -254,7 +255,7 @@ async def download_invoice_pdf(
     try:
         user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
         ai_extracted_invoice_postgres_repository: AIExtractedInvoicePostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
-        files_repository = await repositories_registry.return_files_repository()
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -372,7 +373,7 @@ async def accept_ai_extracted_invoice(
         invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
         invoice_item_postgres_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
 
-        files_repository = await repositories_registry.return_files_repository()
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -511,7 +512,7 @@ async def delete_ai_extracted_invoice(
         ai_extracted_user_business_entity_postgres_repository: AIExtractedUserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_user_business_entity_postgres_repository(postgres_session)
         ai_extracted_external_business_entity_postgres_repository: AIExtractedUserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_external_business_entity_postgres_repository(postgres_session)
 
-        files_repository = await repositories_registry.return_files_repository()
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
