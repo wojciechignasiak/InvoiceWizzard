@@ -129,5 +129,5 @@ class RepositoriesRegistry(RepositoriesRegistryABC):
     async def return_ai_is_user_business_recognized_postgres_repository(self, session: AsyncSession) -> AIIsUserBusinessRecognizedPostgresRepositoryABC:
         return self.ai_is_user_business_recognized_postgres_repository(session)
     
-    async def return_ai_extraction_error_postgres_repository(self, session: AsyncSession) -> AIExtractionFailurePostgresRepositoryABC:
+    async def return_ai_extraction_failure_postgres_repository(self, session: AsyncSession) -> AIExtractionFailurePostgresRepositoryABC:
         return self.ai_extraction_failure_postgres_repository(session)

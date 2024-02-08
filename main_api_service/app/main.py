@@ -4,6 +4,8 @@ from starlette import middleware
 from app.aplication_startup_processes import ApplicationStartupProcesses
 from app.kafka.consumed_events_managers.extracted_invoice_data_event_manager import ExtractedInvoiceDataMenager
 from app.kafka.consumed_events_managers.extracted_invoice_data_event_manager_abc import ExtractedInvoiceDataMenagerABC
+from app.kafka.consumed_events_managers.ai_extraction_failure_manager import AIExtractionFailureManager
+from app.kafka.consumed_events_managers.ai_extraction_failure_manager_abc import AIExtractionFailureManagerABC
 from app.kafka.clients.events_consumer import EventsConsumer
 from contextlib import asynccontextmanager
 from app.schema.schema import Base
@@ -64,9 +66,14 @@ async def lifespan(app: FastAPI):
         repositories_registry=app.state.repositories_registry,
         postgres_url=application_statup_processes.postgres_url)
     
+    ai_extraction_failure_manager: AIExtractionFailureManagerABC = AIExtractionFailureManager(
+        repositories_registry=app.state.repositories_registry,
+        postgres_url=application_statup_processes.postgres_url)
+    
     events_consumer: EventsConsumer = EventsConsumer(
         kafka_consumer=app.state.kafka_consumer,
-        extracted_invoice_data_event_manager=extracted_invoice_data_manager)
+        extracted_invoice_data_event_manager=extracted_invoice_data_manager,
+        ai_extraction_failure_manager=ai_extraction_failure_manager)
     
     asyncio.create_task(events_consumer.run_consumer())
     

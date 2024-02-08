@@ -4,7 +4,7 @@ from modules.ocr_utility.ocr_utility import OCRUtility
 from modules.redisearch_repository.redisearch_repository import RedisearchRepository
 from langchain.vectorstores.redis import Redis
 from langchain.chains import RetrievalQA
-from typing import List, Dict, Literal
+from typing import List, Dict
 from modules.logging.logging import logger
 from uuid import uuid4
 from asyncio import AbstractEventLoop
@@ -156,7 +156,7 @@ class ExtractData:
             )
             result = self.text_extraction_model.invoke(prompt)
             print("Invoice and Business extracted!")
-            return result["result"]
+            return result
         except Exception as e:
             logger.error(f"ExtractData.__extract_invoice_and_business_entities_from_text() Error: {e}")
             raise Exception(f"ExtractData.__extract_invoice_and_business_entities_from_text() Error: {e}")
@@ -169,7 +169,7 @@ class ExtractData:
             )
             result = self.text_extraction_model.invoke(prompt)
             print("Invoice Items extracted!")
-            return result["result"]
+            return result
         except Exception as e:
             logger.error(f"ExtractData.__extract_invoice_items_from_text() Error: {e}")
             raise Exception(f"ExtractData.__extract_invoice_items_from_text() Error: {e}")
@@ -182,7 +182,7 @@ class ExtractData:
             )
             result = self.text_extraction_model.invoke(prompt)
             print("Invoice and Business Entities JSON string extracted!")
-            return result["result"]
+            return result
         except Exception as e:
             logger.error(f"ExtractData.__extract_invoice_and_business_entities_json_string_from_ai_response() Error: {e}")
             raise Exception(f"ExtractData.__extract_invoice_and_business_entities_json_string_from_ai_response() Error: {e}")
@@ -195,7 +195,7 @@ class ExtractData:
             )
             result = self.text_extraction_model.invoke(prompt)
             print("Invoice Items JSON string extracted!")
-            return result["result"]
+            return result
         except Exception as e:
             logger.error(f"ExtractData.__extract_invoice_items_json_string_from_ai_response() Error: {e}")
             raise Exception(f"ExtractData.__extract_invoice_items_json_string_from_ai_response() Error: {e}")

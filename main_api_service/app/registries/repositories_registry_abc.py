@@ -91,5 +91,5 @@ class RepositoriesRegistryABC(ABC):
         ...
 
     @abstractmethod
-    async def return_ai_extraction_error_postgres_repository(self, session: AsyncSession) -> AIExtractionFailurePostgresRepositoryABC:
+    async def return_ai_extraction_failure_postgres_repository(self, session: AsyncSession) -> AIExtractionFailurePostgresRepositoryABC:
         ...

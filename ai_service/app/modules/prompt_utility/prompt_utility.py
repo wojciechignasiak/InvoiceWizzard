@@ -145,7 +145,7 @@ class PromptUtility:
         
         return str(info + searched_data)
     
-    def get_correct_json_invoice_items_prompt(self, extracted_invoice_item: str) -> Literal:
+    def get_correct_json_invoice_items_prompt(self, extracted_invoice_item: str) -> str:
         info = """
             Context: You will be getting JSON's. Some of them may be incorrect. If provided JSON is incorrect fix it and return in correct format. If provided JSON is correct return it without changing anything.
 
@@ -183,7 +183,7 @@ class PromptUtility:
         
         return str(info + searched_data)
     
-    def get_correct_json_invoice_and_business_entities_prompt(self, extracted_invoice_and_business_data: str) -> Literal:
+    def get_correct_json_invoice_and_business_entities_prompt(self, extracted_invoice_and_business_data: str) -> str:
         info = """
             Context: You will be getting JSON's. Some of them may be incorrect. If provided JSON is incorrect fix it and return in correct format. If provided JSON is correct return it without changing anything.
 

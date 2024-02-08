@@ -35,10 +35,10 @@ class AIExtractionFailureManager(AIExtractionFailureManagerABC):
 
 
                 create_ai_extraction_failure_model: CreateAIExtractionFailureModel = CreateAIExtractionFailureModel(
-                    file_location=message["file_location"],
+                    invoice_pdf=message["file_location"],
                     user_id=file_location_list[5]
                 )
-                ai_extraction_failure_postgres_repository: AIExtractionFailurePostgresRepositoryABC = self._repositories_registry.return_ai_extraction_error_postgres_repository(
+                ai_extraction_failure_postgres_repository: AIExtractionFailurePostgresRepositoryABC = await self._repositories_registry.return_ai_extraction_failure_postgres_repository(
                     session=session
                 )
                 
