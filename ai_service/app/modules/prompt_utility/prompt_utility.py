@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Literal
 
 class PromptUtility:
 
@@ -145,8 +145,8 @@ class PromptUtility:
         
         return str(info + searched_data)
     
-    def get_correct_json_invoice_items_prompt(self) -> str:
-        prompt = """
+    def get_correct_json_invoice_items_prompt(self, extracted_invoice_item: str) -> Literal:
+        info = """
             Context: You will be getting JSON's. Some of them may be incorrect. If provided JSON is incorrect fix it and return in correct format. If provided JSON is correct return it without changing anything.
 
             Example:
@@ -175,14 +175,16 @@ class PromptUtility:
                 ]
                 }
             
-            Input: {input}
-            Answer:
             """
+        searched_data = f"""
+                Input: {extracted_invoice_item}
+                Answer:
+                """
         
-        return prompt
+        return str(info + searched_data)
     
-    def get_correct_json_invoice_and_business_entities_prompt(self) -> str:
-        prompt = """
+    def get_correct_json_invoice_and_business_entities_prompt(self, extracted_invoice_and_business_data: str) -> Literal:
+        info = """
             Context: You will be getting JSON's. Some of them may be incorrect. If provided JSON is incorrect fix it and return in correct format. If provided JSON is correct return it without changing anything.
 
             Example:
@@ -238,8 +240,10 @@ class PromptUtility:
                     "nip": null
                 }
             }
-            Input: {input}
-            Answer:
             """
+        searched_data = f"""
+                Input: {extracted_invoice_and_business_data}
+                Answer:
+                """
         
-        return prompt
+        return str(info+searched_data)

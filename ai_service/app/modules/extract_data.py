@@ -4,7 +4,7 @@ from modules.ocr_utility.ocr_utility import OCRUtility
 from modules.redisearch_repository.redisearch_repository import RedisearchRepository
 from langchain.vectorstores.redis import Redis
 from langchain.chains import RetrievalQA
-from typing import List, Dict
+from typing import List, Dict, Literal
 from modules.logging.logging import logger
 from uuid import uuid4
 from asyncio import AbstractEventLoop
@@ -177,8 +177,10 @@ class ExtractData:
     def __extract_invoice_and_business_entities_json_string_from_ai_response(self, ai_response: str) -> str:
         try:
             print("Extracting Invoice and Business Entities JSON string from AI response...")
-            prompt = self.prompt_utility.get_correct_json_invoice_items_prompt()
-            result = self.text_extraction_model.invoke(prompt.format(input=ai_response))
+            prompt: str = self.prompt_utility.get_correct_json_invoice_items_prompt(
+                extracted_invoice_item=ai_response
+            )
+            result = self.text_extraction_model.invoke(prompt)
             print("Invoice and Business Entities JSON string extracted!")
             return result["result"]
         except Exception as e:
@@ -188,8 +190,10 @@ class ExtractData:
     def __extract_invoice_items_json_string_from_ai_response(self, ai_response: str) -> str:
         try:            
             print("Extracting Invoice Items JSON string from AI response...")
-            prompt = self.prompt_utility.get_correct_json_invoice_and_business_entities_prompt()
-            result = self.text_extraction_model.invoke(prompt.format(input=ai_response))
+            prompt: str = self.prompt_utility.get_correct_json_invoice_and_business_entities_prompt(
+                extracted_invoice_and_business_data=ai_response
+            )
+            result = self.text_extraction_model.invoke(prompt)
             print("Invoice Items JSON string extracted!")
             return result["result"]
         except Exception as e:

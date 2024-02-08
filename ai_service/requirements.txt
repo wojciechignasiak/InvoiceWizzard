@@ -7,3 +7,4 @@ redis[hiredis]
 pdf2image>=1.17.0,<1.18.0
 pillow>=10.2.0,<10.3.0
 PyMuPDF>=1.23.21,<1.24.0
+pytesseract>=0.3.10,<0.4.0
