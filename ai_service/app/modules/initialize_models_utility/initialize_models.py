@@ -8,7 +8,7 @@ class InitializeModels:
     def __init__(self):
         self.__ollama_host: str = os.getenv('OLLAMA_HOST')
         self.__ollama_port: str = os.getenv('OLLAMA_PORT')
-        self.__ollama_models: List = ["openchat:latest", "llava:latest"]
+        self.__ollama_models: List = ["openchat:latest"]
 
     def initialize_models(self):
         print(f"Initializing models: {self.__ollama_models}")
