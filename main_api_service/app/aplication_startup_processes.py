@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 from redis.asyncio import Redis, BlockingConnectionPool
-from kafka.errors import KafkaTimeoutError, KafkaError
+from aiokafka.errors import KafkaTimeoutError, KafkaError
 from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
 from app.models.kafka_topics_enum import KafkaTopicsEnum
 from app.kafka.initialize_topics.startup_topics import startup_topics
