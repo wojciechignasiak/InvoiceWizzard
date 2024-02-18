@@ -10,10 +10,7 @@ from sqlalchemy.ext.asyncio import (
     AsyncEngine
 )
 from app.logging import logger
-from typing import (
-    Dict, 
-    List
-)
+
 
 
 class AIExtractionFailureManager(AIExtractionFailureManagerABC):
@@ -26,12 +23,12 @@ class AIExtractionFailureManager(AIExtractionFailureManagerABC):
                                     echo=False,
                                     future=True
                                 )
-    async def create_ai_extraction_failure(self, message: Dict):
+    async def create_ai_extraction_failure(self, message: dict):
         try:
             async with self._engine.begin() as conn:
                 
                 session: AsyncSession = AsyncSession(conn)
-                file_location_list: List = message["file_location"].split("/")
+                file_location_list: list = message["file_location"].split("/")
 
 
                 create_ai_extraction_failure_model: CreateAIExtractionFailureModel = CreateAIExtractionFailureModel(

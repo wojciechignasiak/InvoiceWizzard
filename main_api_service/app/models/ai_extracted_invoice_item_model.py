@@ -1,6 +1,6 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, Configdict
 from datetime import date
-from typing import Optional, List
+from typing import Optional
 from pydantic.functional_validators import field_validator
 from uuid import UUID, uuid4
 from app.schema.schema import AIExtractedInvoiceItem

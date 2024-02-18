@@ -34,7 +34,6 @@ from app.types.redis_repository_abstract_types import (
 )
 from app.schema.schema import AIExtractionFailure
 from pathlib import Path
-from typing import  List
 
 router = APIRouter()
 http_bearer = HTTPBearer()
@@ -58,13 +57,13 @@ async def get_all_external_business_entities(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
-        ai_extraction_failures: List[AIExtractionFailure] = await ai_extraction_failure_postgres_repository.get_all_ai_extraction_failure(
+        ai_extraction_failures: list[AIExtractionFailure] = await ai_extraction_failure_postgres_repository.get_all_ai_extraction_failure(
             user_id=jwt_payload.id,
             page=page,
             items_per_page=items_per_page
         )
 
-        ai_extraction_failures_model: List[AIExtractionFailureModel] = [await AIExtractionFailureModel.ai_extraction_failure_schema_to_model(ai_extraction_failure) for ai_extraction_failure in ai_extraction_failures]
+        ai_extraction_failures_model: list[AIExtractionFailureModel] = [await AIExtractionFailureModel.ai_extraction_failure_schema_to_model(ai_extraction_failure) for ai_extraction_failure in ai_extraction_failures]
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(ai_extraction_failures_model))
     except HTTPException as e:

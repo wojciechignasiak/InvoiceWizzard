@@ -1,10 +1,10 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, Configdict
 from typing import Optional
 from app.schema.schema import UserBusinessEntity
 from uuid import uuid4
 
 class CreateUserBusinessEntityModel(BaseModel):
-    model_config = ConfigDict(json_schema_extra={
+    model_config = Configdict(json_schema_extra={
         "example":{
                 "company_name": "Company Name",
                 "city": "Warsaw",
@@ -25,7 +25,7 @@ class CreateUserBusinessEntityModel(BaseModel):
         return uuid4()
 
 class UpdateUserBusinessEntityModel(BaseModel):
-    model_config = ConfigDict(json_schema_extra={
+    model_config = Configdict(json_schema_extra={
         "example":{
                 "id": "a91031db-fc69-4b48-878e-0db79cef4cca",
                 "company_name": "Company Name",

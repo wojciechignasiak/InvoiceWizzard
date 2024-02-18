@@ -1,6 +1,5 @@
 from app.models.ai_extracted_invoice_model import CreateAIExtractedInvoiceModel, UpdateAIExtractedInvoiceModel
 from app.schema.schema import AIExtractedInvoice
-from typing import List
 from app.database.postgres.repositories.ai_extracted_invoice_repository_abc import AIExtractedInvoicePostgresRepositoryABC
 from app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
 from sqlalchemy import insert, select, update, delete
@@ -73,7 +72,7 @@ class AIExtractedInvoicePostgresRepository(BasePostgresRepository, AIExtractedIn
     async def get_all_extracted_invoices(self, 
                                         user_id: str,
                                         page: int = 1, 
-                                        items_per_page: int = 10) -> List[AIExtractedInvoice]:
+                                        items_per_page: int = 10) -> list[AIExtractedInvoice]:
         try:
             stmt = (
                 select(AIExtractedInvoice).
@@ -84,7 +83,7 @@ class AIExtractedInvoicePostgresRepository(BasePostgresRepository, AIExtractedIn
                 offset((page - 1) * items_per_page)
             )
             ai_extracted_invoice = await self.session.scalars(stmt)
-            ai_extracted_invoice_list: List = ai_extracted_invoice.all()
+            ai_extracted_invoice_list: list = ai_extracted_invoice.all()
 
             if not ai_extracted_invoice_list:
                 raise PostgreSQLNotFoundError("Extracted invoices not found in database.")

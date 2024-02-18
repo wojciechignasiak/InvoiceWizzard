@@ -4,7 +4,6 @@ from langchain.chains import RetrievalQA, QAGenerationChain
 from langchain.llms.ollama import Ollama
 from modules.logging.logging import logger
 import os
-from typing import Dict
 
 
 

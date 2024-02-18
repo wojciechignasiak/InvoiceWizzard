@@ -3,7 +3,7 @@ from app.models.kafka_topics_enum import KafkaTopicsEnum
 from app.kafka.consumed_events_managers.extracted_invoice_data_event_manager_abc import ExtractedInvoiceDataMenagerABC
 from app.kafka.consumed_events_managers.ai_extraction_failure_manager_abc import AIExtractionFailureManagerABC
 from app.logging import logger
-from typing import Dict
+
 
 import json
 
@@ -25,11 +25,11 @@ class EventsConsumer:
                     match message.topic:
                         case KafkaTopicsEnum.extracted_invoice_data.value:
                             invoice_data: str = message.value.decode("utf-8")
-                            invoice_data: Dict = json.loads(invoice_data)
+                            invoice_data: dict = json.loads(invoice_data)
                             await self._extracted_invoice_data_event_manager.create_invoice_data(invoice_data)
                         case KafkaTopicsEnum.unable_to_extract_invoice_data.value:
                             invoice_data: str = message.value.decode("utf-8")
-                            invoice_data: Dict = json.loads(invoice_data)
+                            invoice_data: dict = json.loads(invoice_data)
                             await self._ai_extraction_failure_manager.create_ai_extraction_failure(invoice_data)
                             
                 except Exception as inner_error:

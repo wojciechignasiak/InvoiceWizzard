@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, Configdict
 from datetime import datetime, date
 from typing import Optional
 from app.schema.schema import Invoice
@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from pydantic.functional_validators import field_validator
 
 class CreateInvoiceModel(BaseModel):
-    model_config = ConfigDict(json_schema_extra={
+    model_config = Configdict(json_schema_extra={
         "example":{
                 "user_business_entity_id": "abcac67f-6d59-41b5-bf88-58fbaefbd725",
                 "external_business_entity_id": "abcac67f-6d59-41b5-bf88-58fbaefbd725",
@@ -49,7 +49,7 @@ class CreateInvoiceModel(BaseModel):
 
 
 class UpdateInvoiceModel(BaseModel):
-    model_config = ConfigDict(json_schema_extra={
+    model_config = Configdict(json_schema_extra={
         "example":{
                 "id": "cfafb4bd-59e0-46e5-9005-6afd7e5b8a38",
                 "user_business_entity_id": "abcac67f-6d59-41b5-bf88-58fbaefbd725",
@@ -92,7 +92,7 @@ class UpdateInvoiceModel(BaseModel):
 
 
 class InvoiceModel(BaseModel):
-    model_config = ConfigDict(json_schema_extra={
+    model_config = Configdict(json_schema_extra={
         "example":{
                 "id": "cfafb4bd-59e0-46e5-9005-6afd7e5b8a38",
                 "user_business_entity_id": "abcac67f-6d59-41b5-bf88-58fbaefbd725",

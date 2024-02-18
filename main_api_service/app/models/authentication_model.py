@@ -1,7 +1,7 @@
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, Configdict, EmailStr
 
 class LogInModel(BaseModel):
-    model_config = ConfigDict(json_schema_extra={
+    model_config = Configdict(json_schema_extra={
         "example":{
                 "email": "email@example.com",
                 "password": "passw0rd!",

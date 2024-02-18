@@ -4,7 +4,6 @@ from modules.ocr_utility.ocr_utility import OCRUtility
 from modules.redisearch_repository.redisearch_repository import RedisearchRepository
 from langchain.vectorstores.redis import Redis
 from langchain.chains import RetrievalQA
-from typing import List, Dict
 from modules.logging.logging import logger
 from uuid import uuid4
 from asyncio import AbstractEventLoop
@@ -28,7 +27,7 @@ class ExtractData:
             loop=loop,
         )
 
-    async def is_scan_or_text(self, message) -> Dict:
+    async def is_scan_or_text(self, message) -> dict:
         try:
             is_scan = self.pdf_utility.is_scan(
                 file_location=message["file_location"]
@@ -43,14 +42,14 @@ class ExtractData:
             asyncio.create_task(self.kafka_producer.exception_occured(message))
             logger.error(f"ExtractData.is_scan_or_text() Error: {e}")
 
-    def __extract_data_from_text(self, message: Dict):
+    def __extract_data_from_text(self, message: dict):
         try:
             print("Creating redis index...")
             redis_index: str = f"pdf_index_{uuid4()}"
             print(f"Created redis index: {redis_index}")
 
             print("Chunking pdf file...")
-            chunked_pdf: List = self.pdf_utility.chunk_pdf_file(
+            chunked_pdf: list = self.pdf_utility.chunk_pdf_file(
                 file_location=message["file_location"])
             print("PDF chunked!")
 
@@ -94,9 +93,9 @@ class ExtractData:
         finally:
             self.redis_repository.clean_data_from_index(redis_index, redis)
 
-    def __extract_data_from_image(self, message: Dict):
+    def __extract_data_from_image(self, message: dict):
         try:
-            extracted_text: List = self.ocr_utility.extract_text_from_pdf(
+            extracted_text: list = self.ocr_utility.extract_text_from_pdf(
                 pdf_path=message["file_location"])
             
             invoice_and_business_entities: str = self.__extract_invoice_and_business_entities_from_text(
@@ -125,11 +124,11 @@ class ExtractData:
             logger.error(f"ExtractData.__extract_data_from_image() Error: {e}")
             raise Exception(f"ExtractData.__extract_data_from_image() Error: {e}")
         
-    def __extract_invoice_and_business_entities_from_embeddings(self, message: Dict, qa_chain: RetrievalQA) -> str:
+    def __extract_invoice_and_business_entities_from_embeddings(self, message: dict, qa_chain: RetrievalQA) -> str:
         try:
             print("Extracting Invoice and Business entities from embeddings...")
             invoice_and_business_entities_prompt = self.prompt_utility.get_invoice_and_business_entities_extraction_prompt(message["user_business_entities_nip"])
-            result: Dict = qa_chain.invoke({"query": invoice_and_business_entities_prompt})
+            result: dict = qa_chain.invoke({"query": invoice_and_business_entities_prompt})
             print("Invoice and Business entities extracted!")
             return result["result"]
         except Exception as e:
@@ -140,14 +139,14 @@ class ExtractData:
         try:
             print("Extracting Invoice Items from embeddings...")
             invoice_items_prompt = self.prompt_utility.get_invoice_items_extraction_prompt()
-            result: Dict = qa_chain.invoke({"query": invoice_items_prompt})
+            result: dict = qa_chain.invoke({"query": invoice_items_prompt})
             print("Invoice Items extracted!")
             return result["result"]
         except Exception as e:
             logger.error(f"ExtractData.__extract_invoice_items_from_embeddings() Error: {e}")
             raise Exception(f"ExtractData.__extract_invoice_items_from_embeddings() Error: {e}")
     
-    def __extract_invoice_and_business_entities_from_text(self, nip_list: str, extracted_text: List) -> str:
+    def __extract_invoice_and_business_entities_from_text(self, nip_list: str, extracted_text: list) -> str:
         try:
             print("Extracting Invoice and Business entities from text...")
             prompt = self.prompt_utility.get_invoice_and_business_entities_extraction_from_text_prompt(
@@ -161,7 +160,7 @@ class ExtractData:
             logger.error(f"ExtractData.__extract_invoice_and_business_entities_from_text() Error: {e}")
             raise Exception(f"ExtractData.__extract_invoice_and_business_entities_from_text() Error: {e}")
     
-    def __extract_invoice_items_from_text(self, extracted_text: List) -> str:
+    def __extract_invoice_items_from_text(self, extracted_text: list) -> str:
         try:            
             print("Extracting Invoice Items from text...")
             prompt = self.prompt_utility.get_invoice_items_extraction_from_text_prompt(

@@ -61,7 +61,6 @@ from app.models.jwt_model import (
 )
 from app.files.files_repository_abc import FilesRepositoryABC
 from uuid import uuid4
-from typing import List, Dict
 from pathlib import Path
 
 
@@ -114,12 +113,12 @@ async def extract_invoice_data_from_file(
             case _:
                 raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Invoice file in unsupported format. Use PDF or JPG/JPEG/PNG.")
             
-        user_business_entities: List[UserBusinessEntity] = await user_business_entity_postgres_repository.get_all_user_business_entities(
+        user_business_entities: list[UserBusinessEntity] = await user_business_entity_postgres_repository.get_all_user_business_entities(
             user_id=jwt_payload.id,
             items_per_page=1000
         )
 
-        user_business_entities_nip: List[str] = []
+        user_business_entities_nip: list[str] = []
 
         for user_business_entity in user_business_entities:
             user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(
@@ -173,14 +172,14 @@ async def get_ai_extracted_invoice(
         
         ai_extracted_invoice_model: AIExtractedInvoiceModel = await AIExtractedInvoiceModel.ai_extracted_invoice_schema_to_model(ai_extracted_invoice)
 
-        ai_extracted_invoice_items: List[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
+        ai_extracted_invoice_items: list[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
             extracted_invoice_id=ai_extracted_invoice_model.id,
             user_id=jwt_payload.id
         )
 
         net_value: float = 0.0
         gross_value: float = 0.0
-        ai_extracted_invoice_item_models: List[AIExtractedInvoiceItemModel] = [] 
+        ai_extracted_invoice_item_models: list[AIExtractedInvoiceItemModel] = [] 
         for ai_extracted_invoice_item in ai_extracted_invoice_items:
             ai_extracted_invoice_item_model = await AIExtractedInvoiceItemModel.ai_extracted_invoice_item_schema_to_model(ai_extracted_invoice_item)
 
@@ -224,7 +223,7 @@ async def get_ai_extracted_invoice(
             ai_is_external_business_entity_recognized
         )
 
-        ai_extracted_invoice: Dict = ai_extracted_invoice_model.model_dump()
+        ai_extracted_invoice: dict = ai_extracted_invoice_model.model_dump()
 
         ai_extracted_invoice["net_value"] = net_value
         ai_extracted_invoice["gross_value"] = gross_value
@@ -311,17 +310,17 @@ async def get_all_ai_extracted_invoices(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
-        ai_extracted_invoices: List[AIExtractedInvoice] = await ai_extracted_invoice_postgres_repository.get_all_extracted_invoices(
+        ai_extracted_invoices: list[AIExtractedInvoice] = await ai_extracted_invoice_postgres_repository.get_all_extracted_invoices(
             user_id=jwt_payload.id,
             page=page,
             items_per_page=items_per_page
         )
-        ai_extracted_invoices_with_net_and_gross_value: List[Dict] = []
+        ai_extracted_invoices_with_net_and_gross_value: list[dict] = []
 
         for ai_extracted_invoice in ai_extracted_invoices:
             ai_extracted_invoice_model: AIExtractedInvoiceModel = await AIExtractedInvoiceModel.ai_extracted_invoice_schema_to_model(ai_extracted_invoice)
             
-            ai_extracted_invoice_items: List[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
+            ai_extracted_invoice_items: list[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
                 extracted_invoice_id=ai_extracted_invoice_model.id,
                 user_id=jwt_payload.id
             )
@@ -338,7 +337,7 @@ async def get_all_ai_extracted_invoices(
                 if ai_extracted_invoice_item_model.gross_value != None:
                     gross_value+=ai_extracted_invoice_item_model.gross_value
 
-            ai_extracted_invoice: Dict = ai_extracted_invoice_model.model_dump()
+            ai_extracted_invoice: dict = ai_extracted_invoice_model.model_dump()
             ai_extracted_invoice["net_value"] = net_value
             ai_extracted_invoice["gross_value"] = gross_value
 
@@ -386,7 +385,7 @@ async def accept_ai_extracted_invoice(
             user_id=jwt_payload.id
         )
 
-        ai_extracted_invoice_items: List[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
+        ai_extracted_invoice_items: list[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
             extracted_invoice_id=ai_extracted_invoice_id,
             user_id=jwt_payload.id
         )
@@ -405,7 +404,7 @@ async def accept_ai_extracted_invoice(
             extracted_invoice_schema = ai_extracted_invoice
             )
 
-        extracted_invoice_item_models: List[AIExtractedInvoiceItemModel] = []
+        extracted_invoice_item_models: list[AIExtractedInvoiceItemModel] = []
 
         for extracted_invoice_item in ai_extracted_invoice_items:
             extracted_invoice_item_model: AIExtractedInvoiceItemModel = await AIExtractedInvoiceItemModel.ai_extracted_invoice_item_schema_to_model(

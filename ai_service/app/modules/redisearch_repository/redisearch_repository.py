@@ -1,7 +1,6 @@
 import os
 from langchain.vectorstores.redis import Redis
 from langchain_community.embeddings.ollama import OllamaEmbeddings
-from typing import List
 from modules.logging.logging import logger
 
 class RedisearchRepository:
@@ -10,7 +9,7 @@ class RedisearchRepository:
         self.host = os.getenv("REDISEARCH_HOST")
         self.port = os.getenv("REDISEARCH_PORT")
 
-    def embedding_file(self, pdf_pages: List, ollama_embedding_model: OllamaEmbeddings, redis_index: str) -> Redis:
+    def embedding_file(self, pdf_pages: list, ollama_embedding_model: OllamaEmbeddings, redis_index: str) -> Redis:
         try:
             redis: Redis = Redis.from_documents(
                 documents=pdf_pages, 

@@ -17,7 +17,6 @@ from sqlalchemy.exc import (
     OperationalError,
     ProgrammingError
     )
-from typing import List
 from app.logging import logger
 
 class AIExtractionFailurePostgresRepository(BasePostgresRepository, AIExtractionFailurePostgresRepositoryABC):
@@ -67,7 +66,7 @@ class AIExtractionFailurePostgresRepository(BasePostgresRepository, AIExtraction
     async def get_all_ai_extraction_failure(self,
                                             user_id: str,
                                             page: int = 1, 
-                                            items_per_page: int = 10) -> List[AIExtractionFailure]:
+                                            items_per_page: int = 10) -> list[AIExtractionFailure]:
         try:
             stmt = (
                 select(AIExtractionFailure).

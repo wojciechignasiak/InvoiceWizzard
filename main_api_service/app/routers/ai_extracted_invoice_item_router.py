@@ -36,7 +36,7 @@ from app.types.kafka_event_abstract_types import (
 from app.models.jwt_model import (
     JWTPayloadModel
 )
-from typing import List
+
 
 
 router = APIRouter()
@@ -62,12 +62,12 @@ async def get_ai_extracted_invoice_items_by_ai_extracted_invoice_id(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
-        extracted_invoice_items: List[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
+        extracted_invoice_items: list[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
             extracted_invoice_id=ai_extracted_invoice_id,
             user_id=jwt_payload.id
         )
 
-        invoice_item_models: List[AIExtractedInvoiceItemModel] = []
+        invoice_item_models: list[AIExtractedInvoiceItemModel] = []
 
         for invoice_item in extracted_invoice_items:
             invoice_item_model: AIExtractedInvoiceItemModel = await AIExtractedInvoiceItemModel.ai_extracted_invoice_item_schema_to_model(

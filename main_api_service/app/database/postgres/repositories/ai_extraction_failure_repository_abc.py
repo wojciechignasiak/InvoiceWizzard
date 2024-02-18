@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from app.models.ai_extraction_failure_model import CreateAIExtractionFailureModel
 from app.schema.schema import AIExtractionFailure
-from typing import List
 
 class AIExtractionFailurePostgresRepositoryABC(ABC):
     @abstractmethod
@@ -19,7 +18,7 @@ class AIExtractionFailurePostgresRepositoryABC(ABC):
     async def get_all_ai_extraction_failure(self,
                                             user_id: str,
                                             page: int = 1, 
-                                            items_per_page: int = 10) -> List[AIExtractionFailure]:
+                                            items_per_page: int = 10) -> list[AIExtractionFailure]:
         ...
 
     @abstractmethod

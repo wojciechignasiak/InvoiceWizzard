@@ -8,16 +8,13 @@ from app.models.ai_is_external_business_entity_recognized_model import CreateAII
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
-from typing import (
-    Dict, 
-    List
-)
+
 from abc import ABC, abstractmethod
 
 class ExtractedInvoiceDataMenagerABC(ABC):
 
     @abstractmethod
-    async def create_invoice_data(self, invoice_data: Dict):
+    async def create_invoice_data(self, invoice_data: dict):
         ...
 
     @abstractmethod
@@ -25,7 +22,7 @@ class ExtractedInvoiceDataMenagerABC(ABC):
         ...
 
     @abstractmethod
-    async def _create_ai_extracted_invoice_items(self, invoice_items: List[CreateAIExtractedInvoiceItemModel], user_id: str, ai_extracted_invoice_id: str, session: AsyncSession) -> None:
+    async def _create_ai_extracted_invoice_items(self, invoice_items: list[CreateAIExtractedInvoiceItemModel], user_id: str, ai_extracted_invoice_id: str, session: AsyncSession) -> None:
         ...
 
     @abstractmethod
@@ -45,17 +42,17 @@ class ExtractedInvoiceDataMenagerABC(ABC):
         ...
 
     @abstractmethod
-    async def try_to_recognize_user_business_entity_by_name(self, user_id: str, name: str, session: AsyncSession) -> List:
+    async def try_to_recognize_user_business_entity_by_name(self, user_id: str, name: str, session: AsyncSession) -> list:
         ...
     
     @abstractmethod
-    async def try_to_recognize_user_business_entity_by_nip(self, user_id: str, nip: str, session: AsyncSession) -> List:
+    async def try_to_recognize_user_business_entity_by_nip(self, user_id: str, nip: str, session: AsyncSession) -> list:
         ...
     
     @abstractmethod
-    async def try_to_recognize_external_business_entity_by_name(self, user_id: str, name: str, session: AsyncSession) -> List:
+    async def try_to_recognize_external_business_entity_by_name(self, user_id: str, name: str, session: AsyncSession) -> list:
         ...
 
     @abstractmethod
-    async def try_to_recognize_external_business_entity_by_nip(self, user_id: str, nip: str, session: AsyncSession) -> List:
+    async def try_to_recognize_external_business_entity_by_nip(self, user_id: str, nip: str, session: AsyncSession) -> list:
         ...

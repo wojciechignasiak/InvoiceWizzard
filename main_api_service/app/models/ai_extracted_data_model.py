@@ -1,13 +1,13 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, Configdict
 from datetime import date
-from typing import Optional, List
+from typing import Optional
 from app.models.ai_extracted_invoice_model import CreateAIExtractedInvoiceModel
 from app.models.ai_extracted_invoice_item_model import CreateAIExtractedInvoiceItemModel
 from app.models.ai_extracted_user_business_entity_model import CreateAIExtractedUserBusinessModel
 from app.models.ai_extracted_external_business_entity_model import CreateAIExtractedExternalBusinessModel
 
 class AIExtractedDataModel(BaseModel):
-    model_config = ConfigDict(json_schema_extra={
+    model_config = Configdict(json_schema_extra={
         "example":{
                 "user_id": "some_id",
                 "invoice":
@@ -56,6 +56,6 @@ class AIExtractedDataModel(BaseModel):
         )
     user_id: str
     invoice: CreateAIExtractedInvoiceModel
-    invoice_items: List[CreateAIExtractedInvoiceItemModel]
+    invoice_items: list[CreateAIExtractedInvoiceItemModel]
     user_business_entity: CreateAIExtractedUserBusinessModel
     external_business_entity: CreateAIExtractedExternalBusinessModel

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from app.models.ai_extracted_invoice_model import CreateAIExtractedInvoiceModel, UpdateAIExtractedInvoiceModel
 from app.schema.schema import AIExtractedInvoice
-from typing import List
+
 
 class AIExtractedInvoicePostgresRepositoryABC(ABC):
     @abstractmethod
@@ -19,7 +19,7 @@ class AIExtractedInvoicePostgresRepositoryABC(ABC):
     async def get_all_extracted_invoices(self, 
                                         user_id: str,
                                         page: int = 1, 
-                                        items_per_page: int = 10) -> List[AIExtractedInvoice]:
+                                        items_per_page: int = 10) -> list[AIExtractedInvoice]:
         ...
 
     @abstractmethod

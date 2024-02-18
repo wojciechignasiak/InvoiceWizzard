@@ -1,4 +1,3 @@
-from typing import List
 from langchain.prompts.prompt import PromptTemplate
 from langchain.prompts.few_shot import FewShotPromptTemplate
 
@@ -7,7 +6,7 @@ class BetterPromptUtility:
     def __init__(self):
         pass
     
-    def single_prompt(self, nip_list: List):
+    def single_prompt(self, nip_list: list):
 
         examples = [
             {

@@ -1,11 +1,10 @@
-from typing import List, Dict, Literal
 
 class PromptUtility:
 
     def __init__(self):
         pass
     
-    def get_invoice_and_business_entities_extraction_prompt(self, nip_list: List):
+    def get_invoice_and_business_entities_extraction_prompt(self, nip_list: list):
         info = f"""
         User business NIP numbers: {nip_list}
         'is_issued' is true only if the seller's NIP is provided on the NIP numbers list.
@@ -71,7 +70,7 @@ class PromptUtility:
         return str(info + searched_data)
     
 
-    def get_invoice_and_business_entities_extraction_from_text_prompt(self, nip_list: List, extracted_text: List):
+    def get_invoice_and_business_entities_extraction_from_text_prompt(self, nip_list: list, extracted_text: list):
         info = f"""
         User business NIP numbers: {nip_list}
         'is_issued' is true only if the seller's NIP is provided on the NIP numbers list.
@@ -118,7 +117,7 @@ class PromptUtility:
 
         return str(info + searched_data + data)
 
-    def get_invoice_items_extraction_from_text_prompt(self, extracted_text: List) -> str:
+    def get_invoice_items_extraction_from_text_prompt(self, extracted_text: list) -> str:
 
         info ="""
                 Generate separate JSON structures for invoice items based on the provided embeddings. Each JSON structure should follow the format below:

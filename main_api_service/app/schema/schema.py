@@ -1,7 +1,7 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, VARCHAR, DATE, BOOLEAN, FLOAT, INTEGER
-from typing import Optional, List
+from typing import Optional
 from datetime import date
 import uuid
 
@@ -34,7 +34,7 @@ class UserBusinessEntity(Base):
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=False)
-    invoice: Mapped[List["Invoice"]] = relationship(back_populates="user_business_entity")
+    invoice: Mapped[list["Invoice"]] = relationship(back_populates="user_business_entity")
 
 class ExternalBusinessEntity(Base):
     __tablename__= 'external_business_entity'
@@ -45,7 +45,7 @@ class ExternalBusinessEntity(Base):
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
-    invoice: Mapped[List["Invoice"]] = relationship(back_populates="external_business_entity")
+    invoice: Mapped[list["Invoice"]] = relationship(back_populates="external_business_entity")
 
 class Invoice(Base):
     __tablename__ = 'invoice'
@@ -66,7 +66,7 @@ class Invoice(Base):
     is_settled: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
     is_issued: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=True)
     in_trash: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
-    invoice_item: Mapped[List["InvoiceItem"]] = relationship(back_populates="invoice")
+    invoice_item: Mapped[list["InvoiceItem"]] = relationship(back_populates="invoice")
 
 
 class InvoiceItem(Base):

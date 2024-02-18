@@ -1,10 +1,10 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, Configdict
 from typing import Optional
 from app.schema.schema import ExternalBusinessEntity
 from uuid import uuid4
 
 class CreateExternalBusinessEntityModel(BaseModel):
-    model_config = ConfigDict(json_schema_extra={
+    model_config = Configdict(json_schema_extra={
         "example":{
                 "name": "Name/Company Name",
                 "city": "Warsaw",
@@ -25,7 +25,7 @@ class CreateExternalBusinessEntityModel(BaseModel):
         return uuid4()
 
 class UpdateExternalBusinessEntityModel(BaseModel):
-    model_config = ConfigDict(json_schema_extra={
+    model_config = Configdict(json_schema_extra={
         "example":{
                 "id": "a91031db-fc69-4b48-878e-0db79cef4cca",
                 "name": "Name/Company Name",

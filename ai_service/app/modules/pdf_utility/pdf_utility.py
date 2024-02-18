@@ -1,6 +1,5 @@
 from io import BytesIO
 from langchain.document_loaders.pdf import PyPDFLoader
-from typing import List
 from PyPDF2 import PdfReader
 from modules.logging.logging import logger
 from pdf2image import convert_from_path
@@ -8,10 +7,10 @@ import base64
 
 class PdfUtility:
 
-    def chunk_pdf_file(self, file_location: str) -> List:
+    def chunk_pdf_file(self, file_location: str) -> list:
         try:
             loader: PyPDFLoader = PyPDFLoader(file_location)
-            pdf_pages: List = loader.load_and_split()
+            pdf_pages: list = loader.load_and_split()
             return pdf_pages
         except Exception as e:
             logger.error(f"PdfUtility.chunk_pdf_file() Error: {e}")
@@ -31,7 +30,7 @@ class PdfUtility:
             logger.error(f"PdfUtility.is_scan() Error: {e}")
             raise Exception(f"PdfUtility.is_scan() Error: {e}")
         
-    def pdf_to_images_and_base64(self, pdf_path: str) -> List:
+    def pdf_to_images_and_base64(self, pdf_path: str) -> list:
         try:
             print("Extracting base64 images form pdf...")
             images = convert_from_path(pdf_path)
