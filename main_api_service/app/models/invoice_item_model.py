@@ -1,11 +1,11 @@
-from pydantic import BaseModel, Configdict
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from uuid import UUID, uuid4
 from app.schema.schema import InvoiceItem
 from pydantic.functional_validators import field_validator
 
 class CreateInvoiceItemModel(BaseModel):
-    model_config = Configdict(json_schema_extra={
+    model_config = ConfigDict(json_schema_extra={
         "example":{
                 "item_description": "My product/service name",
                 "number_of_items": 1,
@@ -25,7 +25,7 @@ class CreateInvoiceItemModel(BaseModel):
 
 
 class InvoiceItemModel(BaseModel):
-    model_config = Configdict(json_schema_extra={
+    model_config = ConfigDict(json_schema_extra={
         "example":{
                 "id": "d09ac12a-f128-4aa5-8b62-849ea61fcc3c",
                 "invoice_id": "d09ac12a-f128-4aa5-8b62-849ea61fcc3c",
@@ -61,7 +61,7 @@ class InvoiceItemModel(BaseModel):
         )
 
 class UpdateInvoiceItemModel(BaseModel):
-    model_config = Configdict(json_schema_extra={
+    model_config = ConfigDict(json_schema_extra={
         "example":{
                 "id": "d09ac12a-f128-4aa5-8b62-849ea61fcc3c",
                 "invoice_id": "d09ac12a-f128-4aa5-8b62-849ea61fcc3c",

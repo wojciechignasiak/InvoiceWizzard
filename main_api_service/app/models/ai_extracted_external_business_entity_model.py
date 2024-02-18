@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Configdict
+from pydantic import BaseModel, ConfigDict
 from datetime import date
 from typing import Optional
 from pydantic.functional_validators import field_validator

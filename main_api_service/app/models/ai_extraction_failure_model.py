@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Configdict
+from pydantic import BaseModel, ConfigDict
 from datetime import date
 from uuid import uuid4
 from datetime import date
@@ -19,7 +19,7 @@ class CreateAIExtractionFailureModel(BaseModel):
 
 
 class AIExtractionFailureModel(BaseModel):
-    model_config = Configdict(json_schema_extra={
+    model_config = ConfigDict(json_schema_extra={
         "example":{
                 "id": "cfafb4bd-59e0-46e5-9005-6afd7e5b8a38",
                 "invoice_pdf": "file_location",

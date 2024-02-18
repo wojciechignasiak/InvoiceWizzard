@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Configdict
+from pydantic import BaseModel, ConfigDict
 from datetime import date
 from typing import Optional
 from pydantic.functional_validators import field_validator
@@ -54,7 +54,7 @@ class UpdateAIExtractedInvoiceModel(BaseModel):
         return value
 
 class AIExtractedInvoiceModel(BaseModel):
-    model_config = Configdict(json_schema_extra={
+    model_config = ConfigDict(json_schema_extra={
         "example":{
                 "id": "cfafb4bd-59e0-46e5-9005-6afd7e5b8a38",
                 "invoice_number": "1/2023",
