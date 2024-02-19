@@ -131,7 +131,7 @@ class AIExtractedUserBusinessEntity(Base):
     city: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
+    nip: Mapped[Optional[str]] = mapped_column(VARCHAR(80), nullable=True)
 
 class AIExtractedExternalBusinessEntity(Base):
     __tablename__= 'ai_extracted_external_business_entity'
@@ -142,7 +142,7 @@ class AIExtractedExternalBusinessEntity(Base):
     city: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
     postal_code: Mapped[Optional[str]] = mapped_column(VARCHAR(20), nullable=True)
     street: Mapped[Optional[str]] = mapped_column(VARCHAR(255), nullable=True)
-    nip: Mapped[Optional[str]] = mapped_column(VARCHAR(10), nullable=True)
+    nip: Mapped[Optional[str]] = mapped_column(VARCHAR(80), nullable=True)
 
 class AIExtractionFailure(Base):
     __tablename__= 'ai_extraction_failure'
