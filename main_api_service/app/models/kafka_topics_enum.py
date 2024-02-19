@@ -14,3 +14,6 @@ class KafkaTopicsEnum(str, Enum):
     external_business_entity_removed = "external_business_entity_removed"
     remove_invoice = "remove_invoice"
     invoice_removed = "invoice_removed"
+    extract_invoice_data = "extract_invoice_data"
+    unable_to_extract_invoice_data = "unable_to_extract_invoice_data"
+    extracted_invoice_data = "extracted_invoice_data"

@@ -57,7 +57,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
         try:
             stmt = select(User).where(User.id == user_id)
             user = await self.session.scalar(stmt)
-            if user == None:
+            if user is None:
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
@@ -69,7 +69,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
         try:
             stmt = select(User).where(User.email == user_email_adress)
             user = await self.session.scalar(stmt)
-            if user == None:
+            if user is None:
                 raise PostgreSQLNotFoundError("User with provided email address not found in database.")
             return user
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
@@ -101,7 +101,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             )
             user = await self.session.scalar(stmt)
 
-            if user == None:
+            if user is None:
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
@@ -132,7 +132,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
                         )
             )
             user = await self.session.scalar(stmt)
-            if user == None:
+            if user is None:
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user    
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
@@ -149,7 +149,7 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
                 returning(User)
             )
             user = await self.session.scalar(stmt)
-            if user == None:
+            if user is None:
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user
         except IntegrityError as e:
@@ -165,11 +165,11 @@ class UserPostgresRepository(BasePostgresRepository, UserPostgresRepositoryABC):
             stmt = (
                 update(User).
                 where(User.id == new_password.id).
-                values(email = new_password.new_password).
+                values(password = new_password.new_password).
                 returning(User)
             )
             user = await self.session.scalar(stmt)
-            if user == None:
+            if user is None:
                 raise PostgreSQLNotFoundError("User with provided id not found in database.")
             return user
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:

@@ -62,7 +62,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                     )
                 )
             user_business_entity = await self.session.scalar(stmt)
-            if user_business_entity == None:
+            if user_business_entity is None:
                 return True
             else:
                 return False
@@ -88,7 +88,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                 returning(ExternalBusinessEntity)
             )
             updated_external_business_entity = await self.session.scalar(stmt)
-            if updated_external_business_entity == None:
+            if updated_external_business_entity is None:
                 raise PostgreSQLNotFoundError("External Business Entity with provided id not found in database.")
             return updated_external_business_entity
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
@@ -107,7 +107,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                     )
                 )
             external_business_entity = await self.session.scalar(stmt)
-            if external_business_entity == None:
+            if external_business_entity is None:
                 return True
             else:
                 return False
@@ -125,7 +125,7 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                 )
             )
             external_business_entity = await self.session.scalar(stmt)
-            if external_business_entity == None:
+            if external_business_entity is None:
                 raise PostgreSQLNotFoundError("External Business Entity with provided id not found in database.")
             return external_business_entity
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
@@ -156,9 +156,10 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                 offset((page - 1) * items_per_page)
             )
             external_business_entities = await self.session.scalars(stmt)
-            if not external_business_entities:
+            external_business_entities_list: list = external_business_entities.all()
+            if not external_business_entities_list:
                 raise PostgreSQLNotFoundError("No External Business Entities found in database.")
-            return external_business_entities
+            return external_business_entities_list
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"ExternalBusinessEntityPostgresRepository.get_all_external_business_entities() Error: {e}")
             raise PostgreSQLDatabaseError("Error related to database occured.")

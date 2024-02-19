@@ -26,6 +26,14 @@ from app.models.invoice_item_model import (
     InvoiceItemModel
 )
 from app.schema.schema import InvoiceItem
+from app.types.postgres_repository_abstract_types import (
+    InvoiceItemPostgresRepositoryABC
+)
+from app.types.redis_repository_abstract_types import (
+    UserRedisRepositoryABC
+)
+
+
 
 
 router = APIRouter()
@@ -42,8 +50,8 @@ async def create_invoice_item(
     ):
 
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        invoice_item_postgres_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        invoice_item_postgres_repository: InvoiceItemPostgresRepositoryABC = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -78,8 +86,8 @@ async def update_invoice_item(
     postgres_session: AsyncSession = Depends(get_session),
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        invoice_item_postgres_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        invoice_item_postgres_repository: InvoiceItemPostgresRepositoryABC = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -112,8 +120,8 @@ async def update_invoice_item_in_trash_status(
     postgres_session: AsyncSession = Depends(get_session),
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        invoice_item_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        invoice_item_repository: InvoiceItemPostgresRepositoryABC = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -147,8 +155,8 @@ async def get_invoice_items_by_invoice_id(
     postgres_session: AsyncSession = Depends(get_session),
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        invoice_item_postgres_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        invoice_item_postgres_repository: InvoiceItemPostgresRepositoryABC = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -185,8 +193,8 @@ async def delete_invoice_item(
     postgres_session: AsyncSession = Depends(get_session),
     ):
     try:
-        user_redis_repository = await repositories_registry.return_user_redis_repository(redis_client)
-        invoice_item_postgres_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        invoice_item_postgres_repository: InvoiceItemPostgresRepositoryABC = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials

@@ -32,7 +32,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 value=new_user.model_dump_json(),
                 ex=expiry_time
             )
-            if is_user_created == False:
+            if is_user_created is False:
                 raise RedisSetError("Cannot register new user in database.")
             return is_user_created
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
@@ -83,7 +83,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 name=f"JWT:{jwt_token}:{jwt_payload.id}",
                 value=jwt_payload.model_dump_json(),
                 ex=expiry_time)
-            if is_jwt_saved == False:
+            if is_jwt_saved is False:
                 raise RedisSetError("Error occured durning saving JWT token to database.")
             return is_jwt_saved
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
@@ -126,7 +126,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 name=f"new_email:{key_id}", 
                 value=new_email.model_dump_json(),
                 ex=expiry_time)
-            if is_new_email_saved == False:
+            if is_new_email_saved is False:
                 raise RedisSetError("Error durning saving new email to database occured")
             return is_new_email_saved
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
@@ -136,7 +136,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
     async def retrieve_new_email(self, key_id: str) -> bytes:
         try:
             new_email: bytes = await self.redis_client.get(f"new_email:{key_id}")
-            if new_email == None:
+            if new_email is None:
                 raise RedisNotFoundError("New email not found in database.")
             return new_email
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
@@ -157,7 +157,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
                 name=f"new_password:{key_id}", 
                 value=new_password.model_dump_json(),
                 ex=expiry_time)
-            if is_new_password_saved == False:
+            if is_new_password_saved is False:
                 raise RedisSetError("Error durning saving new password to database occured.")
             return is_new_password_saved
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
@@ -167,7 +167,7 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
     async def retrieve_new_password(self, key_id: str) -> bytes:
         try:
             new_password: bytes = await self.redis_client.get(f"new_password:{key_id}")
-            if new_password == None:
+            if new_password is None:
                 raise RedisNotFoundError("New password not found in database.")
             return new_password
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:

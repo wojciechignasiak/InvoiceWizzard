@@ -5,8 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 from redis.asyncio import Redis, BlockingConnectionPool
-from kafka.errors import KafkaTimeoutError, KafkaError
-from aiokafka import AIOKafkaProducer
+from aiokafka.errors import KafkaTimeoutError, KafkaError
+from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
+from app.models.kafka_topics_enum import KafkaTopicsEnum
 from app.kafka.initialize_topics.startup_topics import startup_topics
 from app.registries.repositories_registry import RepositoriesRegistry
 from app.database.postgres.repositories.user_repository import UserPostgresRepository
@@ -18,11 +19,19 @@ from app.database.redis.repositories.external_business_entity_repository import 
 from app.database.postgres.repositories.invoice_repository import InvoicePostgresRepository
 from app.database.redis.repositories.invoice_repository import InvoiceRedisRepository
 from app.database.postgres.repositories.invoice_item_repository import InvoiceItemPostgresRepository
+from app.database.postgres.repositories.ai_extracted_invoice_repository import AIExtractedInvoicePostgresRepository
+from app.database.postgres.repositories.ai_extracted_invoice_item_repository import AIExtractedInvoiceItemPostgresRepository
+from app.database.postgres.repositories.ai_extracted_external_business_entity_repository import AIExtractedExternalBusinessEntityPostgresRepository
+from app.database.postgres.repositories.ai_extracted_user_business_entity_repository import AIExtractedUserBusinessEntityPostgresRepository
+from app.database.postgres.repositories.ai_is_external_business_recognized_repository import AIIsExternalBusinessEntityRecognizedPostgresRepository
+from app.database.postgres.repositories.ai_is_user_business_recognized_repository import AIIsUserBusinessRecognizedPostgresRepository
+from app.database.postgres.repositories.ai_extraction_failure_repository import AIExtractionFailurePostgresRepository
 from app.registries.events_registry import EventsRegistry
 from app.kafka.events.user_events import UserEvents
 from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
 from app.kafka.events.external_business_entity_events import ExternalBusinessEntityEvents
 from app.kafka.events.invoice_events import InvoiceEvents
+from app.kafka.events.ai_invoice_events import AIInvoiceEvents
 from app.files.files_repository import FilesRepository
 
 class ApplicationStartupProcesses:
@@ -71,7 +80,7 @@ class ApplicationStartupProcesses:
         while True:
             try:
                 print("Creating Redis connection pool...")
-                redis_pool = BlockingConnectionPool(host=self.redis_host, port=self.redis_port, password=self.redis_password)
+                redis_pool = BlockingConnectionPool(max_connections=3000, host=self.redis_host, port=self.redis_port, password=self.redis_password)
                 redis_client: Redis = await Redis(connection_pool=redis_pool)
                 print("Testing connection to Redis...")
                 redis_info = await redis_client.ping()
@@ -103,10 +112,26 @@ class ApplicationStartupProcesses:
             try:
                 print("Running Kafka Producer on separate event loop...")
                 loop = asyncio.get_event_loop()
-                kafka_producer: AIOKafkaProducer = AIOKafkaProducer(loop=loop, bootstrap_servers=self.kafka_url)
+                kafka_producer: AIOKafkaProducer = AIOKafkaProducer(
+                    loop=loop, 
+                    bootstrap_servers=self.kafka_url)
                 return kafka_producer
             except (KafkaError, KafkaTimeoutError) as e:
                 print(f'Error occured durning running Kafka Producer: {e}')
+
+    async def kafka_consumer(self) -> AIOKafkaConsumer:
+        while True:
+            try:
+                print("Running Kafka Consumer on separate event loop...")
+                loop = asyncio.get_event_loop()
+                kafka_consumer: AIOKafkaConsumer = AIOKafkaConsumer(
+                    KafkaTopicsEnum.unable_to_extract_invoice_data.value, 
+                    KafkaTopicsEnum.extracted_invoice_data.value,
+                    loop=loop, 
+                    bootstrap_servers=self.kafka_url)
+                return kafka_consumer
+            except (KafkaError, KafkaTimeoutError) as e:
+                print(f'Error occured durning running Kafka Consumer: {e}')
 
     async def repositories_registry(self) -> RepositoriesRegistry:
         while True:
@@ -122,7 +147,14 @@ class ApplicationStartupProcesses:
                     InvoicePostgresRepository,
                     InvoiceRedisRepository,
                     InvoiceItemPostgresRepository,
-                    FilesRepository
+                    FilesRepository,
+                    AIExtractedInvoicePostgresRepository,
+                    AIExtractedInvoiceItemPostgresRepository,
+                    AIExtractedExternalBusinessEntityPostgresRepository,
+                    AIExtractedUserBusinessEntityPostgresRepository,
+                    AIIsExternalBusinessEntityRecognizedPostgresRepository,
+                    AIIsUserBusinessRecognizedPostgresRepository,
+                    AIExtractionFailurePostgresRepository
                     )
                 
                 print("Repositories registry initialized!")
@@ -138,7 +170,8 @@ class ApplicationStartupProcesses:
                     UserEvents,
                     UserBusinessEntityEvents,
                     ExternalBusinessEntityEvents,
-                    InvoiceEvents
+                    InvoiceEvents,
+                    AIInvoiceEvents
                     )
                 print("Events registry initialized!")
                 return events_registry

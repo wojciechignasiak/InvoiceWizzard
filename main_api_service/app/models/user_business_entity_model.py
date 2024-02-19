@@ -15,9 +15,9 @@ class CreateUserBusinessEntityModel(BaseModel):
             }
         )
     company_name: str
-    city: Optional[str]
-    postal_code: Optional[str]
-    street: Optional[str]
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+    street: Optional[str] = None
     nip: str
 
     @property
@@ -38,9 +38,9 @@ class UpdateUserBusinessEntityModel(BaseModel):
         )
     id: str
     company_name: str
-    city: Optional[str]
-    postal_code: Optional[str]
-    street: Optional[str]
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+    street: Optional[str] = None
     nip: str
 
 class UserBusinessEntityModel(UpdateUserBusinessEntityModel):

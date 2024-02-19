@@ -55,7 +55,7 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
                 )
             )
             invoice_item = await self.session.scalar(stmt)
-            if invoice_item == None:
+            if invoice_item is None:
                 raise PostgreSQLNotFoundError("Invoice item with provided id not found in database.")
             return invoice_item
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
@@ -97,7 +97,7 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
                 returning(InvoiceItem)
             )
             updated_invoice_item = await self.session.scalar(stmt)
-            if updated_invoice_item == None:
+            if updated_invoice_item is None:
                 raise PostgreSQLNotFoundError("Invoice item with provided id not found in database.")
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoiceItemPostgresRepository.update_invoice_item() Error: {e}")
@@ -117,7 +117,7 @@ class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresR
                 .returning(InvoiceItem)
             )
             updated_invoice = await self.session.scalar(stmt)
-            if updated_invoice == None:
+            if updated_invoice is None:
                 raise PostgreSQLNotFoundError("Invoice item with provided id not found in database.")
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoicePostgresRepository.update_invoice_item_in_trash_status() Error: {e}")

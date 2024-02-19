@@ -64,7 +64,7 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                 )
             )
             invoice = await self.session.scalar(stmt)
-            if invoice == None:
+            if invoice is None:
                 raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
             return invoice
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
@@ -169,7 +169,7 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                 returning(Invoice)
             )
             updated_invoice = await self.session.scalar(stmt)
-            if updated_invoice == None:
+            if updated_invoice is None:
                 raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoicePostgresRepository.update_invoice() Error: {e}")
@@ -189,7 +189,7 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                 returning(Invoice)
             )
             updated_invoice = await self.session.scalar(stmt)
-            if updated_invoice == None:
+            if updated_invoice is None:
                 raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoicePostgresRepository.update_invoice_in_trash_status() Error: {e}")
@@ -225,11 +225,11 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                     (Invoice.external_business_entity_id == new_invoice.external_business_entity_id) &
                     (Invoice.invoice_number == new_invoice.invoice_number) &
                     (Invoice.is_issued == new_invoice.is_issued) &
-                    (Invoice.in_trash == False)
+                    (Invoice.in_trash is False)
                     )
                 )
             invoice = await self.session.scalar(stmt)
-            if invoice == None:
+            if invoice is None:
                 return True
             else:
                 return False
@@ -248,11 +248,11 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                     (Invoice.external_business_entity_id == update_invoice.external_business_entity_id) &
                     (Invoice.invoice_number == update_invoice.invoice_number) &
                     (Invoice.is_issued == update_invoice.is_issued) &
-                    (Invoice.in_trash == False)
+                    (Invoice.in_trash is False)
                     )
                 )
             invoice = await self.session.scalar(stmt)
-            if invoice == None:
+            if invoice is None:
                 return True
             else:
                 return False
@@ -274,7 +274,7 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                 returning(Invoice)
             )
             updated_invoice = await self.session.scalar(stmt)
-            if updated_invoice == None:
+            if updated_invoice is None:
                 raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoicePostgresRepository.update_invoice_file() Error: {e}")
@@ -294,7 +294,7 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                 returning(Invoice)
             )
             removed_invoice_file = await self.session.scalar(stmt)
-            if removed_invoice_file == None:
+            if removed_invoice_file is None:
                 raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
         except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
             logger.error(f"InvoicePostgresRepository.remove_invoice_file() Error: {e}")

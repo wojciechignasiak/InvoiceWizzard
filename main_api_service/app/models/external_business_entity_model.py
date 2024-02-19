@@ -15,10 +15,10 @@ class CreateExternalBusinessEntityModel(BaseModel):
             }
         )
     name: str
-    city: Optional[str]
-    postal_code: Optional[str]
-    street: Optional[str]
-    nip: Optional[str]
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+    street: Optional[str] = None
+    nip: Optional[str] = None
 
     @property
     def id(self):
@@ -38,10 +38,10 @@ class UpdateExternalBusinessEntityModel(BaseModel):
         )
     id: str
     name: str
-    city: Optional[str]
-    postal_code: Optional[str]
-    street: Optional[str]
-    nip: Optional[str]
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+    street: Optional[str] = None
+    nip: Optional[str] = None
 
 class ExternalBusinessEntityModel(UpdateExternalBusinessEntityModel):
     pass

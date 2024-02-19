@@ -24,7 +24,7 @@ class ExternalBusinessEntityRedisRepository(BaseRedisRepository, ExternalBusines
                 name=f"remove_external_business_entity:{key_id}", 
                 value=json.dumps({"id":f"{external_business_entity_id}"}),
                 ex=expiry_time)
-            if is_external_business_entity_removal_initialized == False:
+            if is_external_business_entity_removal_initialized is False:
                 raise RedisSetError("Error durning initializing external business entity removal.")
             return is_external_business_entity_removal_initialized
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
@@ -34,7 +34,7 @@ class ExternalBusinessEntityRedisRepository(BaseRedisRepository, ExternalBusines
     async def retrieve_external_business_entity_removal(self, key_id: str) -> bytes:
         try:
             external_business_entity_to_remove: bytes = await self.redis_client.get(f"remove_external_business_entity:{key_id}")
-            if external_business_entity_to_remove == None:
+            if external_business_entity_to_remove is None:
                 raise RedisNotFoundError("Not found external business entity to remove in database.")
             return external_business_entity_to_remove
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:

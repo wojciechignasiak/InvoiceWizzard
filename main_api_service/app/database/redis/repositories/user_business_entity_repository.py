@@ -24,7 +24,7 @@ class UserBusinessEntityRedisRepository(BaseRedisRepository, UserBusinessEntityR
                 name=f"remove_user_business_entity:{key_id}", 
                 value=json.dumps({"id":f"{user_business_entity_id}"}),
                 ex=expiry_time)
-            if is_user_business_entity_removal_initialized == False:
+            if is_user_business_entity_removal_initialized is False:
                 raise RedisSetError("Error durning initializing user business entity removal.")
             return is_user_business_entity_removal_initialized
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
@@ -34,7 +34,7 @@ class UserBusinessEntityRedisRepository(BaseRedisRepository, UserBusinessEntityR
     async def retrieve_user_business_entity_removal(self, key_id: str) -> bytes:
         try:
             user_business_entity_to_remove: bytes = await self.redis_client.get(f"remove_user_business_entity:{key_id}")
-            if user_business_entity_to_remove == None:
+            if user_business_entity_to_remove is None:
                 raise RedisNotFoundError("Not found user business entity to remove in database.")
             return user_business_entity_to_remove
         except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:

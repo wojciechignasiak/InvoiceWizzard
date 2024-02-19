@@ -2,16 +2,29 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from starlette import middleware
 from app.aplication_startup_processes import ApplicationStartupProcesses
+from app.kafka.consumed_events_managers.extracted_invoice_data_event_manager import ExtractedInvoiceDataMenager
+from app.kafka.consumed_events_managers.extracted_invoice_data_event_manager_abc import ExtractedInvoiceDataMenagerABC
+from app.kafka.consumed_events_managers.ai_extraction_failure_manager import AIExtractionFailureManager
+from app.kafka.consumed_events_managers.ai_extraction_failure_manager_abc import AIExtractionFailureManagerABC
+from app.kafka.clients.events_consumer import EventsConsumer
 from contextlib import asynccontextmanager
 from app.schema.schema import Base
-
+import asyncio
 from app.routers import (
     user_router,
     user_business_entity_router,
     external_business_entity_router,
     invoice_router,
-    invoice_item_router
+    invoice_item_router,
+    ai_extracted_invoice_router,
+    ai_extracted_invoice_item_router,
+    ai_extracted_external_business_entity_router,
+    ai_extracted_user_business_entity_router,
+    ai_is_user_business_entity_recognized_router,
+    ai_is_external_business_entity_recognized_router,
+    ai_extraction_failure_router
     )
+
 
 middleware = [
     middleware.Middleware(
@@ -47,6 +60,25 @@ async def lifespan(app: FastAPI):
 
     app.state.events_registry = await application_statup_processes.events_registry()
 
+    app.state.kafka_consumer = await application_statup_processes.kafka_consumer()
+    
+    extracted_invoice_data_manager: ExtractedInvoiceDataMenagerABC = ExtractedInvoiceDataMenager(
+        repositories_registry=app.state.repositories_registry,
+        postgres_url=application_statup_processes.postgres_url)
+    
+    ai_extraction_failure_manager: AIExtractionFailureManagerABC = AIExtractionFailureManager(
+        repositories_registry=app.state.repositories_registry,
+        postgres_url=application_statup_processes.postgres_url)
+    
+    events_consumer: EventsConsumer = EventsConsumer(
+        kafka_consumer=app.state.kafka_consumer,
+        extracted_invoice_data_event_manager=extracted_invoice_data_manager,
+        ai_extraction_failure_manager=ai_extraction_failure_manager)
+    
+    asyncio.create_task(events_consumer.run_consumer())
+    
+    print("Kafka Consumer started...")
+
     yield
     ''' Run on shutdown
         Close the connection
@@ -54,9 +86,10 @@ async def lifespan(app: FastAPI):
     '''
     print("Disposing PostgreSQL engine...")
     await app.state.engine.dispose()
-    print("Stopping Kafka producer...")
+    print("Stopping Kafka Producer...")
     await app.state.kafka_producer.stop()
-    
+    print("Stopping Kafka Consumer...")
+    await app.state.kafka_consumer.stop()
 
 def create_application() -> FastAPI:
     application = FastAPI(lifespan=lifespan, openapi_url="/openapi.json", docs_url="/docs", middleware=middleware)
@@ -65,6 +98,14 @@ def create_application() -> FastAPI:
     application.include_router(external_business_entity_router.router, tags=["external-business-entity"])
     application.include_router(invoice_router.router, tags=["invoice"])
     application.include_router(invoice_item_router.router, tags=["invoice-item"])
+    application.include_router(ai_extracted_invoice_router.router, tags=["ai-extracted-invoice"])
+    application.include_router(ai_extracted_invoice_item_router.router, tags=["ai-extracted-invoice-item"])
+    application.include_router(ai_extracted_user_business_entity_router.router, tags=["ai-extracted-user-business-entity"])
+    application.include_router(ai_is_user_business_entity_recognized_router.router, tags=["ai-is-user-business-entity-recognized"])
+    application.include_router(ai_extracted_external_business_entity_router.router, tags=["ai-extracted-external-business-entity"])
+    application.include_router(ai_is_external_business_entity_recognized_router.router, tags=["ai-is-external-business-entity-recognized"])
+    application.include_router(ai_extraction_failure_router.router, tags=["ai-extraction-failure"])
+
     return application
 
 app = create_application()

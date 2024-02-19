@@ -1,14 +1,14 @@
-from kafka.admin import KafkaAdminClient, NewTopic
 from app.models.kafka_topics_enum import KafkaTopicsEnum
 import logging
+from aiokafka.admin import AIOKafkaAdminClient, NewTopic
 
 async def startup_topics(kafka_url: str):
-    admin_client = KafkaAdminClient(
+    admin_client = AIOKafkaAdminClient(
             bootstrap_servers=f'{kafka_url}',
             security_protocol="PLAINTEXT"
         )
     try:
-        topics = admin_client.list_topics()
+        topics = await admin_client.list_topics()
         existing_topics = topics
         topic_name_list = [
             KafkaTopicsEnum.account_registered.value,
@@ -23,7 +23,10 @@ async def startup_topics(kafka_url: str):
             KafkaTopicsEnum.remove_external_business_entity.value,
             KafkaTopicsEnum.external_business_entity_removed.value,
             KafkaTopicsEnum.remove_invoice.value,
-            KafkaTopicsEnum.invoice_removed.value
+            KafkaTopicsEnum.invoice_removed.value,
+            KafkaTopicsEnum.extract_invoice_data.value,
+            KafkaTopicsEnum.unable_to_extract_invoice_data.value,
+            KafkaTopicsEnum.extracted_invoice_data.value
         ]
         topic_list = []
         for topic_name in topic_name_list:
@@ -31,8 +34,8 @@ async def startup_topics(kafka_url: str):
                 new_topic: NewTopic = NewTopic(name=topic_name, num_partitions=3, replication_factor=1)
                 topic_list.append(new_topic)
 
-        admin_client.create_topics(new_topics=topic_list, validate_only=False)
+        await admin_client.create_topics(new_topics=topic_list, validate_only=False)
     except Exception as e:
         logging.exception(f"startup_topics(): {e}")
     finally:
-        admin_client.close()
+        await admin_client.close()
