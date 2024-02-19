@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from app.models.ai_extracted_invoice_item_model import CreateAIExtractedInvoiceItemModel, UpdateAIExtractedInvoiceItemModel
 from app.schema.schema import AIExtractedInvoiceItem
-from typing import List
 
 class AIExtractedInvoiceItemPostgresRepositoryABC(ABC):
     @abstractmethod
@@ -14,7 +13,7 @@ class AIExtractedInvoiceItemPostgresRepositoryABC(ABC):
     @abstractmethod
     async def get_all_extracted_invoice_item_data_by_extracted_invoice_id(self, 
                                                                         extracted_invoice_id: str,
-                                                                        user_id: str) -> List[AIExtractedInvoiceItem]:
+                                                                        user_id: str) -> list[AIExtractedInvoiceItem]:
         ...
 
     @abstractmethod

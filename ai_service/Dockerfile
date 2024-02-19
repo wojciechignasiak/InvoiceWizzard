@@ -1,5 +1,5 @@
 # pull official base image
-FROM python:3.11
+FROM python:3.12
 
 # set working directory
 WORKDIR /usr/src/ai_service
@@ -7,10 +7,14 @@ WORKDIR /usr/src/ai_service
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata/
 
 # install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-traditional \
+    poppler-utils \
+    tesseract-ocr \
+    tesseract-ocr-pol \
     && rm -rf /var/lib/apt/lists/*
 
 # install Python dependencies

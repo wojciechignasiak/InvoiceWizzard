@@ -1,7 +1,8 @@
+from modules.response_extraction_utility.response_extraction_utility_abc import ResponseExtractionUtilityABC
 from modules.logging.logging import logger
 import json
 
-class ResponseExtractionUtility:
+class ResponseExtractionUtility(ResponseExtractionUtilityABC):
 
     def __init__(self):
         pass

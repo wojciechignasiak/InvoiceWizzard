@@ -17,6 +17,14 @@ class FilesRepository(FilesRepositoryABC):
         except Exception as e:
             logger.error(f"FilesRepository.remove_invoice_folder() Error: {e}")
             raise Exception("Error durning removing file occured.")
+        
+    async def remove_ai_extraction_failure_folder(file_path: str):
+        try:
+            folder_file_path: str = os.path.dirname(file_path)
+            shutil.rmtree(folder_file_path)
+        except Exception as e:
+            logger.error(f"FilesRepository.remove_ai_extraction_failure_folder() Error: {e}")
+            raise Exception("Error durning removing file occured.")
 
     async def save_invoice_file(file_path: str, file_data: bytes):
         try:
@@ -47,7 +55,7 @@ class FilesRepository(FilesRepositoryABC):
             logger.error(f"FilesRepository.convert_from_img_to_pdf_and_save_invoice_file() Error: {e}")
             raise Exception("Error durning converting img to pdf file occured.")
 
-    async def get_invoice_pdf_file(file_path: str):
+    async def get_invoice_pdf_file(file_path: str) -> Path:
         try:
             return Path(file_path)
         except Exception as e:

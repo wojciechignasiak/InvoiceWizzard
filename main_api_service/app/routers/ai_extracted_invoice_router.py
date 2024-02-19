@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.security import HTTPBearer
 from fastapi.encoders import jsonable_encoder
 from app.registries.get_repositories_registry import get_repositories_registry
@@ -59,8 +59,9 @@ from app.types.kafka_event_abstract_types import (
 from app.models.jwt_model import (
     JWTPayloadModel
 )
+from app.files.files_repository_abc import FilesRepositoryABC
 from uuid import uuid4
-from typing import List, Dict
+from pathlib import Path
 
 
 router = APIRouter()
@@ -79,7 +80,7 @@ async def extract_invoice_data_from_file(
     ):
     try:
         user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
-        files_repository = await repositories_registry.return_files_repository()
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
         user_business_entity_postgres_repository: UserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_user_business_entity_postgres_repository(postgres_session)
         ai_invoice_events: AIInvoiceEventsABC = await events_registry.return_ai_invoice_events(kafka_producer_client)
 
@@ -112,12 +113,12 @@ async def extract_invoice_data_from_file(
             case _:
                 raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Invoice file in unsupported format. Use PDF or JPG/JPEG/PNG.")
             
-        user_business_entities: List[UserBusinessEntity] = await user_business_entity_postgres_repository.get_all_user_business_entities(
+        user_business_entities: list[UserBusinessEntity] = await user_business_entity_postgres_repository.get_all_user_business_entities(
             user_id=jwt_payload.id,
             items_per_page=1000
         )
 
-        user_business_entities_nip: List[str] = []
+        user_business_entities_nip: list[str] = []
 
         for user_business_entity in user_business_entities:
             user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(
@@ -171,14 +172,14 @@ async def get_ai_extracted_invoice(
         
         ai_extracted_invoice_model: AIExtractedInvoiceModel = await AIExtractedInvoiceModel.ai_extracted_invoice_schema_to_model(ai_extracted_invoice)
 
-        ai_extracted_invoice_items: List[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
+        ai_extracted_invoice_items: list[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
             extracted_invoice_id=ai_extracted_invoice_model.id,
             user_id=jwt_payload.id
         )
 
         net_value: float = 0.0
         gross_value: float = 0.0
-        ai_extracted_invoice_item_models: List[AIExtractedInvoiceItemModel] = [] 
+        ai_extracted_invoice_item_models: list[AIExtractedInvoiceItemModel] = [] 
         for ai_extracted_invoice_item in ai_extracted_invoice_items:
             ai_extracted_invoice_item_model = await AIExtractedInvoiceItemModel.ai_extracted_invoice_item_schema_to_model(ai_extracted_invoice_item)
 
@@ -222,7 +223,7 @@ async def get_ai_extracted_invoice(
             ai_is_external_business_entity_recognized
         )
 
-        ai_extracted_invoice: Dict = ai_extracted_invoice_model.model_dump()
+        ai_extracted_invoice: dict = ai_extracted_invoice_model.model_dump()
 
         ai_extracted_invoice["net_value"] = net_value
         ai_extracted_invoice["gross_value"] = gross_value
@@ -240,6 +241,53 @@ async def get_ai_extracted_invoice(
     except PostgreSQLNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (Exception, RedisDatabaseError, PostgreSQLDatabaseError, PostgreSQLIntegrityError) as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@router.get("/ai-extracted-invoice-module/download-invoice-pdf/")
+async def download_invoice_pdf(
+    extracted_invoice_id: str,
+    token = Depends(http_bearer), 
+    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    redis_client: Redis = Depends(get_redis_client),
+    postgres_session: AsyncSession = Depends(get_session),
+    ):
+    try:
+        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        ai_extracted_invoice_postgres_repository: AIExtractedInvoicePostgresRepositoryABC = await repositories_registry.return_ai_extracted_invoice_postgres_repository(postgres_session)
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
+
+        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
+            jwt_token=token.credentials
+            )
+        
+        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+
+        ai_extracted_invoice: AIExtractedInvoice = await ai_extracted_invoice_postgres_repository.get_extracted_invoice(
+            extracted_invoice_id=extracted_invoice_id
+        )
+
+        invoice_model: AIExtractedInvoiceModel = await AIExtractedInvoiceModel.ai_extracted_invoice_schema_to_model(
+            ai_extracted_invoice
+        )
+        
+        if invoice_model.invoice_pdf is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice doesn't have file.")
+        
+        file: Path = await files_repository.get_invoice_pdf_file(
+            file_path=invoice_model.invoice_pdf
+            )
+        
+        if file.is_file() == False:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+
+        return FileResponse(path=file, status_code=status.HTTP_200_OK, filename=file.name)
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except RedisJWTNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except PostgreSQLNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except (Exception, PostgreSQLDatabaseError, RedisDatabaseError, PostgreSQLIntegrityError) as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.get("/ai-extracted-invoice-module/get-all-ai-extracted-invoices/")
@@ -262,17 +310,17 @@ async def get_all_ai_extracted_invoices(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
-        ai_extracted_invoices: List[AIExtractedInvoice] = await ai_extracted_invoice_postgres_repository.get_all_extracted_invoices(
+        ai_extracted_invoices: list[AIExtractedInvoice] = await ai_extracted_invoice_postgres_repository.get_all_extracted_invoices(
             user_id=jwt_payload.id,
             page=page,
             items_per_page=items_per_page
         )
-        ai_extracted_invoices_with_net_and_gross_value: List[Dict] = []
+        ai_extracted_invoices_with_net_and_gross_value: list[dict] = []
 
         for ai_extracted_invoice in ai_extracted_invoices:
             ai_extracted_invoice_model: AIExtractedInvoiceModel = await AIExtractedInvoiceModel.ai_extracted_invoice_schema_to_model(ai_extracted_invoice)
             
-            ai_extracted_invoice_items: List[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
+            ai_extracted_invoice_items: list[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
                 extracted_invoice_id=ai_extracted_invoice_model.id,
                 user_id=jwt_payload.id
             )
@@ -289,7 +337,7 @@ async def get_all_ai_extracted_invoices(
                 if ai_extracted_invoice_item_model.gross_value != None:
                     gross_value+=ai_extracted_invoice_item_model.gross_value
 
-            ai_extracted_invoice: Dict = ai_extracted_invoice_model.model_dump()
+            ai_extracted_invoice: dict = ai_extracted_invoice_model.model_dump()
             ai_extracted_invoice["net_value"] = net_value
             ai_extracted_invoice["gross_value"] = gross_value
 
@@ -324,7 +372,7 @@ async def accept_ai_extracted_invoice(
         invoice_postgres_repository = await repositories_registry.return_invoice_postgres_repository(postgres_session)
         invoice_item_postgres_repository = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)
 
-        files_repository = await repositories_registry.return_files_repository()
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -337,7 +385,7 @@ async def accept_ai_extracted_invoice(
             user_id=jwt_payload.id
         )
 
-        ai_extracted_invoice_items: List[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
+        ai_extracted_invoice_items: list[AIExtractedInvoiceItem] = await ai_extracted_invoice_item_postgres_repository.get_all_extracted_invoice_item_data_by_extracted_invoice_id(
             extracted_invoice_id=ai_extracted_invoice_id,
             user_id=jwt_payload.id
         )
@@ -356,7 +404,7 @@ async def accept_ai_extracted_invoice(
             extracted_invoice_schema = ai_extracted_invoice
             )
 
-        extracted_invoice_item_models: List[AIExtractedInvoiceItemModel] = []
+        extracted_invoice_item_models: list[AIExtractedInvoiceItemModel] = []
 
         for extracted_invoice_item in ai_extracted_invoice_items:
             extracted_invoice_item_model: AIExtractedInvoiceItemModel = await AIExtractedInvoiceItemModel.ai_extracted_invoice_item_schema_to_model(
@@ -463,7 +511,7 @@ async def delete_ai_extracted_invoice(
         ai_extracted_user_business_entity_postgres_repository: AIExtractedUserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_user_business_entity_postgres_repository(postgres_session)
         ai_extracted_external_business_entity_postgres_repository: AIExtractedUserBusinessEntityPostgresRepositoryABC = await repositories_registry.return_ai_extracted_external_business_entity_postgres_repository(postgres_session)
 
-        files_repository = await repositories_registry.return_files_repository()
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials

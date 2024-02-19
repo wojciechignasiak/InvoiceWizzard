@@ -3,7 +3,7 @@ from app.models.invoice_model import InvoiceModel
 from app.models.user_business_entity_model import UserBusinessEntityModel
 from app.models.external_business_entity_model import ExternalBusinessEntityModel
 from app.logging import logger
-from typing import List, Union
+from typing import Union
 from app.utils.invoice_html_builder_abc import InvoiceHTMLBuilderABC
 
 class InvoiceHTMLBuilder(InvoiceHTMLBuilderABC):
@@ -15,12 +15,12 @@ class InvoiceHTMLBuilder(InvoiceHTMLBuilderABC):
     )
     def __init__(self, 
                 invoice: InvoiceModel,
-                invoice_items: List[InvoiceItemModel],
+                invoice_items: list[InvoiceItemModel],
                 user_business_entity: UserBusinessEntityModel,
                 external_business_entity: ExternalBusinessEntityModel):
         
         self.invoice: InvoiceModel = invoice
-        self.invoice_items: List[InvoiceItemModel] = invoice_items
+        self.invoice_items: list[InvoiceItemModel] = invoice_items
         self.user_business_entity: UserBusinessEntityModel = user_business_entity
         self.external_business_entity: ExternalBusinessEntityModel = external_business_entity
 
@@ -344,7 +344,7 @@ class InvoiceHTMLBuilder(InvoiceHTMLBuilderABC):
                     <span class="invoice-client-entry-title">Nabywca</span>
                     <span class="invoice-client-entry">{self.external_business_entity.name}</span>
                     <span class="invoice-client-entry">{self.external_business_entity.street}; {self.external_business_entity.postal_code} {self.external_business_entity.city}</span>
-                    {buyer_nip}
+                    <span class="invoice-client-entry">NIP {buyer_nip}</span>
                 </div>
                 """
             else:

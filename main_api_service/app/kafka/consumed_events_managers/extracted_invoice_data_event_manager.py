@@ -27,10 +27,7 @@ from sqlalchemy.ext.asyncio import (
     AsyncEngine
 )
 from app.logging import logger
-from typing import (
-    Dict, 
-    List
-)
+
 
 class ExtractedInvoiceDataMenager(ExtractedInvoiceDataMenagerABC):
     def __init__(self, repositories_registry: RepositoriesRegistryABC, postgres_url: str):
@@ -42,7 +39,7 @@ class ExtractedInvoiceDataMenager(ExtractedInvoiceDataMenagerABC):
                                     future=True
                                 )
 
-    async def create_invoice_data(self, invoice_data: Dict):
+    async def create_invoice_data(self, invoice_data: dict):
         try:
             async with self._engine.begin() as conn:
                 
@@ -78,14 +75,14 @@ class ExtractedInvoiceDataMenager(ExtractedInvoiceDataMenagerABC):
                 )
 
                 if ai_extracted_data_model.user_business_entity.nip:
-                    result_user_business_entity_recognition: List = await self.try_to_recognize_user_business_entity_by_nip(
+                    result_user_business_entity_recognition: list = await self.try_to_recognize_user_business_entity_by_nip(
                         user_id=ai_extracted_data_model.user_id,
                         nip=ai_extracted_data_model.user_business_entity.nip,
                         session=session
                     )
                     
                 elif ai_extracted_data_model.user_business_entity.nip is None and ai_extracted_data_model.user_business_entity.company_name is not None:
-                    result_user_business_entity_recognition: List = await self.try_to_recognize_user_business_entity_by_name(
+                    result_user_business_entity_recognition: list = await self.try_to_recognize_user_business_entity_by_name(
                         user_id=ai_extracted_data_model.user_id,
                         company_name=ai_extracted_data_model.user_business_entity.company_name,
                         session=session
@@ -107,13 +104,13 @@ class ExtractedInvoiceDataMenager(ExtractedInvoiceDataMenagerABC):
 
 
                 if ai_extracted_data_model.external_business_entity.nip:
-                    result_external_business_entity_recognition: List = await self.try_to_recognize_external_business_entity_by_nip(
+                    result_external_business_entity_recognition: list = await self.try_to_recognize_external_business_entity_by_nip(
                         user_id=ai_extracted_data_model.user_id,
                         nip=ai_extracted_data_model.external_business_entity.nip,
                         session=session
                     )
                 elif ai_extracted_data_model.external_business_entity.nip is None and ai_extracted_data_model.external_business_entity.name is not None:
-                    result_external_business_entity_recognition: List = await self.try_to_recognize_external_business_entity_by_name(
+                    result_external_business_entity_recognition: list = await self.try_to_recognize_external_business_entity_by_name(
                         user_id=ai_extracted_data_model.user_id,
                         name=ai_extracted_data_model.external_business_entity.name,
                         session=session
@@ -171,7 +168,7 @@ class ExtractedInvoiceDataMenager(ExtractedInvoiceDataMenagerABC):
         except Exception as e:
             logger.error(f"ExtractedInvoiceDataMenager._create_ai_extracted_invoice() Error: {e}")
         
-    async def _create_ai_extracted_invoice_items(self, invoice_items: List[CreateAIExtractedInvoiceItemModel], user_id: str, ai_extracted_invoice_id: str, session: AsyncSession) -> None:
+    async def _create_ai_extracted_invoice_items(self, invoice_items: list[CreateAIExtractedInvoiceItemModel], user_id: str, ai_extracted_invoice_id: str, session: AsyncSession) -> None:
         try:
             ai_extracted_invoice_item_repository: AIExtractedInvoiceItemPostgresRepositoryABC = await self._repositories_registry.return_ai_extracted_invoice_item_postgres_repository(
                     session=session
@@ -241,7 +238,7 @@ class ExtractedInvoiceDataMenager(ExtractedInvoiceDataMenagerABC):
         except Exception as e:
             logger.error(f"ExtractedInvoiceDataMenager._create_ai_is_extracted_external_business_entity_recognized() Error: {e}")
         
-    async def try_to_recognize_user_business_entity_by_name(self, user_id: str, name: str, session: AsyncSession) -> List:
+    async def try_to_recognize_user_business_entity_by_name(self, user_id: str, name: str, session: AsyncSession) -> list:
         try:
             user_business_entity_repository: UserBusinessEntityPostgresRepositoryABC = await self._repositories_registry.return_user_business_entity_postgres_repository(
                 session=session
@@ -256,7 +253,7 @@ class ExtractedInvoiceDataMenager(ExtractedInvoiceDataMenagerABC):
         except Exception:
             return []
 
-    async def try_to_recognize_user_business_entity_by_nip(self, user_id: str, nip: str, session: AsyncSession) -> List:
+    async def try_to_recognize_user_business_entity_by_nip(self, user_id: str, nip: str, session: AsyncSession) -> list:
         try:
             user_business_entity_repository: UserBusinessEntityPostgresRepositoryABC = await self._repositories_registry.return_user_business_entity_postgres_repository(
                 session=session
@@ -271,7 +268,7 @@ class ExtractedInvoiceDataMenager(ExtractedInvoiceDataMenagerABC):
         except Exception:
             return []
     
-    async def try_to_recognize_external_business_entity_by_name(self, user_id: str, name: str, session: AsyncSession) -> List:
+    async def try_to_recognize_external_business_entity_by_name(self, user_id: str, name: str, session: AsyncSession) -> list:
         try:
             external_business_entity_repository: ExternalBusinessEntityPostgresRepositoryABC = await self._repositories_registry.return_external_business_entity_postgres_repository(
                 session=session
@@ -286,7 +283,7 @@ class ExtractedInvoiceDataMenager(ExtractedInvoiceDataMenagerABC):
         except Exception as e:
             return []
 
-    async def try_to_recognize_external_business_entity_by_nip(self, user_id: str, nip: str, session: AsyncSession) -> List:
+    async def try_to_recognize_external_business_entity_by_nip(self, user_id: str, nip: str, session: AsyncSession) -> list:
         try:
             external_business_entity_repository: ExternalBusinessEntityPostgresRepositoryABC = await self._repositories_registry.return_external_business_entity_postgres_repository(
                 session=session

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 from redis.asyncio import Redis, BlockingConnectionPool
-from kafka.errors import KafkaTimeoutError, KafkaError
+from aiokafka.errors import KafkaTimeoutError, KafkaError
 from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
 from app.models.kafka_topics_enum import KafkaTopicsEnum
 from app.kafka.initialize_topics.startup_topics import startup_topics
@@ -25,6 +25,7 @@ from app.database.postgres.repositories.ai_extracted_external_business_entity_re
 from app.database.postgres.repositories.ai_extracted_user_business_entity_repository import AIExtractedUserBusinessEntityPostgresRepository
 from app.database.postgres.repositories.ai_is_external_business_recognized_repository import AIIsExternalBusinessEntityRecognizedPostgresRepository
 from app.database.postgres.repositories.ai_is_user_business_recognized_repository import AIIsUserBusinessRecognizedPostgresRepository
+from app.database.postgres.repositories.ai_extraction_failure_repository import AIExtractionFailurePostgresRepository
 from app.registries.events_registry import EventsRegistry
 from app.kafka.events.user_events import UserEvents
 from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
@@ -152,7 +153,8 @@ class ApplicationStartupProcesses:
                     AIExtractedExternalBusinessEntityPostgresRepository,
                     AIExtractedUserBusinessEntityPostgresRepository,
                     AIIsExternalBusinessEntityRecognizedPostgresRepository,
-                    AIIsUserBusinessRecognizedPostgresRepository
+                    AIIsUserBusinessRecognizedPostgresRepository,
+                    AIExtractionFailurePostgresRepository
                     )
                 
                 print("Repositories registry initialized!")
