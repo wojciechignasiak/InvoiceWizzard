@@ -7,7 +7,6 @@ import asyncio
 
 async def main():
     try:
-        
         initialize_models: InitializeModelsABC = InitializeModels()
         await initialize_models.initialize_models()
         loop: AbstractEventLoop = asyncio.get_event_loop()
