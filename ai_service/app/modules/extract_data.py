@@ -31,8 +31,6 @@ class ExtractData:
 
     async def is_scan_or_text(self, message: dict) -> dict:
         try:
-            print(message)
-            print(type(message))
             is_scan: bool = self.pdf_utility.is_scan(
                 file_location=message["file_location"]
                 )
@@ -103,7 +101,7 @@ class ExtractData:
                 pdf_path=message["file_location"])
             
             invoice_and_business_entities: str = self.__extract_invoice_and_business_entities_from_text(
-                message=message["user_business_entities_nip"],
+                nip_list=message["user_business_entities_nip"],
                 extracted_text=extracted_text
             )
 
