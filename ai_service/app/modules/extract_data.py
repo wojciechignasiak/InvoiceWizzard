@@ -15,7 +15,9 @@ import asyncio
 
 class ExtractData:
     
-    def __init__(self, loop: AbstractEventLoop) -> None:
+    def __init__(
+            self, 
+            loop: AbstractEventLoop) -> None:
         self.ollama_utility = OllamaUtility()
         self.pdf_utility = PdfUtility()
         self.prompt_utility = PromptUtility()
@@ -27,16 +29,18 @@ class ExtractData:
             loop=loop,
         )
 
-    async def is_scan_or_text(self, message) -> dict:
+    async def is_scan_or_text(self, message: dict) -> dict:
         try:
-            is_scan = self.pdf_utility.is_scan(
+            print(message)
+            print(type(message))
+            is_scan: bool = self.pdf_utility.is_scan(
                 file_location=message["file_location"]
                 )
             if is_scan is True:
-                self.__extract_data_from_image(message)
+                result: dict = self.__extract_data_from_image(message)
                 await self.kafka_producer.extracted_invoice_data(result)
             else:
-                result = self.__extract_data_from_text(message)
+                result: dict = self.__extract_data_from_text(message)
                 await self.kafka_producer.extracted_invoice_data(result)
         except Exception as e:
             asyncio.create_task(self.kafka_producer.exception_occured(message))

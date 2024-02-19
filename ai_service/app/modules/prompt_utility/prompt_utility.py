@@ -1,10 +1,11 @@
+from modules.prompt_utility.prompt_utility_abc import PromptUtilityABC
 
-class PromptUtility:
+class PromptUtility(PromptUtilityABC):
 
     def __init__(self):
         pass
     
-    def get_invoice_and_business_entities_extraction_prompt(self, nip_list: list):
+    def get_invoice_and_business_entities_extraction_prompt(self, nip_list: list) -> str:
         info = f"""
         User business NIP numbers: {nip_list}
         'is_issued' is true only if the seller's NIP is provided on the NIP numbers list.
@@ -70,7 +71,7 @@ class PromptUtility:
         return str(info + searched_data)
     
 
-    def get_invoice_and_business_entities_extraction_from_text_prompt(self, nip_list: list, extracted_text: list):
+    def get_invoice_and_business_entities_extraction_from_text_prompt(self, nip_list: list, extracted_text: list) -> str:
         info = f"""
         User business NIP numbers: {nip_list}
         'is_issued' is true only if the seller's NIP is provided on the NIP numbers list.

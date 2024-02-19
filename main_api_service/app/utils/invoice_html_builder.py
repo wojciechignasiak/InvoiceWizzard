@@ -344,7 +344,7 @@ class InvoiceHTMLBuilder(InvoiceHTMLBuilderABC):
                     <span class="invoice-client-entry-title">Nabywca</span>
                     <span class="invoice-client-entry">{self.external_business_entity.name}</span>
                     <span class="invoice-client-entry">{self.external_business_entity.street}; {self.external_business_entity.postal_code} {self.external_business_entity.city}</span>
-                    {buyer_nip}
+                    <span class="invoice-client-entry">NIP {buyer_nip}</span>
                 </div>
                 """
             else:

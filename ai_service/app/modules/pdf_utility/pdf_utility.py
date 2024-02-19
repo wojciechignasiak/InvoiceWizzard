@@ -1,11 +1,12 @@
 from io import BytesIO
+from modules.pdf_utility.pdf_utility_abc import PdfUtilityABC
 from langchain.document_loaders.pdf import PyPDFLoader
 from PyPDF2 import PdfReader
 from modules.logging.logging import logger
 from pdf2image import convert_from_path
 import base64
 
-class PdfUtility:
+class PdfUtility(PdfUtilityABC):
 
     def chunk_pdf_file(self, file_location: str) -> list:
         try:

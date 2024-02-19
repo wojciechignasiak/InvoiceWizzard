@@ -1,42 +1,45 @@
-import fitz  
+from modules.logging.logging import logger
+from modules.ocr_utility.ocr_utility_abc import OCRUtilityABC
+from fitz import Document
 from PIL import Image
 import pytesseract
+import fitz
 import io
-from modules.logging.logging import logger
 
-class OCRUtility:
+
+class OCRUtility(OCRUtilityABC):
 
     def __init__(self) -> None:
         pass
 
-    def convert_pdf_to_images(self, pdf_path):
+    def convert_pdf_to_images(self, pdf_path: str) -> list:
         try:
-            images = []
-            pdf_document = fitz.open(pdf_path)
+            images: list = []
+            pdf_document: Document = fitz.open(pdf_path)
             for page_number in range(pdf_document.page_count):
                 page = pdf_document[page_number]
                 image_list = page.get_images(full=True)
                 for img_index, img in enumerate(image_list):
-                    base_image = pdf_document.extract_image(img[0])
+                    base_image: dict = pdf_document.extract_image(img[0])
                     image_bytes = base_image["image"]
-                    image = Image.open(io.BytesIO(image_bytes))
+                    image: Image = Image.open(io.BytesIO(image_bytes))
                     images.append(image)
             return images
         except Exception as e:
             logger.error(f"OCRUtility.convert_pdf_to_images() Error: {e}")
             raise Exception(f"OCRUtility.convert_pdf_to_images() Error: {e}")
 
-    def extract_text_from_image(self, image):
+    def extract_text_from_image(self, image) -> str:
         try:
-            return pytesseract.image_to_string(image)
+            return pytesseract.image_to_string(image=image, lang='pol+eng')
         except Exception as e:
             logger.error(f"OCRUtility.extract_text_from_image() Error: {e}")
             raise Exception(f"OCRUtility.extract_text_from_image() Error: {e}")
 
-    def extract_text_from_pdf(self, pdf_path):
+    def extract_text_from_pdf(self, pdf_path: str) -> list:
         try:
-            images = self.convert_pdf_to_images(pdf_path)
-            extracted_text = []
+            images: list = self.convert_pdf_to_images(pdf_path)
+            extracted_text: list = []
             for image in images:
                 text = self.extract_text_from_image(image)
                 extracted_text.append(text)
