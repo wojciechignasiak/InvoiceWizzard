@@ -6,12 +6,12 @@ asyncpg>=0.29.0,<0.30.0
 sqlalchemy>=2.0.27,<2.0.28
 redis>=5.0.1,<5.1.0
 redis[hiredis]
-aiofiles>=23.2.1,<23.3.0
 pytest>=8.0.1,<8.1.0
 pytest-asyncio>=0.23.5,<0.24.0
 pytest-mock>=3.12.0,<3.13.0
 httpx>=0.26.0,<0.27.0
 aiokafka>=0.10.0,<0.11.0
+kafka-python3>=3.0.0,<3.1.0
 PyJWT>=2.8.0,<2.9.0
 weasyprint>=61.0,<62.0
 img2pdf>=0.5.1,<0.5.2

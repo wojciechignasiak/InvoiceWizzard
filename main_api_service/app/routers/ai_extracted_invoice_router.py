@@ -118,13 +118,10 @@ async def extract_invoice_data_from_file(
             items_per_page=1000
         )
 
-        user_business_entities_nip: list[str] = []
-
-        for user_business_entity in user_business_entities:
-            user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(
-                user_business_entity_schema=user_business_entity
-            )
-            user_business_entities_nip.append(user_business_entity_model.nip)
+        user_business_entities_nip: list[str] = [
+            (await UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)).nip
+            for user_business_entity in user_business_entities
+        ]
 
         await ai_invoice_events.extract_invoice_data(
             file_location=file_path,
@@ -404,15 +401,7 @@ async def accept_ai_extracted_invoice(
             extracted_invoice_schema = ai_extracted_invoice
             )
 
-        extracted_invoice_item_models: list[AIExtractedInvoiceItemModel] = []
-
-        for extracted_invoice_item in ai_extracted_invoice_items:
-            extracted_invoice_item_model: AIExtractedInvoiceItemModel = await AIExtractedInvoiceItemModel.ai_extracted_invoice_item_schema_to_model(
-                extracted_invoice_item_schema=extracted_invoice_item
-            )
-
-            extracted_invoice_item_models.append(extracted_invoice_item_model)
-
+        ai_extracted_invoice_items: list[AIExtractedInvoiceItemModel] = [await AIExtractedInvoiceItemModel.ai_extracted_invoice_item_schema_to_model(ai_extracted_invoice_item) for ai_extracted_invoice_item in ai_extracted_invoice_items]
 
         ai_is_user_business_entity_recognized_model: AIIsUserBusinessEntityRecognizedModel = await AIIsUserBusinessEntityRecognizedModel.ai_is_user_business_entity_recognized_schema_to_model(
             is_user_business_recognized_schema = ai_is_user_business_entity_recognized
@@ -458,7 +447,7 @@ async def accept_ai_extracted_invoice(
         
         invoice_model: InvoiceModel = await InvoiceModel.invoice_schema_to_model(invoice)
 
-        for extracted_invoice_item_model in extracted_invoice_item_models:
+        for extracted_invoice_item_model in ai_extracted_invoice_items:
             create_invoice_item_model: CreateInvoiceItemModel = CreateInvoiceItemModel(
                 item_description=extracted_invoice_item_model.item_description,
                 number_of_items=extracted_invoice_item_model.number_of_items,
