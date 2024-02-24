@@ -21,7 +21,7 @@ from sqlalchemy.exc import (
     )
 from app.logging import logger
 from sqlalchemy import insert, update, delete, select, or_
-from uuid import uuid4, UUID
+from uuid import UUID
 from typing import Optional
 
 class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessEntityPostgresRepositoryABC):

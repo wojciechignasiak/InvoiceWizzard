@@ -9,6 +9,7 @@ from app.database.postgres.repositories.ai_extracted_invoice_repository_abc impo
 from app.database.postgres.repositories.ai_extracted_user_business_entity_repository_abc import AIExtractedUserBusinessEntityPostgresRepositoryABC
 from app.database.postgres.repositories.ai_is_external_business_recognized_repository_abc import AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC
 from app.database.postgres.repositories.ai_is_user_business_recognized_repository_abc import AIIsUserBusinessRecognizedPostgresRepositoryABC
+from app.database.postgres.repositories.report_repositry_abc import ReportPostgresRepositoryABC
 from app.database.redis.repositories.user_repository_abc import UserRedisRepositoryABC
 from app.database.postgres.repositories.ai_extraction_failure_repository_abc import AIExtractionFailurePostgresRepositoryABC
 from app.database.redis.repositories.user_business_entity_repository_abc import UserBusinessEntityRedisRepositoryABC
@@ -59,7 +60,8 @@ class RepositoriesRegistry(RepositoriesRegistryABC):
                 ai_extracted_user_business_entity_postgres_repository: AIExtractedUserBusinessEntityPostgresRepositoryABC,
                 ai_is_external_business_recognized_postgres_repository: AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC,
                 ai_is_user_business_recognized_postgres_repository: AIIsUserBusinessRecognizedPostgresRepositoryABC,
-                ai_extraction_failure_postgres_repository: AIExtractionFailurePostgresRepositoryABC
+                ai_extraction_failure_postgres_repository: AIExtractionFailurePostgresRepositoryABC,
+                report_postgres_repository: ReportPostgresRepositoryABC
                 ) -> None:
         
         self.user_postgres_repository = user_postgres_repository
@@ -79,6 +81,7 @@ class RepositoriesRegistry(RepositoriesRegistryABC):
         self.ai_is_external_business_recognized_postgres_repository = ai_is_external_business_recognized_postgres_repository
         self.ai_is_user_business_recognized_postgres_repository = ai_is_user_business_recognized_postgres_repository
         self.ai_extraction_failure_postgres_repository = ai_extraction_failure_postgres_repository
+        self.report_postgres_repository = report_postgres_repository
 
 
     async def return_user_postgres_repository(self, session: AsyncSession) -> UserPostgresRepositoryABC:
@@ -131,3 +134,6 @@ class RepositoriesRegistry(RepositoriesRegistryABC):
     
     async def return_ai_extraction_failure_postgres_repository(self, session: AsyncSession) -> AIExtractionFailurePostgresRepositoryABC:
         return self.ai_extraction_failure_postgres_repository(session)
+    
+    async def return_report_postgres_repository(self, session: AsyncSession) -> ReportPostgresRepositoryABC:
+        return self.report_postgres_repository(session)

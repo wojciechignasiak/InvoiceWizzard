@@ -171,12 +171,11 @@ async def get_invoice_items_by_invoice_id(
         )
         if not invoice_items:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No invoice item related to provided invoice id.")
-        invoice_items_model_list = []
-        for invoice_item in invoice_items:
-            invoice_item_model: InvoiceItemModel = await InvoiceItemModel.invoice_item_schema_to_model(invoice_item)
-            invoice_items_model_list.append(invoice_item_model)
 
-        return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(invoice_items_model_list))
+        invoice_items: list[InvoiceItemModel] = [await InvoiceItemModel.invoice_item_schema_to_model(invoice_item) for invoice_item in invoice_items]
+        
+
+        return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(invoice_items))
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
