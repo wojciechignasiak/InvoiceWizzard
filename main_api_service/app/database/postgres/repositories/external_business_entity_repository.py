@@ -142,19 +142,25 @@ class ExternalBusinessEntityPostgresRepository(BasePostgresRepository, ExternalB
                                                 street: Optional[str] = None,
                                                 nip: Optional[str] = None) -> list:
         try:
-            stmt = (
-                select(ExternalBusinessEntity).
-                where(
-                    (ExternalBusinessEntity.user_id == user_id) &
-                    (ExternalBusinessEntity.name.ilike(f"%{name}%") if name else True) &
-                    (ExternalBusinessEntity.city.ilike(f"%{city}%") if city else True) &
-                    (ExternalBusinessEntity.postal_code.ilike(f"%{postal_code}%") if postal_code else True) &
-                    (ExternalBusinessEntity.street.ilike(f"%{street}%") if street else True) &
-                    (ExternalBusinessEntity.nip.ilike(f"%{nip}%") if nip else True)
-                ).
-                limit(items_per_page).
-                offset((page - 1) * items_per_page)
-            )
+            stmt = select(ExternalBusinessEntity).where((ExternalBusinessEntity.user_id == user_id))
+                    
+            if name:
+                stmt = stmt.where(ExternalBusinessEntity.name.ilike(f"%{name}%") )
+
+            if city:
+                stmt = stmt.where(ExternalBusinessEntity.city.ilike(f"%{city}%"))
+
+            if postal_code:
+                stmt = stmt.where(ExternalBusinessEntity.postal_code.ilike(f"%{postal_code}%"))
+
+            if street:
+                stmt = stmt.where(ExternalBusinessEntity.street.ilike(f"%{street}%"))
+
+            if nip:
+                stmt = stmt.where(ExternalBusinessEntity.nip.ilike(f"%{nip}%"))
+
+            stmt = stmt.limit(items_per_page).offset((page - 1) * items_per_page)
+            
             external_business_entities = await self.session.scalars(stmt)
             external_business_entities_list: list = external_business_entities.all()
             if not external_business_entities_list:

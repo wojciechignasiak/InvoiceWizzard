@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from app.models.invoice_model import CreateInvoiceModel, UpdateInvoiceModel 
 from app.schema.schema import Invoice
+from datetime import date
 
 class InvoicePostgresRepositoryABC(ABC):
     
@@ -24,15 +25,15 @@ class InvoicePostgresRepositoryABC(ABC):
                                 external_business_entity_id: Optional[str] = None,
                                 external_business_entity_name: Optional[str] = None,
                                 invoice_number: Optional[str] = None,
-                                start_issue_date: Optional[str] = None,
-                                end_issue_date: Optional[str] = None,
-                                start_sale_date: Optional[str] = None,
-                                end_sale_date: Optional[str] = None,
+                                start_issue_date: Optional[date] = None,
+                                end_issue_date: Optional[date] = None,
+                                start_sale_date: Optional[date] = None,
+                                end_sale_date: Optional[date] = None,
                                 payment_method: Optional[str] = None,
-                                start_payment_deadline: Optional[str] = None,
-                                end_payment_deadline: Optional[str] = None,
-                                start_added_date: Optional[str] = None,
-                                end_added_date: Optional[str] = None,
+                                start_payment_deadline: Optional[date] = None,
+                                end_payment_deadline: Optional[date] = None,
+                                start_added_date: Optional[date] = None,
+                                end_added_date: Optional[date] = None,
                                 is_settled: Optional[bool] = None,
                                 is_issued: Optional[bool] = None,
                                 in_trash: Optional[bool] = None) -> list:
