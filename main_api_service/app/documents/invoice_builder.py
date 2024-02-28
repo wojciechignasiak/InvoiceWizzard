@@ -4,9 +4,9 @@ from app.models.user_business_entity_model import UserBusinessEntityModel
 from app.models.external_business_entity_model import ExternalBusinessEntityModel
 from app.logging import logger
 from typing import Union
-from app.utils.invoice_html_builder_abc import InvoiceHTMLBuilderABC
+from app.documents.invoice_builder_abc import InvoiceBuilderABC
 
-class InvoiceHTMLBuilder(InvoiceHTMLBuilderABC):
+class InvoiceBuilder(InvoiceBuilderABC):
     __slots__= (
         'invoice', 
         'invoice_items',
@@ -33,7 +33,8 @@ class InvoiceHTMLBuilder(InvoiceHTMLBuilderABC):
             sale_date: str = await self._sale_date_html()
             payment_method: str = await self._payment_method_html()
             payment_deadline: str = await self._payment_deadline_html()
-            buyer: str = await self._buyer_html(self.external_business_entity.nip)
+            buyer: str = await self._buyer_html(
+                buyer_nip=self.external_business_entity.nip)
             invoice_items: str = await self._invoice_items_html()
             gross_sum_value: float = await self._count_gross_sum()
             gross_sum: str = await self._gross_sum_html(

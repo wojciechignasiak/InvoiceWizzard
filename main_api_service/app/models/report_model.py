@@ -42,8 +42,10 @@ class UserBusinessEntityReportModel(BaseModel):
         )
     id: UUID
     name: str
-    net_value: float
-    gross_value: float
+    issued_net_value: float
+    issued_gross_value: float
+    recived_net_value: float
+    recived_gross_value: float
     number_of_issued_invoices: Optional[int] = 0
     number_of_recived_invoices: Optional[int] = 0
     issued_settled_invoices: Optional[list[InvoiceReportModel]] = None
@@ -55,6 +57,8 @@ class UserBusinessEntityReportModel(BaseModel):
         return UserBusinessEntityReportModel(
             id=tuple_data[0],
             name=tuple_data[1],
-            net_value=tuple_data[2],
-            gross_value=tuple_data[3]
+            issued_net_value=tuple_data[2],
+            issued_gross_value=tuple_data[3],
+            recived_net_value=tuple_data[4],
+            recived_gross_value=tuple_data[5]
         )

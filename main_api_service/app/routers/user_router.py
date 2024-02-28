@@ -47,7 +47,8 @@ from app.models.user_model import (
     UpdateUserPasswordModel, 
     ResetUserPasswordModel
     )
-from app.utils.user_utils import UserUtils
+from app.auth.auth_tools import AuthTools
+from app.auth.auth_tools_abc import AuthToolsABC
 from aiokafka import AIOKafkaProducer
 from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
 from uuid import uuid4
@@ -97,6 +98,7 @@ async def get_current_user(
 async def register_account(
     new_user: RegisterUserModel,
     repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    auth_tools: AuthToolsABC = Depends(AuthTools),
     events_registry: EventsRegistryABC = Depends(get_events_registry),
     redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
@@ -107,7 +109,6 @@ async def register_account(
         user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
         user_events: UserEventsABC = await events_registry.return_user_events(kafka_producer_client)
-        user_utils: UserUtils = UserUtils()
         
         is_email_address_arleady_taken: bool = await user_postgres_repository.is_email_address_arleady_taken(
             user_email_adress=new_user.email
@@ -116,9 +117,9 @@ async def register_account(
         if is_email_address_arleady_taken == True:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account with this email adress already exists.")
         
-        personal_salt: str = await user_utils.salt_generator()
+        personal_salt: str = await auth_tools.salt_generator()
 
-        hashed_password: str = await user_utils.hash_password(
+        hashed_password: str = await auth_tools.hash_password(
             salt=personal_salt, 
             password=new_user.password
             )
@@ -205,6 +206,7 @@ async def confirm_account(
 async def log_in(
     log_in: LogInModel,
     repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    auth_tools: AuthToolsABC = Depends(AuthTools),
     redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session)
     ):
@@ -212,13 +214,12 @@ async def log_in(
     try:
         user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
-        user_utils = UserUtils()
 
         user: User = await user_postgres_repository.get_user_by_email_address(
             user_email_adress=log_in.email
         )
 
-        verify_password: bool = await user_utils.verify_password(
+        verify_password: bool = await auth_tools.verify_password(
             salt=user.salt, 
             password=log_in.password, 
             hash=user.password
@@ -243,7 +244,7 @@ async def log_in(
             payload=jwt_payload
             )
 
-        jwt_token: str = await user_utils.jwt_encoder(
+        jwt_token: str = await auth_tools.jwt_encoder(
             jwt_data=jwt_data
             )
         
@@ -476,7 +477,7 @@ async def change_password(
     events_registry: EventsRegistryABC = Depends(get_events_registry),
     redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
-    user_utils: UserUtils = Depends(UserUtils),
+    auth_tools: AuthToolsABC = Depends(AuthTools),
     kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
 
@@ -495,7 +496,7 @@ async def change_password(
             user_id=jwt_payload.id
             )
 
-        password_match: bool = await user_utils.verify_password(
+        password_match: bool = await auth_tools.verify_password(
             salt=user.salt, 
             password=new_password.current_password,
             hash=user.password
@@ -505,7 +506,7 @@ async def change_password(
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong current password.")
 
         
-        hashed_new_password: str = await user_utils.hash_password(
+        hashed_new_password: str = await auth_tools.hash_password(
             salt=user.salt, 
             password=new_password.new_password
             )
@@ -542,6 +543,7 @@ async def change_password(
 async def reset_password(
     reset_password: ResetUserPasswordModel,
     repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
+    auth_tools: AuthToolsABC = Depends(AuthTools),
     events_registry: EventsRegistryABC = Depends(get_events_registry),
     redis_client: Redis = Depends(get_redis_client),
     postgres_session: AsyncSession = Depends(get_session),
@@ -550,14 +552,13 @@ async def reset_password(
     try:
         user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
         user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
-        user_utils: UserUtils = UserUtils()
         user_events: UserEventsABC = await events_registry.return_user_events(kafka_producer_client)
         
         user: User = await user_postgres_repository.get_user_by_email_address(
             user_email_adress=reset_password.email
             )
 
-        hashed_new_password = await user_utils.hash_password(
+        hashed_new_password = await auth_tools.hash_password(
             salt=user.salt, 
             password=reset_password.new_password)
 

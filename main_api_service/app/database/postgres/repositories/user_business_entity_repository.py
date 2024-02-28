@@ -162,18 +162,26 @@ class UserBusinessEntityPostgresRepository(BasePostgresRepository, UserBusinessE
                                             nip: Optional[str] = None) -> list:
         try:
             stmt = (
-                select(UserBusinessEntity).
-                where(
-                    (UserBusinessEntity.user_id == user_id) &
-                    (UserBusinessEntity.company_name.ilike(f"%{company_name}%") if company_name else True) &
-                    (UserBusinessEntity.city.ilike(f"%{city}%") if city else True) &
-                    (UserBusinessEntity.postal_code.ilike(f"%{postal_code}%") if postal_code else True) &
-                    (UserBusinessEntity.street.ilike(f"%{street}%") if street else True) &
-                    (UserBusinessEntity.nip.ilike(f"%{nip}%") if nip else True)
-                ).
-                limit(items_per_page).
-                offset((page - 1) * items_per_page)
+                select(UserBusinessEntity).where(UserBusinessEntity.user_id == user_id)
             )
+
+            if company_name:
+                stmt = stmt.where(UserBusinessEntity.company_name.ilike(f"%{company_name}%"))
+
+            if city:
+                stmt = stmt.where(UserBusinessEntity.company_name.ilike(f"%{city}%"))
+
+            if postal_code:
+                stmt = stmt.where(UserBusinessEntity.postal_code.ilike(f"%{postal_code}%"))
+
+            if street:
+                stmt = stmt.where(UserBusinessEntity.street.ilike(f"%{street}%"))
+
+            if nip:
+                stmt = stmt.where(UserBusinessEntity.nip.ilike(f"%{nip}%"))
+                
+            stmt = stmt.limit(items_per_page).offset((page - 1) * items_per_page)
+            
             user_business_entities = await self.session.scalars(stmt)
             user_business_entities_list: list = user_business_entities.all()
             if not user_business_entities_list:

@@ -1,6 +1,5 @@
-from fastapi import APIRouter, HTTPException, status, Depends, UploadFile
-from fastapi.responses import JSONResponse, FileResponse
-from fastapi.encoders import jsonable_encoder
+from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.responses import FileResponse
 from fastapi.security import HTTPBearer
 from app.registries.get_repositories_registry import get_repositories_registry
 from app.registries.repositories_registry_abc import RepositoriesRegistryABC
@@ -30,14 +29,18 @@ from app.types.postgres_repository_abstract_types import (
 from app.types.redis_repository_abstract_types import (
     UserRedisRepositoryABC,
 )
-
-
+from datetime import date
+from app.documents.report_builder_abc import ReportBuilderABC
+from app.documents.report_builder import ReportBuilder
+from app.files.files_repository_abc import FilesRepositoryABC
 
 router = APIRouter()
 http_bearer = HTTPBearer()
 
 @router.post("/report-module/generate-report/")
 async def generate_invoice(
+    issue_date_start: date,
+    issue_date_end: date,
     token = Depends(http_bearer), 
     repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
     redis_client: Redis = Depends(get_redis_client),
@@ -47,6 +50,7 @@ async def generate_invoice(
     try:
         user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
         report_postgres_repository: ReportPostgresRepositoryABC = await repositories_registry.return_report_postgres_repository(postgres_session)
+        files_repository: FilesRepositoryABC = await repositories_registry.return_files_repository()
 
         jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
             jwt_token=token.credentials
@@ -56,9 +60,8 @@ async def generate_invoice(
 
         user_business_entities_report: list[tuple] = await report_postgres_repository.get_user_business_entities_net_and_gross_values(
             user_id=jwt_payload.id,
-            start_date='2023-12-01',
-            end_date='2023-12-30',
-            is_issued=True
+            start_date=issue_date_start,
+            end_date=issue_date_end
         )
 
         user_business_entities_report: list[UserBusinessEntityReportModel] = [
@@ -69,16 +72,16 @@ async def generate_invoice(
         for user_business_entity_report in user_business_entities_report:
             number_of_issued_invoices: list[tuple] = await report_postgres_repository.get_user_business_entity_number_of_invoices(
                 user_id=jwt_payload.id,
-                start_date='2023-12-01',
-                end_date='2023-12-30',
+                start_date=issue_date_start,
+                end_date=issue_date_end,
                 is_issued=True,
                 user_business_entity_id=str(user_business_entity_report.id)
             )
 
             number_of_recived_invoices: list[tuple] = await report_postgres_repository.get_user_business_entity_number_of_invoices(
                 user_id=jwt_payload.id,
-                start_date='2023-12-01',
-                end_date='2023-12-30',
+                start_date=issue_date_start,
+                end_date=issue_date_end,
                 is_issued=False,
                 user_business_entity_id=str(user_business_entity_report.id)
             )
@@ -90,8 +93,8 @@ async def generate_invoice(
             issued_settled_invoices: list[tuple] = await report_postgres_repository.get_user_invoice_data_related_to_user_business_entity(
                 user_id=jwt_payload.id,
                 user_business_entity_id=str(user_business_entity_report.id),
-                start_date='2023-12-01',
-                end_date='2023-12-30',
+                start_date=issue_date_start,
+                end_date=issue_date_end,
                 is_issued=True,
                 is_settled=True
             )
@@ -103,8 +106,8 @@ async def generate_invoice(
             issued_unsettled_invoices = await report_postgres_repository.get_user_invoice_data_related_to_user_business_entity(
                 user_id=jwt_payload.id,
                 user_business_entity_id=str(user_business_entity_report.id),
-                start_date='2023-12-01',
-                end_date='2023-12-30',
+                start_date=issue_date_start,
+                end_date=issue_date_end,
                 is_issued=True,
                 is_settled=False
             )
@@ -116,8 +119,8 @@ async def generate_invoice(
             recived_settled_invoices = await report_postgres_repository.get_user_invoice_data_related_to_user_business_entity(
                 user_id=jwt_payload.id,
                 user_business_entity_id=str(user_business_entity_report.id),
-                start_date='2023-12-01',
-                end_date='2023-12-30',
+                start_date=issue_date_start,
+                end_date=issue_date_end,
                 is_issued=False,
                 is_settled=True
             )
@@ -129,8 +132,8 @@ async def generate_invoice(
             recived_unsettled_invoices = await report_postgres_repository.get_user_invoice_data_related_to_user_business_entity(
                 user_id=jwt_payload.id,
                 user_business_entity_id=str(user_business_entity_report.id),
-                start_date='2023-12-01',
-                end_date='2023-12-30',
+                start_date=issue_date_start,
+                end_date=issue_date_end,
                 is_issued=False,
                 is_settled=False
             )
@@ -138,8 +141,30 @@ async def generate_invoice(
             if recived_unsettled_invoices:
                 recived_unsettled_invoices = [await InvoiceReportModel.from_tuple_to_model(invoice) for invoice in recived_unsettled_invoices]
                 user_business_entity_report.recived_unsettled_invoices = recived_unsettled_invoices
+
+        report_builder: ReportBuilderABC = ReportBuilder()
+        report_html = await report_builder.create_report_html_document(
+            user_business_entities_report=user_business_entities_report,
+            start_date=issue_date_start,
+            end_date=issue_date_end
+        )
         
-        return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder(user_business_entities_report))
+        
+        file_path = f"/usr/app/invoice-files/report/{jwt_payload.id}/report.pdf"
+
+        await files_repository.invoice_html_to_pdf(
+            invoice_html=report_html,
+            file_path=file_path
+        )
+        
+        file = await files_repository.get_invoice_pdf_file(
+            file_path=file_path
+        )
+        
+        if file.is_file() == False:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+        
+        return FileResponse(path=file, status_code=status.HTTP_200_OK, filename=file.name)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:
