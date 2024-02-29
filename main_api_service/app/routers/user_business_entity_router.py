@@ -171,7 +171,7 @@ async def get_all_user_business_entities(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
-        user_business_entity_list: list = await user_business_entity_postgres_repository.get_all_user_business_entities(
+        user_business_entities: list = await user_business_entity_postgres_repository.get_all_user_business_entities(
             user_id=jwt_payload.id,
             page=page,
             items_per_page=items_per_page,
@@ -181,10 +181,7 @@ async def get_all_user_business_entities(
             street=street,
             nip=nip
         )
-        user_business_entities_model = []
-        for user_business_entity in user_business_entity_list:
-            user_business_entity_model: UserBusinessEntityModel = await UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity)
-            user_business_entities_model.append(user_business_entity_model)
+        user_business_entities_model = [await UserBusinessEntityModel.user_business_entity_schema_to_model(user_business_entity) for user_business_entity in user_business_entities]
         
         return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(user_business_entities_model))
     except HTTPException as e:

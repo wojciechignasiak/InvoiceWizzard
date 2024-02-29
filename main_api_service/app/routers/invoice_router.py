@@ -67,11 +67,11 @@ from app.types.kafka_event_abstract_types import (
 from app.files.files_repository_abc import FilesRepositoryABC
 from uuid import uuid4
 import ast
-from app.utils.invoice_html_builder import InvoiceHTMLBuilder
-from app.utils.invoice_html_builder_abc import InvoiceHTMLBuilderABC
+from app.documents.invoice_builder import InvoiceBuilder
+from app.documents.invoice_builder_abc import InvoiceBuilderABC
 from typing import Optional
 from pathlib import Path
-
+from datetime import date
 
 
 router = APIRouter()
@@ -112,21 +112,20 @@ async def create_invoice(
 
         invoice_model: InvoiceModel = await InvoiceModel.invoice_schema_to_model(invoice)
 
-        invoice_items_model: list = []
-        for invoice_item_model in invoice_items:
-            invoice_item: InvoiceItem = await invoice_item_postgres_repository.create_invoice_item(
-                user_id=jwt_payload.id,
-                invoice_id=invoice_model.id,
-                new_invoice_item=invoice_item_model
+        invoice_items: list[InvoiceItemModel] = [
+            await InvoiceItemModel.invoice_item_schema_to_model(
+                await invoice_item_postgres_repository.create_invoice_item(
+                    user_id=jwt_payload.id,
+                    invoice_id=invoice_model.id,
+                    new_invoice_item=invoice_item_model
+                )
             )
-            
-            invoice_item_model: InvoiceItemModel = await InvoiceItemModel.invoice_item_schema_to_model(invoice_item)
-            
-            invoice_items_model.append(invoice_item_model)
+            for invoice_item_model in invoice_items
+        ]
         
         invoice: dict = invoice_model.model_dump()
 
-        invoice["invoice_items"] = invoice_items_model
+        invoice["invoice_items"] = invoice_items
 
         return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder(invoice))
     except HTTPException as e:
@@ -172,12 +171,11 @@ async def get_invoice(
             invoice_id=invoice_model.id,
             in_trash=invoice_model.in_trash
         )
-        sum_gross_value = 0.0
-        sum_net_value = 0.0
-        for invoice_item in invoice_items:
-            invoice_item_model: InvoiceItemModel = await InvoiceItemModel.invoice_item_schema_to_model(invoice_item)
-            sum_gross_value += invoice_item_model.gross_value
-            sum_net_value += invoice_item_model.net_value
+
+        invoice_items: list[InvoiceItemModel] = [await InvoiceItemModel.invoice_item_schema_to_model(invoice_item) for invoice_item in invoice_items]
+
+        sum_gross_value: float = sum(invoice_item.gross_value for invoice_item in invoice_items)
+        sum_net_value: float = sum(invoice_item.net_value for invoice_item in invoice_items)
 
         invoice_details = invoice_model.model_dump()
 
@@ -220,15 +218,15 @@ async def get_all_invoices(
     external_business_entity_id: Optional[str] = None,
     external_business_entity_name: Optional[str] = None,
     invoice_number: Optional[str] = None,
-    start_issue_date: Optional[str] = None,
-    end_issue_date: Optional[str] = None,
-    start_sale_date: Optional[str] = None,
-    end_sale_date: Optional[str] = None,
+    start_issue_date: Optional[date] = None,
+    end_issue_date: Optional[date] = None,
+    start_sale_date: Optional[date] = None,
+    end_sale_date: Optional[date] = None,
     payment_method: Optional[str] = None,
-    start_payment_deadline: Optional[str] = None,
-    end_payment_deadline: Optional[str] = None,
-    start_added_date: Optional[str] = None,
-    end_added_date: Optional[str] = None,
+    start_payment_deadline: Optional[date] = None,
+    end_payment_deadline: Optional[date] = None,
+    start_added_date: Optional[date] = None,
+    end_added_date: Optional[date] = None,
     is_settled: Optional[bool] = None,
     is_issued: Optional[bool] = None,
     in_trash: Optional[bool] = None,
@@ -768,11 +766,7 @@ async def generate_invoice_pdf(
             in_trash=False
         )
 
-        invoice_items_model: list = []
-
-        for invoice_item in invoice_items:
-            invoice_item_model: InvoiceItemModel = await InvoiceItemModel.invoice_item_schema_to_model(invoice_item)
-            invoice_items_model.append(invoice_item_model)
+        invoice_items: list[InvoiceItemModel] = [await InvoiceItemModel.invoice_item_schema_to_model(invoice_item) for invoice_item in invoice_items]
         
         user_business_entity: UserBusinessEntity = await user_business_entity_postgres_repository.get_user_business_entity(
             user_id=jwt_payload.id,
@@ -788,14 +782,14 @@ async def generate_invoice_pdf(
         
         external_business_entity_model: ExternalBusinessEntityModel = await ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
 
-        invoice_html_builder: InvoiceHTMLBuilderABC = InvoiceHTMLBuilder(
+        invoice_builder: InvoiceBuilderABC = InvoiceBuilder(
             user_business_entity=user_business_entity_model,
             external_business_entity=external_business_entity_model,
             invoice=invoice_model,
-            invoice_items=invoice_items_model
+            invoice_items=invoice_items
         )
         
-        invoice_html: str = await invoice_html_builder.create_invoice_html_document()
+        invoice_html: str = await invoice_builder.create_invoice_html_document()
         
         file_path = f"/usr/app/invoice-files/invoice/{jwt_payload.id}/{invoice_model.id}/invoice.pdf"
 

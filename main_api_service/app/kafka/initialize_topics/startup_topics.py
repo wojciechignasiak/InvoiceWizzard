@@ -3,12 +3,16 @@ import logging
 from aiokafka.admin import AIOKafkaAdminClient, NewTopic
 
 async def startup_topics(kafka_url: str):
+
+    #fix topic initialization
+    
     admin_client = AIOKafkaAdminClient(
             bootstrap_servers=f'{kafka_url}',
             security_protocol="PLAINTEXT"
         )
     try:
         topics = await admin_client.list_topics()
+        print(topics)
         existing_topics = topics
         topic_name_list = [
             KafkaTopicsEnum.account_registered.value,
@@ -36,6 +40,6 @@ async def startup_topics(kafka_url: str):
 
         await admin_client.create_topics(new_topics=topic_list, validate_only=False)
     except Exception as e:
-        logging.exception(f"startup_topics(): {e}")
+        logging.error(f"startup_topics(): {e}")
     finally:
         await admin_client.close()

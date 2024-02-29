@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Union
 
 
-class InvoiceHTMLBuilderABC(ABC):
+class InvoiceBuilderABC(ABC):
 
     @abstractmethod
     async def create_invoice_html_document(self) -> str:

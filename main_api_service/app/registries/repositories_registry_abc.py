@@ -11,6 +11,7 @@ from app.types.postgres_repository_abstract_types import (
     AIIsExternalBusinessEntityRecognizedPostgresRepositoryABC,
     AIIsUserBusinessRecognizedPostgresRepositoryABC,
     AIExtractionFailurePostgresRepositoryABC,
+    ReportPostgresRepositoryABC
 )
 from app.types.redis_repository_abstract_types import (
     UserRedisRepositoryABC,
@@ -92,4 +93,8 @@ class RepositoriesRegistryABC(ABC):
 
     @abstractmethod
     async def return_ai_extraction_failure_postgres_repository(self, session: AsyncSession) -> AIExtractionFailurePostgresRepositoryABC:
+        ...
+
+    @abstractmethod
+    async def return_report_postgres_repository(self, session: AsyncSession) -> ReportPostgresRepositoryABC:
         ...

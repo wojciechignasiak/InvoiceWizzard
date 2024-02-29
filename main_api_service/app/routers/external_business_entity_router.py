@@ -173,7 +173,7 @@ async def get_all_external_business_entities(
         
         jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
 
-        external_business_entity_list: list = await external_business_entity_postgres_repository.get_all_external_business_entities(
+        external_business_entities: list[Optional[ExternalBusinessEntity]] = await external_business_entity_postgres_repository.get_all_external_business_entities(
             user_id=jwt_payload.id,
             page=page,
             items_per_page=items_per_page,
@@ -183,12 +183,9 @@ async def get_all_external_business_entities(
             street=street,
             nip=nip
         )
-        external_business_entities_model = []
-        for external_business_entity in external_business_entity_list:
-            external_business_entity_model: ExternalBusinessEntityModel = await ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity)
-            external_business_entities_model.append(external_business_entity_model)
+        external_business_entities: list[ExternalBusinessEntityModel] = [await ExternalBusinessEntityModel.external_business_entity_schema_to_model(external_business_entity) for external_business_entity in external_business_entities]
         
-        return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(external_business_entities_model))
+        return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(external_business_entities))
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:

@@ -67,15 +67,9 @@ async def get_ai_extracted_invoice_items_by_ai_extracted_invoice_id(
             user_id=jwt_payload.id
         )
 
-        invoice_item_models: list[AIExtractedInvoiceItemModel] = []
+        extracted_invoice_items: list[AIExtractedInvoiceItemModel] = [await AIExtractedInvoiceItemModel.ai_extracted_invoice_item_schema_to_model(invoice_item) for invoice_item in extracted_invoice_items]
 
-        for invoice_item in extracted_invoice_items:
-            invoice_item_model: AIExtractedInvoiceItemModel = await AIExtractedInvoiceItemModel.ai_extracted_invoice_item_schema_to_model(
-                extracted_invoice_item_schema=invoice_item
-            )
-            invoice_item_models.append(invoice_item_model)
-
-        return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(invoice_item_models))
+        return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(extracted_invoice_items))
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except RedisJWTNotFoundError as e:

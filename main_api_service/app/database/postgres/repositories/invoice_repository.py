@@ -1,8 +1,8 @@
 from app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
 from app.database.postgres.repositories.invoice_repository_abc import InvoicePostgresRepositoryABC
 from app.models.invoice_model import CreateInvoiceModel, UpdateInvoiceModel
-from app.schema.schema import Invoice
-from sqlalchemy import insert, select, or_, and_, update, delete, func
+from app.schema.schema import Invoice, ExternalBusinessEntity, UserBusinessEntity
+from sqlalchemy import insert, select, update, delete, func
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLDatabaseError,
     PostgreSQLIntegrityError,
@@ -19,6 +19,7 @@ from sqlalchemy.exc import (
     )
 from typing import Optional
 from app.logging import logger
+from datetime import date
 
 
 class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositoryABC):
@@ -81,62 +82,75 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
                                 external_business_entity_id: Optional[str] = None,
                                 external_business_entity_name: Optional[str] = None,
                                 invoice_number: Optional[str] = None,
-                                start_issue_date: Optional[str] = None,
-                                end_issue_date: Optional[str] = None,
-                                start_sale_date: Optional[str] = None,
-                                end_sale_date: Optional[str] = None,
+                                start_issue_date: Optional[date] = None,
+                                end_issue_date: Optional[date] = None,
+                                start_sale_date: Optional[date] = None,
+                                end_sale_date: Optional[date] = None,
                                 payment_method: Optional[str] = None,
-                                start_payment_deadline: Optional[str] = None,
-                                end_payment_deadline: Optional[str] = None,
-                                start_added_date: Optional[str] = None,
-                                end_added_date: Optional[str] = None,
+                                start_payment_deadline: Optional[date] = None,
+                                end_payment_deadline: Optional[date] = None,
+                                start_added_date: Optional[date] = None,
+                                end_added_date: Optional[date] = None,
                                 is_settled: Optional[bool] = None,
                                 is_issued: Optional[bool] = None,
                                 in_trash: Optional[bool] = None) -> list:
         try:
-            stmt = (
-                select(Invoice).
-                where(
-                    and_(
-                        Invoice.user_id == user_id,
-                        Invoice.user_business_entity_id == user_business_entity_id if user_business_entity_id else True,
-                        Invoice.user_business_entity.company_name.ilike(f"%{user_business_entity_name}%") if user_business_entity_name else True,
-                        Invoice.external_business_entity_id == external_business_entity_id if external_business_entity_id else True,
-                        Invoice.external_business_entity.company_name.ilike(f"%{external_business_entity_name}%") if external_business_entity_name else True,
-                        Invoice.invoice_number.ilike(f"%{invoice_number}%") if invoice_number else True,
-                        or_(
-                            and_(
-                                Invoice.issue_date >= start_issue_date,
-                                or_(end_issue_date is None, Invoice.issue_date <= end_issue_date)
-                            ) if start_issue_date else True,
-                        ),
-                        or_(
-                            and_(
-                                Invoice.sale_date >= start_sale_date,
-                                or_(end_sale_date is None, Invoice.sale_date <= end_sale_date)
-                            ) if start_sale_date else True,
-                        ),
-                        Invoice.payment_method.ilike(f"%{payment_method}%") if payment_method else True,
-                        or_(
-                            and_(
-                                Invoice.payment_deadline >= start_payment_deadline,
-                                or_(end_payment_deadline is None, Invoice.payment_deadline <= end_payment_deadline)
-                            ) if start_payment_deadline else True,
-                        ),
-                        or_(
-                            and_(
-                                Invoice.added_date >= start_added_date,
-                                or_(end_added_date is None, Invoice.added_date <= end_added_date)
-                            ) if start_added_date else True,
-                        ),
-                        Invoice.is_settled == is_settled if is_settled is not None else True,
-                        Invoice.is_issued == is_issued if is_issued is not None else True,
-                        Invoice.in_trash == in_trash if in_trash is not None else True
-                    )
-                ).
-                limit(items_per_page).
-                offset((page - 1) * items_per_page)
-            )
+            stmt = select(Invoice).where(Invoice.user_id == user_id)
+
+            if user_business_entity_id:
+                stmt = stmt.where(Invoice.user_business_entity_id == user_business_entity_id)
+
+            if external_business_entity_id:
+                stmt = stmt.where(Invoice.external_business_entity_id == external_business_entity_id)
+
+            if invoice_number:
+                stmt = stmt.where(Invoice.invoice_number.ilike(f"%{invoice_number}%"))
+
+            if start_issue_date:
+                stmt = stmt.where(Invoice.issue_date >= start_issue_date)
+            
+            if end_issue_date:
+                stmt = stmt.where(Invoice.issue_date <= end_issue_date)
+            
+            if start_sale_date:
+                stmt = stmt.where(Invoice.sale_date >= start_sale_date)
+            
+            if end_sale_date:
+                stmt = stmt.where(Invoice.sale_date <= end_sale_date)
+
+            if payment_method:
+                stmt = stmt.where(Invoice.payment_method.ilike(f"%{payment_method}%"))
+
+            if start_payment_deadline:
+                stmt = stmt.where(Invoice.payment_deadline >= start_payment_deadline)
+
+            if end_payment_deadline:
+                stmt = stmt.where(Invoice.payment_deadline <= end_payment_deadline)
+
+            if start_added_date:
+                stmt = stmt.where(Invoice.added_date >= start_added_date)
+
+            if end_added_date:
+                stmt = stmt.where(Invoice.added_date <= end_added_date)
+
+            if is_settled is not None:
+                stmt = stmt.where(Invoice.is_settled == is_settled)
+            
+            if is_issued is not None:
+                stmt = stmt.where(Invoice.is_issued == is_issued)
+            
+            if in_trash is not None:
+                stmt = stmt.where(Invoice.in_trash == in_trash)
+
+            if external_business_entity_name:
+                stmt = stmt.where(ExternalBusinessEntity.name.ilike(f"%{external_business_entity_name}%"))
+                stmt = stmt.join(ExternalBusinessEntity, ExternalBusinessEntity.id == Invoice.external_business_entity_id)
+
+            if user_business_entity_name:
+                stmt = stmt.where(UserBusinessEntity.company_name.ilike(f"%{user_business_entity_name}%"))
+                stmt = stmt.join(UserBusinessEntity, UserBusinessEntity.id == Invoice.user_business_entity_id)
+
+            stmt = stmt.limit(items_per_page).offset((page - 1) * items_per_page)
 
             invoices = await self.session.scalars(stmt)
             if not invoices:
