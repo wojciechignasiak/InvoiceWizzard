@@ -48,8 +48,28 @@ services:
       - postgresql
       - redis
       - kafka
-
 ######################FastAPI SERVICES - End###########################
+
+######################Notification SERVICE - Beginning###########################
+  notification_service:
+    container_name: notification_service
+    build: ./notification_service
+    image: ghcr.io/wojciechignasiak/notification_service:0.0.1
+    environment:
+      - KAFKA_HOST=${KAFKA_HOST}
+      - KAFKA_PORT=${KAFKA_PORT}
+    ports:
+      - 8083:80
+    expose:
+      - 80
+    networks:
+      - backend-network
+    restart: always
+    volumes:
+      - ./notification_service:/usr/src/notification_service/
+    depends_on:
+      - kafka
+######################Notification SERVICE - End###########################
 
 ######################AI SERVICES - Beginning###########################
   ai_service:
