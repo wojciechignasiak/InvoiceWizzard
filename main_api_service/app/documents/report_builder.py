@@ -85,10 +85,10 @@ class ReportBuilder(ReportBuilderABC):
             {company_header}
             {issued_invoice_summary}
             {recived_invoice_summary}
-            {issued_unsettled_invoices}
-            {unsettled_recived_invoices}
-            {settled_issued_invoices}
-            {settled_recived_invoices}
+            {issued_unsettled_invoices if issued_unsettled_invoices is not None else ""}
+            {unsettled_recived_invoices if unsettled_recived_invoices is not None else ""}
+            {settled_issued_invoices if settled_issued_invoices is not None else ""}
+            {settled_recived_invoices if settled_recived_invoices is not None else ""}
             </div>
             """
             return invoice_body
@@ -327,10 +327,10 @@ class ReportBuilder(ReportBuilderABC):
                                     end_date: date) -> str:
         try:
             report_header: str = f"""
-                <div class="invoice-title">
+                
                     <span class="invoice-header-title">Raport faktur</span>
                     <span class="invoice-header-subtitle">z przedziału czasowego</span>
-                </div>
+                
                 <div class="invoice-header-data">
                     <span class="invoice-header-date">{start_date} r.</span>
                     <span class="invoice-header-dates-separator">−</span>
@@ -346,26 +346,28 @@ class ReportBuilder(ReportBuilderABC):
             <head>
                 <meta charset="UTF-8">
                 <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Sora:wght@100;200;300;400;500;600;700;800&display=swap');
                     *{
                         box-sizing: border-box;
-                        font-family: 'Roboto', sans-serif;
+                        font-family: Arial, Helvetica, sans-serif;
+                    }
+                    @media print {
+                        body {
+                            margin: 0;
+                        }
+                    }
+                    @page {
+                        margin: 0cm;
+                        padding: 25px;
                     }
                     body{
-                        background-color: #999;
                         margin: 0;
                         padding: 0;
-                        width: fit-content;
-                        height: fit-content;
                     }
                     .invoice-main{
-                        width: 800px;
                         background: #fff;
-                        min-height: 100vh;
+                        height: 100%;
                     }
                     .invoice-raport-element{
-                        display: flex;
-                        flex-direction: column;
                         padding: 25px;
                     }
                     
@@ -395,14 +397,17 @@ class ReportBuilder(ReportBuilderABC):
                         margin-bottom: 10px;
                     }
                     .invoice-header-title{
-                        display: block;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
                         text-transform: uppercase;
                         font-size: 48px;
                         font-weight: 900;
-                        
                     }
                     .invoice-header-subtitle{
-                        display: block;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
                         text-transform: uppercase;
                         font-size: 24px;
                         font-weight: 600;
@@ -468,34 +473,36 @@ class ReportBuilder(ReportBuilderABC):
                         background-color: #f0f0f0;
                     }
                     .invoice-raport-detials-content{
-                        width: 100%;    
-                    }
-                    .invoice-raport-details:first-child{
-                        margin-bottom: 25px;
+                        width: 100%;
+                        display: block;  
                     }
                     .invoice-raport-details{
-                        width: 100%;
                         background-color: #f0f0f0;
                         color: #1F1F1F;
                         border-radius: 8px;
                         display: flex;
-                        flex-direction: row;
                         justify-content: space-between;
                         align-items: center;
+                        margin-bottom: 25px;
+                    }
+                    .invoice-raport-details:first-child{
+                        margin-bottom: 25px;
                     }
                     .invoice-raport-details-entry{
-                        padding: 16px;
+                        padding: 8px;
+                        font-size: 14px;
                         display: flex;
                         flex-direction: column;
-                        justify-content: center;
                         align-items: center;
                     }
                     .invoice-raport-details-entry-title{
                         text-transform: uppercase;
                         font-weight: 700;
+                        display: inline-block;
                     }
                     .invoice-raport-details-entry-data{
                         font-weight: 300;
+                        display: inline-block;
                     }
                     .invoice-raport-company-header{
                         display: flex;
