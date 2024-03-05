@@ -30,25 +30,25 @@ class ReportPostgresRepository(BasePostgresRepository, ReportPostgresRepositoryA
                     UserBusinessEntity.company_name,
                     func.sum(
                         case(
-                            (Invoice.is_issued == True, InvoiceItem.net_value),
+                            (Invoice.is_issued is True, InvoiceItem.net_value),
                             else_=0
                         )
                     ).label("issued_invoice_net_value"),
                     func.sum(
                         case(
-                            (Invoice.is_issued == True, InvoiceItem.gross_value),
+                            (Invoice.is_issued is True, InvoiceItem.gross_value),
                             else_=0
                         )
                     ).label("issued_invoice_gross_value"),
                     func.sum(
                         case(
-                            (Invoice.is_issued == False, InvoiceItem.net_value),
+                            (Invoice.is_issued is False, InvoiceItem.net_value),
                             else_=0
                         )
                     ).label("received_invoice_net_value"),
                     func.sum(
                         case(
-                            (Invoice.is_issued == False, InvoiceItem.gross_value),
+                            (Invoice.is_issued is False, InvoiceItem.gross_value),
                             else_=0
                         )
                     ).label("received_invoice_gross_value")
@@ -56,8 +56,8 @@ class ReportPostgresRepository(BasePostgresRepository, ReportPostgresRepositoryA
                 .join(Invoice, Invoice.id == InvoiceItem.invoice_id)
                 .join(UserBusinessEntity, UserBusinessEntity.id == Invoice.user_business_entity_id)
                 .filter(
-                    Invoice.in_trash == False,
-                    InvoiceItem.in_trash == False,
+                    Invoice.in_trash is False,
+                    InvoiceItem.in_trash is False,
                     Invoice.issue_date.between(start_date, end_date),
                     UserBusinessEntity.user_id == user_id
                 )
@@ -84,8 +84,8 @@ class ReportPostgresRepository(BasePostgresRepository, ReportPostgresRepositoryA
                     )
                 .select_from(Invoice)
                 .join(UserBusinessEntity, UserBusinessEntity.id == Invoice.user_business_entity_id)
-                .filter(Invoice.in_trash == False,
-                        Invoice.is_issued == is_issued,
+                .filter(Invoice.in_trash is False,
+                        Invoice.is_issued is is_issued,
                         Invoice.issue_date.between(start_date, end_date),
                         UserBusinessEntity.id == user_business_entity_id,
                         UserBusinessEntity.user_id == user_id)
@@ -117,10 +117,10 @@ class ReportPostgresRepository(BasePostgresRepository, ReportPostgresRepositoryA
                 .join(Invoice, Invoice.id == InvoiceItem.invoice_id)
                 .join(ExternalBusinessEntity, ExternalBusinessEntity.id == Invoice.external_business_entity_id)
                 .join(UserBusinessEntity, UserBusinessEntity.id == Invoice.user_business_entity_id)
-                .filter(Invoice.in_trash == False,
-                        Invoice.is_issued == is_issued,
-                        Invoice.is_settled == is_settled,
-                        InvoiceItem.in_trash == False,
+                .filter(Invoice.in_trash is False,
+                        Invoice.is_issued is is_issued,
+                        Invoice.is_settled is is_settled,
+                        InvoiceItem.in_trash is False,
                         UserBusinessEntity.id == user_business_entity_id,
                         Invoice.issue_date.between(start_date, end_date),
                         UserBusinessEntity.user_id == user_id)

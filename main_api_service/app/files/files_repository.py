@@ -7,7 +7,7 @@ import shutil
 import imageio
 import img2pdf
 import os
-import io
+from io import BytesIO
 
 class FilesRepository(FilesRepositoryABC):
     
@@ -39,13 +39,13 @@ class FilesRepository(FilesRepositoryABC):
         try:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
                     
-            with imageio.get_reader(io.BytesIO(file_data)) as reader:
+            with imageio.get_reader(BytesIO(file_data)) as reader:
                 is_it_mpo: bool = len(reader) > 1
 
                 if is_it_mpo:
                     base_image = Image.fromarray(reader.get_data(0))
 
-                    with io.BytesIO() as jpeg_stream:
+                    with BytesIO() as jpeg_stream:
                         base_image.save(jpeg_stream, format=file_extension)
                         file_data = jpeg_stream.getvalue()
 

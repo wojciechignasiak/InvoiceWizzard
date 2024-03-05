@@ -8,7 +8,6 @@ from app.kafka.consumed_events_managers.ai_extraction_failure_manager import AIE
 from app.kafka.consumed_events_managers.ai_extraction_failure_manager_abc import AIExtractionFailureManagerABC
 from app.kafka.clients.events_consumer import EventsConsumer
 from contextlib import asynccontextmanager
-from app.schema.schema import Base
 import asyncio
 from app.routers import (
     user_router,
@@ -46,8 +45,7 @@ async def lifespan(app: FastAPI):
 
     app.state.engine = await application_statup_processes.postgres_engine()
 
-    async with app.state.engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    await application_statup_processes.kafka_topics_initialization()
 
     app.state.redis_pool = await application_statup_processes.redis_pool()
 

@@ -4,7 +4,7 @@ from fitz import Document
 from PIL import Image
 import pytesseract
 import fitz
-import io
+from io import BytesIO
 
 
 class OCRUtility(OCRUtilityABC):
@@ -22,7 +22,7 @@ class OCRUtility(OCRUtilityABC):
                 for img_index, img in enumerate(image_list):
                     base_image: dict = pdf_document.extract_image(img[0])
                     image_bytes = base_image["image"]
-                    image: Image = Image.open(io.BytesIO(image_bytes))
+                    image: Image = Image.open(BytesIO(image_bytes))
                     images.append(image)
             return images
         except Exception as e:

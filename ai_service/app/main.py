@@ -18,3 +18,5 @@ async def main():
         await kafka_consumer.run_consumer()
     except Exception as e:
         print(f"AI Service Error: {e}")
+    finally:
+        loop.close()
