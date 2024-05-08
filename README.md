@@ -30,6 +30,6 @@ This repository contains a backend of web application designed to create, genera
 
 
 ## Architecture Diagram
-<p align="center">
-  ![drawio_diagram](readme_images/InvoiceWizzard.png)
-</p>
+<div style="text-align: center;">
+    <img width="100%" src="/readme_images/InvoiceWizzard.png">
+</div>
