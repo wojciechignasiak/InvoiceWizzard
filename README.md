@@ -14,7 +14,16 @@ This repository contains a backend of web application designed to create, genera
 ## Running application locally:
 1. Copy content of ```.env.template``` file.
 2. Create ```.env``` file and paste the previously copied content into it.
+3. If you use Windows or Linux system with Nvidia GPU go to ```docker-compose.yml``` and uncomment this ollama section:
+```
+# deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #       - driver: nvidia
+    #         count: 1
+    #         capabilities: [gpu]
+```
 3. Run command ```docker-compose up -d```.
-4. Generate allembic migration ```docker-compose exec -T main_api_service alembic revision --autogenerate -m "Baseline migration"```.
-5. Run migration ```docker-compose exec -T main_api_service alembic upgrade head```.
+4. Run migration ```docker-compose exec -T main_api_service alembic upgrade head```.
 6. To verify app open web browser at ```http://localhost:8081/docs``` address.
