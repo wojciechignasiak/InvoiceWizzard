@@ -27,3 +27,7 @@ This repository contains a backend of web application designed to create, genera
 3. Run command ```docker-compose up -d```.
 4. Run migration ```docker-compose exec -T main_api_service alembic upgrade head```.
 6. To verify app open web browser at ```http://localhost:8081/docs``` address.
+
+
+## Architecture Diagram
+![drawio_diagram](readme_images/InvoiceWizzard.jpg)
