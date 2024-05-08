@@ -1,0 +1,219 @@
+version: '3'
+
+networks:
+  backend-network:
+    name: backend-network
+    driver: bridge
+
+volumes:
+  postgres-volume:
+  redis-volume:
+  invoice-volume:
+  redisearch-volume:
+  zookeeper-data-volume:
+  zookeeper-logs-volume:
+  zookeeper-secrets:
+  kafka-secrets-volume:
+  kafka-data-volume:
+
+services:
+######################Python SERVICES - Beginning###########################
+
+  main_api_service:
+    container_name: main_api_service
+    build: ./main_api_service
+    image: ghcr.io/wojciechignasiak/main_api_service:0.0.1
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USERNAME=${POSTGRES_USERNAME}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - KAFKA_HOST=${KAFKA_HOST}
+      - KAFKA_PORT=${KAFKA_PORT}
+    ports:
+      - 8081:80
+    expose:
+      - 80
+    networks:
+      - backend-network
+    restart: always
+    volumes:
+      - ./main_api_service:/usr/src/main_api_service/
+      - invoice-volume:/usr/app/invoice-files/
+    depends_on:
+      - postgresql
+      - redis
+      - kafka
+######################FastAPI SERVICES - End###########################
+
+######################Notification SERVICE - Beginning###########################
+  notification_service:
+    container_name: notification_service
+    build: ./notification_service
+    image: ghcr.io/wojciechignasiak/notification_service:0.0.1
+    environment:
+      - KAFKA_HOST=${KAFKA_HOST}
+      - KAFKA_PORT=${KAFKA_PORT}
+    ports:
+      - 8083:80
+    expose:
+      - 80
+    networks:
+      - backend-network
+    restart: always
+    volumes:
+      - ./notification_service:/usr/src/notification_service/
+    depends_on:
+      - kafka
+######################Notification SERVICE - End###########################
+
+######################AI SERVICES - Beginning###########################
+  ai_service:
+    container_name: ai_service
+    build: ./ai_service
+    image: ghcr.io/wojciechignasiak/ai_service:0.0.1
+    environment:
+      - KAFKA_HOST=${KAFKA_HOST}
+      - KAFKA_PORT=${KAFKA_PORT}
+      - REDISEARCH_HOST=${REDISEARCH_HOST}
+      - REDISEARCH_PORT=${REDISEARCH_PORT}
+      - OLLAMA_HOST=${OLLAMA_HOST}
+      - OLLAMA_PORT=${OLLAMA_PORT}
+    ports:
+      - 8082:80
+    expose:
+      - 80
+    networks:
+      - backend-network
+    restart: always
+    volumes:
+      - ./ai_service:/usr/src/ai_service/
+      - invoice-volume:/usr/app/invoice-files/
+    depends_on:
+      - kafka
+      - ollama
+      - redisearch
+
+  ollama:
+    container_name: ollama
+    image: ollama/ollama:0.1.25
+    environment:
+        - OLLAMA_ORIGINS=http://ai_service:8082
+        # - gpus=all
+    ports:
+        - 11434:11434
+    expose:
+      - 11434
+    networks:
+      - backend-network
+    restart: always
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #       - driver: nvidia
+    #         count: 1
+    #         capabilities: [gpu]
+
+
+######################AI SERVICES - End###########################
+######################Databases SERVICES - Beginning###########################
+
+  postgresql:
+    container_name: postgresql
+    image: postgres:16.0-alpine
+    ports:
+      - 5433:5432
+    expose:
+      - 5432
+    networks:
+      - backend-network
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    restart: always
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+      - "/etc/localtime:/etc/localtime:ro"
+
+  redis:
+    container_name: redis
+    image: redis:7.2.2-alpine
+    command: ["redis-server", "--save", "600 1", "--appendonly", "no", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    ports:
+      - "6380:6379"
+    expose:
+      - 6379
+    networks:
+      - backend-network
+    volumes:
+      - redis-volume:/data
+    restart: always
+    sysctls:
+      - net.core.somaxconn=511
+    tmpfs:
+      - /run
+      - /var/run
+
+  redisearch:
+    container_name: redisearch
+    image: redislabs/redisearch:2.8.8
+    ports:
+      - "6379:6379"
+    expose:
+      - 6379
+    networks:
+      - backend-network
+    volumes:
+      - redisearch-volume:/data
+    restart: always
+
+######################Databases SERVICES - End###########################
+
+######################Kafka SERVICES - Start###########################
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0.arm64
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+    networks:
+      - backend-network
+    volumes:
+      - zookeeper-data-volume:/var/lib/zookeeper/data
+      - zookeeper-logs-volume:/var/lib/zookeeper/log
+      - zookeeper-secrets:/etc/zookeeper/secrets
+    restart: always
+  
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0.arm64
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    networks:
+      - backend-network
+    volumes:
+      - kafka-secrets-volume:/etc/kafka/secrets
+      - kafka-data-volume:/var/lib/kafka/data
+    restart: always
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+######################Kafka SERVICES - End###########################
