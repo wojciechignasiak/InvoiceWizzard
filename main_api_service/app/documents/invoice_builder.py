@@ -82,7 +82,7 @@ class InvoiceBuilder(InvoiceBuilderABC):
                                     buyer: str,
                                     invoice_items: str,
                                     gross_sum: str,
-                                    notes: Union[str, None] = None) -> str:
+                                    notes: str|None = None) -> str:
         try:
             invoice_html = f"""
             <html>

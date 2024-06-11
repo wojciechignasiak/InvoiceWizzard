@@ -55,9 +55,11 @@ async def lifespan(app: FastAPI):
     await app.state.kafka_producer.start()
     print("Kafka Producer started...")
 
-    app.state.repositories_registry = await application_statup_processes.repositories_registry()
+    app.state.services_factory = await application_statup_processes.services_factory()
 
-    app.state.events_registry = await application_statup_processes.events_registry()
+    app.state.repositories_factory = await application_statup_processes.repositories_factory()
+
+    app.state.events_factory = await application_statup_processes.events_registry()
 
     app.state.kafka_consumer = await application_statup_processes.kafka_consumer()
     

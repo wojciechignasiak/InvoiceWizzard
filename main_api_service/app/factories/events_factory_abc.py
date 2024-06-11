@@ -7,7 +7,7 @@ from aiokafka import AIOKafkaProducer
 from abc import ABC, abstractmethod
 
 
-class EventsRegistryABC(ABC):
+class EventsFactoryABC(ABC):
 
     @abstractmethod
     async def return_user_events(self, kafka_producer: AIOKafkaProducer) -> UserEventsABC:

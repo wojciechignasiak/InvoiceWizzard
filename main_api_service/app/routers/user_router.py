@@ -1,35 +1,22 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPBearer
-from redis.asyncio import Redis
-from app.registries.get_repositories_registry import get_repositories_registry
-from app.registries.repositories_registry_abc import RepositoriesRegistryABC
-from app.database.redis.client.get_redis_client import get_redis_client
-from app.types.postgres_repository_abstract_types import (
-    UserPostgresRepositoryABC
-)
-from app.types.redis_repository_abstract_types import (
-    UserRedisRepositoryABC
-)
-from app.types.kafka_event_abstract_types import (
-    UserEventsABC
-)
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.factories.services_factory_abc import ServicesFactoryABC
+from app.factories.get_services_factory import get_services_factory
+from app.services.auth_service_abc import AuthServiceABC
+from app.services.user_service_abc import UserServiceABC
 from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisSetError, 
     RedisDatabaseError, 
     RedisNotFoundError, 
     RedisJWTNotFoundError
     )
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.database.postgres.session.get_session import get_session
 from app.database.postgres.exceptions.custom_postgres_exceptions import (
     PostgreSQLDatabaseError, 
     PostgreSQLIntegrityError, 
     PostgreSQLNotFoundError
     )
 from app.schema.schema import User
-from app.registries.get_events_registry import get_events_registry
-from app.registries.events_registry_abc import EventsRegistryABC
 from app.kafka.exceptions.custom_kafka_exceptions import KafkaBaseError
 from app.models.jwt_model import (
     JWTDataModel, 
@@ -47,8 +34,7 @@ from app.models.user_model import (
     UpdateUserPasswordModel, 
     ResetUserPasswordModel
     )
-from app.auth.auth_tools import AuthTools
-from app.auth.auth_tools_abc import AuthToolsABC
+
 from aiokafka import AIOKafkaProducer
 from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_client
 from uuid import uuid4
@@ -61,27 +47,16 @@ http_bearer = HTTPBearer()
 
 @router.get("/user-module/get-current-user/", response_model=UserModel)
 async def get_current_user(
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    token = Depends(http_bearer), 
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session),
+    token: HTTPAuthorizationCredentials = Depends(http_bearer),
+    services_factory: ServicesFactoryABC = Depends(get_services_factory),
     ):
 
     try:
-        user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
+        auth_service: AuthServiceABC = await services_factory.get_auth_service()
+        user_service: UserServiceABC = await services_factory.get_user_service()
 
-        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
-            jwt_token=token.credentials
-            )
-        
-        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
-
-        user: User = await user_postgres_repository.get_user_by_id(
-            user_id=jwt_payload.id
-            )
-
-        user_model: UserModel = await UserModel.user_schema_to_model(user) 
+        jwt_payload: JWTPayloadModel = await auth_service.get_user_jwt(token)
+        user_model: UserModel = await user_service.get_current_user(jwt_payload.id)
 
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_model.model_dump())
     
@@ -97,57 +72,16 @@ async def get_current_user(
 @router.post("/user-module/register-account/")
 async def register_account(
     new_user: RegisterUserModel,
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    auth_tools: AuthToolsABC = Depends(AuthTools),
-    events_registry: EventsRegistryABC = Depends(get_events_registry),
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session),
-    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client),
+    services_factory: ServicesFactoryABC = Depends(get_services_factory),
     ):
 
     try:
-        user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
-        user_events: UserEventsABC = await events_registry.return_user_events(kafka_producer_client)
-        
-        is_email_address_arleady_taken: bool = await user_postgres_repository.is_email_address_arleady_taken(
-            user_email_adress=new_user.email
-            )
+        auth_service: AuthServiceABC = await services_factory.get_auth_service()
+        user_service: UserServiceABC = await services_factory.get_user_service()
 
-        if is_email_address_arleady_taken == True:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account with this email adress already exists.")
-        
-        personal_salt: str = await auth_tools.salt_generator()
-
-        hashed_password: str = await auth_tools.hash_password(
-            salt=personal_salt, 
-            password=new_user.password
-            )
-        
-        new_user_to_redis = CreateUserModel(
-            email=new_user.email, 
-            password=hashed_password,
-            salt=personal_salt
-            )
-        
-        is_user_arleady_registered: bool = await user_redis_repository.is_user_arleady_registered(
-            email_address=new_user.email
-        )
-
-        if is_user_arleady_registered == True:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this email address already registered.")
-        
-        key_id: str = str(uuid4())
-
-        await user_redis_repository.create_user(
-            key_id=key_id,
-            new_user=new_user_to_redis
-            )
-        
-        await user_events.account_registered_event(
-            id=key_id,
-            email_address=new_user.email
-        )
+        personal_salt: str = await auth_service.salt_generator()
+        hashed_password: str = await auth_service.hash_password(personal_salt, new_user.password)
+        await user_service.register_account(new_user, personal_salt, hashed_password)
         
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "Account has been registered. Now confirm your email address."})
     except HTTPException as e:
@@ -160,35 +94,12 @@ async def register_account(
 @router.patch("/user-module/confirm-account/")
 async def confirm_account(
     id: str,
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    events_registry: EventsRegistryABC = Depends(get_events_registry),
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session),
-    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
+    services_factory: ServicesFactoryABC = Depends(get_services_factory),
     ):
 
     try:
-        user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
-        user_events: UserEventsABC = await events_registry.return_user_events(kafka_producer_client)
-
-        user_to_confirm_data: bytes = await user_redis_repository.search_user_by_id(
-            key_id=id
-            )
-        
-        user_to_confirm_data = CreateUserModel.model_validate_json(user_to_confirm_data)
-        
-        created_user: User = await user_postgres_repository.create_user(
-            new_user=user_to_confirm_data
-            )
-
-        await user_redis_repository.delete_user_by_id(
-            key_id=id
-        )
-        
-        await user_events.account_confirmed_event(
-            email_address=created_user.email
-        )
+        user_service: UserServiceABC = await services_factory.get_user_service()
+        await user_service.confirm_account(key_id=id)
         
         return JSONResponse(content={"detail": "Account has been confirmed. Now you can log in."})
     
@@ -204,11 +115,7 @@ async def confirm_account(
 
 @router.post("/user-module/log-in/")
 async def log_in(
-    log_in: LogInModel,
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    auth_tools: AuthToolsABC = Depends(AuthTools),
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session)
+    log_in: LogInModel
     ):
 
     try:
@@ -268,9 +175,7 @@ async def log_in(
 
 @router.delete("/user-module/log-out/")
 async def log_out(
-    token = Depends(http_bearer),
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    redis_client: Redis = Depends(get_redis_client)
+    token = Depends(http_bearer)
     ):
 
     try:
@@ -295,9 +200,7 @@ async def log_out(
     
 @router.delete("/user-module/log-out-from-all-devices/")
 async def log_out_from_all_devices(
-    token = Depends(http_bearer),
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    redis_client: Redis = Depends(get_redis_client)
+    token = Depends(http_bearer)
     ):
 
     try:
@@ -322,10 +225,8 @@ async def log_out_from_all_devices(
 @router.patch("/user-module/update-personal-information/")
 async def update_personal_information(
     user_personal_info: UserPersonalInformationModel,
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    token = Depends(http_bearer), 
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session)):
+    token = Depends(http_bearer),
+    ):
 
     try:
         user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
@@ -356,12 +257,7 @@ async def update_personal_information(
 @router.put("/user-module/change-email-address/")
 async def change_email_address(
     new_email: UpdateUserEmailModel,
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    events_registry: EventsRegistryABC = Depends(get_events_registry),
-    token = Depends(http_bearer), 
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session),
-    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
+    token = Depends(http_bearer),
     ):
 
     try:
@@ -416,12 +312,7 @@ async def change_email_address(
     
 @router.patch("/user-module/confirm-email-address-change/")
 async def confirm_email_address_change(
-    id: str,
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    events_registry: EventsRegistryABC = Depends(get_events_registry),
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session),
-    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
+    id: str
     ):
 
     try:
@@ -472,13 +363,7 @@ async def confirm_email_address_change(
 @router.put("/user-module/change-password/")
 async def change_password(
     new_password: UpdateUserPasswordModel,
-    token = Depends(http_bearer),
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    events_registry: EventsRegistryABC = Depends(get_events_registry),
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session),
-    auth_tools: AuthToolsABC = Depends(AuthTools),
-    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
+    token = Depends(http_bearer)
     ):
 
     try:
@@ -542,12 +427,6 @@ async def change_password(
 @router.put("/user-module/reset-password/")
 async def reset_password(
     reset_password: ResetUserPasswordModel,
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    auth_tools: AuthToolsABC = Depends(AuthTools),
-    events_registry: EventsRegistryABC = Depends(get_events_registry),
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session),
-    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
     try:
         user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
@@ -589,11 +468,6 @@ async def reset_password(
 @router.patch("/user-module/confirm-password-change/")
 async def confirm_password_change(
     id: str,
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    events_registry: EventsRegistryABC = Depends(get_events_registry),
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session),
-    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
     ):
     try:
         user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)

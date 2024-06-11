@@ -25,7 +25,7 @@ from abc import ABC, abstractmethod
 from app.files.files_repository_abc import FilesRepositoryABC
 
 
-class RepositoriesRegistryABC(ABC):
+class RepositoriesFactoryABC(ABC):
 
     @abstractmethod
     async def return_user_postgres_repository(self, session: AsyncSession) -> UserPostgresRepositoryABC:

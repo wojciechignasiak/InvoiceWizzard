@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException, status, Depends, UploadFile
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import HTTPBearer
-from fastapi.encoders import jsonable_encoder
 from app.registries.get_repositories_registry import get_repositories_registry
 from app.registries.repositories_registry_abc import RepositoriesRegistryABC
 from app.database.redis.client.get_redis_client import get_redis_client

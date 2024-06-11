@@ -16,13 +16,13 @@ from app.database.redis.repositories.user_business_entity_repository_abc import 
 from app.database.redis.repositories.external_business_entity_repository_abc import ExternalBusinessEntityRedisRepositoryABC
 from app.database.redis.repositories.invoice_repository_abc import InvoiceRedisRepositoryABC
 from app.files.files_repository_abc import FilesRepositoryABC
-from app.registries.repositories_registry_abc import RepositoriesRegistryABC
+from factories.repositories_factory_abc import RepositoriesFactoryABC
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 
 
 
-class RepositoriesRegistry(RepositoriesRegistryABC):
+class RepositoriesFactory(RepositoriesFactoryABC):
     __slots__= (
         'user_postgres_repository', 
         'user_redis_repository',
