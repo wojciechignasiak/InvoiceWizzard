@@ -12,6 +12,7 @@ from app.database.redis.exceptions.custom_redis_exceptions import (
     RedisSetError,
     RedisJWTNotFoundError
 )
+from app.custom_exceptions.custom_exceptions import DatabaseError
 from app.models.jwt_model import JWTPayloadModel
 from redis.exceptions import (
     RedisError, 
@@ -19,10 +20,9 @@ from redis.exceptions import (
     TimeoutError, 
     ResponseError
 )
-from app.database.redis.repositories.user_repository_abc import UserRedisRepositoryABC
+from fastapi import status
 
-
-class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
+class UserRedisRepository(BaseRedisRepository):
 
     async def create_user(self, key_id: str, new_user: CreateUserModel) -> bool:
         try:
@@ -90,17 +90,22 @@ class UserRedisRepository(BaseRedisRepository, UserRedisRepositoryABC):
             logger.error(f"UserRedisRepository.save_jwt() Error: {e}")
             raise RedisDatabaseError("Error related to database occurred.")
     
-    async def retrieve_jwt(self, jwt_token: str) -> bytes:
+    async def retrieve_jwt(self, jwt_token: str) -> bytes | None:
         try:
             jwt_token_key: list = await self.redis_client.keys(f"JWT:{jwt_token}:*")
             if jwt_token_key:
                 result = await self.redis_client.get(jwt_token_key[0])
                 return result
             else:
-                raise RedisJWTNotFoundError("Unauthorized access or JWT token expired.")
-        except (RedisError, ResponseError, ConnectionError, TimeoutError) as e:
-            logger.error(f"UserRedisRepository.retrieve_jwt() Error: {e}")
-            raise RedisDatabaseError("Error related to database occurred.")
+                return None
+        except Exception as e:
+            raise DatabaseError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message=f"Unexpected error occurred durning getting user jwt token from Redis database.",
+                class_and_method="UserRedisRepository.retrieve_jwt()",
+                argument={'jwt_token': jwt_token},
+                child_error=e
+            )
         
     async def delete_all_jwt_tokens_of_user(self, user_id: str):
         try:

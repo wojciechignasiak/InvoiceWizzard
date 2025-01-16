@@ -4,9 +4,8 @@ from app.models.kafka_topics_enum import KafkaTopicsEnum
 import json
 from app.logging import logger
 from app.kafka.events.kafka_producer_base import KafkaProducerBase
-from app.kafka.events.user_events_abc import UserEventsABC
 
-class UserEvents(KafkaProducerBase, UserEventsABC):
+class UserEvents(KafkaProducerBase):
 
     async def account_registered_event(self, id: str, email_address: str):
         try:

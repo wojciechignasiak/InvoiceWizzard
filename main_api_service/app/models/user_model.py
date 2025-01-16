@@ -4,12 +4,11 @@ from datetime import date
 from uuid import uuid4
 import re
 from typing import Optional
-from app.schema.schema import User
-
-
+from datetime import date
+import uuid
 
 class UserModel(BaseModel):
-    id: str
+    id: uuid.UUID
     email: EmailStr
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -17,26 +16,10 @@ class UserModel(BaseModel):
     city: Optional[str] = None
     postal_code: Optional[str] = None
     street: Optional[str] = None
-    registration_date: str
-    last_login: str
+    registration_date: date
+    last_login: date
     email_notification: bool
     push_notification: bool
-
-    async def user_schema_to_model(user_schema: User) -> "UserModel":
-        return UserModel(
-            id=str(user_schema.id),
-            email=user_schema.email,
-            first_name=user_schema.first_name,
-            last_name=user_schema.last_name,
-            phone_number=user_schema.phone_number,
-            city=user_schema.city,
-            postal_code=user_schema.postal_code,
-            street=user_schema.street,
-            registration_date=str(user_schema.registration_date),
-            last_login=str(user_schema.last_login),
-            email_notification=user_schema.email_notification,
-            push_notification=user_schema.push_notification
-        )
 
 class RegisterUserModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={

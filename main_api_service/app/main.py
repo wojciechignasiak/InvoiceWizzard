@@ -74,7 +74,7 @@ async def lifespan(app: FastAPI):
         extracted_invoice_data_event_manager=extracted_invoice_data_manager,
         ai_extraction_failure_manager=ai_extraction_failure_manager)
     
-    asyncio.create_task(events_consumer.run_consumer())
+    asyncio.run(events_consumer.run_consumer())
     
     print("Kafka Consumer started...")
 

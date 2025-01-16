@@ -54,45 +54,33 @@ from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_clien
 from uuid import uuid4
 import datetime
 
-
+from app.services.auth_service_interface import IAuthService
+from app.services.auth_service import AuthService
+from app.services.user_service_interface import IUserService
+from app.services.user_service import UserService
+from app.custom_exceptions.custom_exceptions import CustomException
+from fastapi.security import HTTPAuthorizationCredentials
 
 router = APIRouter()
 http_bearer = HTTPBearer()
 
 @router.get("/user-module/get-current-user/", response_model=UserModel)
 async def get_current_user(
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    token = Depends(http_bearer), 
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session),
+    auth_service: IAuthService = Depends(AuthService),
+    user_service: IUserService = Depends(UserService),
+    token: HTTPAuthorizationCredentials = Depends(http_bearer),
     ):
-
     try:
-        user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
-
-        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
-            jwt_token=token.credentials
-            )
-        
-        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
-
-        user: User = await user_postgres_repository.get_user_by_id(
-            user_id=jwt_payload.id
-            )
-
-        user_model: UserModel = await UserModel.user_schema_to_model(user) 
-
+        jwt_payload: JWTPayloadModel = await auth_service.get_jwt(token)
+        user_model: UserModel = await user_service.get_user_by_id(user_id=jwt_payload.id)
         return JSONResponse(status_code=status.HTTP_200_OK, content=user_model.model_dump())
-    
-    except HTTPException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except RedisJWTNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
-    except PostgreSQLNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except (Exception, RedisDatabaseError, PostgreSQLDatabaseError) as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except CustomException as e:
+        if e.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
+        else:
+            raise HTTPException(status_code=e.status_code, detail=e.args[0])
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
 
 @router.post("/user-module/register-account/")
 async def register_account(
