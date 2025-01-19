@@ -58,6 +58,9 @@ from app.services.auth_service_interface import IAuthService
 from app.services.auth_service import AuthService
 from app.services.user_service_interface import IUserService
 from app.services.user_service import UserService
+from app.services.register_account_service_interface import IRegisterAccountService
+from app.services.register_account_service import RegisterAccountService
+
 from app.custom_exceptions.custom_exceptions import CustomException
 from fastapi.security import HTTPAuthorizationCredentials
 
@@ -66,9 +69,9 @@ http_bearer = HTTPBearer()
 
 @router.get("/user-module/get-current-user/", response_model=UserModel)
 async def get_current_user(
-    auth_service: IAuthService = Depends(AuthService),
-    user_service: IUserService = Depends(UserService),
     token: HTTPAuthorizationCredentials = Depends(http_bearer),
+    auth_service: IAuthService = Depends(AuthService),
+    user_service: IUserService = Depends(UserService)
     ):
     try:
         jwt_payload: JWTPayloadModel = await auth_service.get_jwt(token)
@@ -85,65 +88,19 @@ async def get_current_user(
 @router.post("/user-module/register-account/")
 async def register_account(
     new_user: RegisterUserModel,
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    auth_tools: AuthToolsABC = Depends(AuthTools),
-    events_registry: EventsRegistryABC = Depends(get_events_registry),
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session),
-    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client),
+    register_account_service: IRegisterAccountService = Depends(RegisterAccountService)
     ):
-
     try:
-        user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
-        user_events: UserEventsABC = await events_registry.return_user_events(kafka_producer_client)
-        
-        is_email_address_arleady_taken: bool = await user_postgres_repository.is_email_address_arleady_taken(
-            user_email_adress=new_user.email
-            )
+        register_account_service.register_user(new_user)
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Account registered. Now confirm your email address."})
+    except CustomException as e:
+        if e.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
+        else:
+            raise HTTPException(status_code=e.status_code, detail=e.args[0])
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
 
-        if is_email_address_arleady_taken == True:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account with this email adress already exists.")
-        
-        personal_salt: str = await auth_tools.salt_generator()
-
-        hashed_password: str = await auth_tools.hash_password(
-            salt=personal_salt, 
-            password=new_user.password
-            )
-        
-        new_user_to_redis = CreateUserModel(
-            email=new_user.email, 
-            password=hashed_password,
-            salt=personal_salt
-            )
-        
-        is_user_arleady_registered: bool = await user_redis_repository.is_user_arleady_registered(
-            email_address=new_user.email
-        )
-
-        if is_user_arleady_registered == True:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this email address already registered.")
-        
-        key_id: str = str(uuid4())
-
-        await user_redis_repository.create_user(
-            key_id=key_id,
-            new_user=new_user_to_redis
-            )
-        
-        await user_events.account_registered_event(
-            id=key_id,
-            email_address=new_user.email
-        )
-        
-        return JSONResponse(status_code=status.HTTP_201_CREATED, content={"detail": "Account has been registered. Now confirm your email address."})
-    except HTTPException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except (Exception, PostgreSQLDatabaseError, RedisSetError, RedisDatabaseError, KafkaBaseError) as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-    
-    
 
 @router.patch("/user-module/confirm-account/")
 async def confirm_account(

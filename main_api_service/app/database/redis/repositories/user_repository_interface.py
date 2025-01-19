@@ -10,44 +10,44 @@ from app.models.jwt_model import (
 
 class IUserRedisRepository(Protocol):
 
-    async def create_user(self, key_id: str, new_user: CreateUserModel) -> bool:
+    async def save_user_registration_data(self, key_id: str, new_user: CreateUserModel) -> None:
         ...
 
-    async def search_user_by_id(self, key_id: str) -> bytes:
+    async def get_user_registration_data_by_id(self, key_id: str) -> bytes | None:
         ...
 
-    async def is_user_arleady_registered(self, email_address: str) -> bool:
+    async def get_user_registration_data_by_email_address(self, email_address: str) -> bytes | None:
         ...
 
-    async def delete_user_by_id(self, key_id: str) -> bool:
+    async def delete_user_registration_data_by_id(self, key_id: str) -> None:
         ...
 
-    async def save_jwt(self, jwt_token: str, jwt_payload: JWTPayloadModel) -> bool:
+    async def save_jwt_token(self, jwt_token: str, jwt_payload: JWTPayloadModel) -> None:
         ...
 
-    async def retrieve_jwt(self, jwt_token: str) -> bytes | None:
+    async def get_jwt_token(self, jwt_token: str) -> bytes | None:
         ...
 
-    async def delete_all_jwt_tokens_of_user(self, user_id: str):
+    async def delete_all_jwt_tokens_of_user(self, user_id: str) -> None:
         ...
 
-    async def delete_jwt_token(self, user_id: str, token: str):
+    async def delete_jwt_token(self, user_id: str, token: str) -> None:
         ...
 
-    async def save_new_email(self, key_id: str, new_email: ConfirmedUserEmailChangeModel) -> bool:
+    async def save_new_email(self, key_id: str, new_email: ConfirmedUserEmailChangeModel) -> None:
         ...
 
-    async def retrieve_new_email(self, key_id: str) -> bytes:
+    async def retrieve_new_email(self, key_id: str) -> bytes | None:
         ...
 
-    async def delete_new_email(self, key_id: str):
+    async def delete_new_email(self, key_id: str) -> None:
         ...
 
-    async def save_new_password(self, key_id: str, new_password: ConfirmedUserPasswordChangeModel) -> bool:
+    async def save_new_password(self, key_id: str, new_password: ConfirmedUserPasswordChangeModel) -> None:
         ...
 
-    async def retrieve_new_password(self, key_id: str) -> bytes:
+    async def get_new_password(self, key_id: str) -> bytes | None:
         ...
 
-    async def delete_new_password(self, key_id: str):
+    async def delete_new_password(self, key_id: str) -> None:
         ...

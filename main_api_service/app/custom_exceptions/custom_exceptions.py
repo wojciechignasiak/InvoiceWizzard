@@ -24,3 +24,6 @@ class DataNotFoundError(CustomException):
 
 class DatabaseError(CustomException):
     """Base exception for database related errors."""
+
+class LogicError(CustomException):
+    """Base exception for other related errors."""

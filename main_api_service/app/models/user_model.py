@@ -36,26 +36,6 @@ class RegisterUserModel(BaseModel):
     password: str
     repeated_password: str
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self._validate_email()
-        self._validate_password()
-
-    def _validate_email(self):
-        if self.email != self.repeated_email:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided email adresses don't match.")
-        
-    def _validate_password(self):
-        if len(self.password) < 8:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided password is too short.")
-        if self.password != self.repeated_password:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided passwords don't match.")
-        if not re.search(r'\d', self.password):
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contatain at least 1 digit.")
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', self.password):
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contatain at least 1 special character.")
-
 
 class CreateUserModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
