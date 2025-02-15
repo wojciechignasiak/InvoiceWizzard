@@ -14,6 +14,32 @@ from app.custom_exceptions.custom_exceptions import (
 #3rd party libraries
 from fastapi import Depends, status
 
+#1st party libraries
+from typing import Protocol
+
+class IUserService(Protocol):
+
+    async def get_user_by_id(self, user_id: str) -> UserModel:
+        ...
+
+    async def get_user_by_email_address(self, email_address: str) -> User:
+        ...
+
+    async def get_user_registration_details_by_email_address(self, email_address: str) -> bytes:
+        ...
+
+    async def save_user_registration_data(self, key_id: str, new_user: CreateUserModel) -> None:
+        ...
+
+    async def send_user_registration_event(self, key_id: str, email_address: str) -> None:
+        ...
+
+    async def confirm_user_account(self, key_id: str) -> None:
+        ...
+
+    async def update_last_login_date(self, user_id: str) -> None:
+        ...
+
 class UserService:
     def __init__(
             self, 
@@ -82,12 +108,12 @@ class UserService:
                 child_error=e,
             )
         
-    async def get_user_by_email_address(self, email_address: str) -> UserModel:
+    async def get_user_by_email_address(self, email_address: str) -> User:
         try:
             user: User | None = await self._user_postgres_repository.get_user_by_email_address(email_address)
             if not user:
                 raise DataNotFoundError(status_code=status.HTTP_404_NOT_FOUND, message="User with provided email address not found in database.")
-            return await self._convert_user_schema_to_user_model(user)
+            return user
         except DataNotFoundError as e:
             raise DataNotFoundError(
                 status_code=e.args[0],
@@ -144,6 +170,37 @@ class UserService:
                 child_error=e,
             )
         
+    async def get_user_registration_details_by_key_id(self, key_id: str) -> bytes:
+        try:
+            user_registration_details: bytes | None = await self._user_redis_repository.get_user_registration_data_by_id(key_id)
+            if not user_registration_details:
+                raise DataNotFoundError(status_code=status.HTTP_404_NOT_FOUND, message="No confirmation data or account already confirmed.")
+            return user_registration_details
+        except DataNotFoundError as e:
+            raise DataNotFoundError(
+                status_code=e.status_code,
+                message=e.args[0],
+                class_and_method="UserService.get_user_registration_details_by_key_id()",
+                argument={'key_id': key_id},
+                child_error=e
+            )
+        except DatabaseError as e:
+            raise ServiceError(
+                status_code=e.status_code,
+                message=e.message,
+                class_and_method="UserService.get_user_registration_details_by_key_id()",
+                argument={'key_id': key_id},
+                child_error=e,
+            )
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occured in UserService while getting user registration data by key id.",
+                class_and_method="UserService.get_user_registration_details_by_key_id()",
+                argument={'key_id': key_id},
+                child_error=e,
+            )
+        
     async def save_user_registration_data(self, key_id: str, new_user: CreateUserModel) -> None:
         try:
             await self._user_redis_repository.save_user_registration_data(key_id, new_user)
@@ -175,45 +232,34 @@ class UserService:
                 argument={'key_id': key_id, 'new_user': 'anonimized'},
                 child_error=e,
             )
-    #     user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
-    #     user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
-    #     user_events: UserEventsABC = await events_registry.return_user_events(kafka_producer_client)
-        
-    #     is_email_address_arleady_taken: bool = await user_postgres_repository.is_email_address_arleady_taken(
-    #         user_email_adress=new_user.email
-    #         )
 
-    #     if is_email_address_arleady_taken == True:
-    #         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account with this email adress already exists.")
+    async def confirm_user_account(self, key_id: str) -> None:
+        try:
+            user_registration_data: bytes = await self.get_user_registration_details_by_key_id(key_id)
+            create_user_model: CreateUserModel = CreateUserModel.model_validate_json(user_registration_data)
+            await self._user_postgres_repository.create_user(create_user_model)
+            await self._user_redis_repository.delete_user_registration_data_by_id(key_id)
+            await self._user_events.account_confirmed_event(create_user_model.email)
+        except DataNotFoundError as e:
+            raise DataNotFoundError(
+                status_code=e.status_code,
+                message=e.args[0],
+                class_and_method="UserService.confirm_user_account()",
+                argument={'key_id': key_id},
+                child_error=e
+            )
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occured in UserService while confirming user account.",
+                class_and_method="UserService.save_user_registration_data()",
+                argument={'key_id': key_id, 'new_user': 'anonimized'},
+                child_error=e,
+            )
         
-    #     personal_salt: str = await auth_tools.salt_generator()
-
-    #     hashed_password: str = await auth_tools.hash_password(
-    #         salt=personal_salt, 
-    #         password=new_user.password
-    #         )
-        
-    #     new_user_to_redis = CreateUserModel(
-    #         email=new_user.email, 
-    #         password=hashed_password,
-    #         salt=personal_salt
-    #         )
-        
-    #     is_user_arleady_registered: bool = await user_redis_repository.is_user_arleady_registered(
-    #         email_address=new_user.email
-    #     )
-
-    #     if is_user_arleady_registered == True:
-    #         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this email address already registered.")
-        
-    #     key_id: str = str(uuid4())
-
-    #     await user_redis_repository.create_user(
-    #         key_id=key_id,
-    #         new_user=new_user_to_redis
-    #         )
-        
-    #     await user_events.account_registered_event(
-    #         id=key_id,
-    #         email_address=new_user.email
-    #     )
+    async def update_last_login_date(self, user_id: str) -> None:
+        try:
+            await self._user_postgres_repository.update_user_last_login(user_id)
+        except Exception as e:
+            pass
+    

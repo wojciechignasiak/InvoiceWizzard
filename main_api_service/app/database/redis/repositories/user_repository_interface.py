@@ -31,7 +31,7 @@ class IUserRedisRepository(Protocol):
     async def delete_all_jwt_tokens_of_user(self, user_id: str) -> None:
         ...
 
-    async def delete_jwt_token(self, user_id: str, token: str) -> None:
+    async def delete_jwt_token(self, token: str) -> None:
         ...
 
     async def save_new_email(self, key_id: str, new_email: ConfirmedUserEmailChangeModel) -> None:

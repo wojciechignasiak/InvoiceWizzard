@@ -54,13 +54,12 @@ from app.kafka.clients.get_kafka_producer_client import get_kafka_producer_clien
 from uuid import uuid4
 import datetime
 
-from app.services.auth_service_interface import IAuthService
-from app.services.auth_service import AuthService
-from app.services.user_service_interface import IUserService
-from app.services.user_service import UserService
-from app.services.register_account_service_interface import IRegisterAccountService
-from app.services.register_account_service import RegisterAccountService
 
+from app.services.auth_service import IAuthService, AuthService
+from app.services.user_service import IUserService, UserService
+from app.services.register_account_service import IRegisterAccountService, RegisterAccountService
+from app.services.login_service import LoginService, ILoginService
+from app.services.logout_service import ILogoutService, LogoutService
 from app.custom_exceptions.custom_exceptions import CustomException
 from fastapi.security import HTTPAuthorizationCredentials
 
@@ -91,7 +90,7 @@ async def register_account(
     register_account_service: IRegisterAccountService = Depends(RegisterAccountService)
     ):
     try:
-        register_account_service.register_user(new_user)
+        await register_account_service.register_user(new_user)
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Account registered. Now confirm your email address."})
     except CustomException as e:
         if e.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
@@ -104,139 +103,55 @@ async def register_account(
 
 @router.patch("/user-module/confirm-account/")
 async def confirm_account(
-    id: str,
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    events_registry: EventsRegistryABC = Depends(get_events_registry),
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session),
-    kafka_producer_client: AIOKafkaProducer = Depends(get_kafka_producer_client)
+    key_id: str,
+    user_service: IUserService = Depends(UserService)
     ):
-
     try:
-        user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
-        user_events: UserEventsABC = await events_registry.return_user_events(kafka_producer_client)
-
-        user_to_confirm_data: bytes = await user_redis_repository.search_user_by_id(
-            key_id=id
-            )
-        
-        user_to_confirm_data = CreateUserModel.model_validate_json(user_to_confirm_data)
-        
-        created_user: User = await user_postgres_repository.create_user(
-            new_user=user_to_confirm_data
-            )
-
-        await user_redis_repository.delete_user_by_id(
-            key_id=id
-        )
-        
-        await user_events.account_confirmed_event(
-            email_address=created_user.email
-        )
-        
-        return JSONResponse(content={"detail": "Account has been confirmed. Now you can log in."})
-    
-    except HTTPException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except PostgreSQLIntegrityError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except RedisNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except (Exception, RedisDatabaseError, PostgreSQLDatabaseError, KafkaBaseError) as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-
-@router.post("/user-module/log-in/")
-async def log_in(
-    log_in: LogInModel,
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    auth_tools: AuthToolsABC = Depends(AuthTools),
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session)
-    ):
-
-    try:
-        user_postgres_repository: UserPostgresRepositoryABC = await repositories_registry.return_user_postgres_repository(postgres_session)
-        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
-
-        user: User = await user_postgres_repository.get_user_by_email_address(
-            user_email_adress=log_in.email
-        )
-
-        verify_password: bool = await auth_tools.verify_password(
-            salt=user.salt, 
-            password=log_in.password, 
-            hash=user.password
-            )
-
-        if verify_password == False:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong email adress or password.")
-        
-        if log_in.remember_me == True:
-            jwt_expiration_time: datetime = datetime.datetime.utcnow() + datetime.timedelta(hours=24*14)
+        await user_service.confirm_user_account(key_id)
+        return JSONResponse(content={"detail": "Account confirmed."})
+    except CustomException as e:
+        if e.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
         else:
-            jwt_expiration_time: datetime = datetime.datetime.utcnow() + datetime.timedelta(hours=12)
+            raise HTTPException(status_code=e.status_code, detail=e.args[0])
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
 
-        jwt_payload: JWTPayloadModel = JWTPayloadModel(
-            id=str(user.id), 
-            email=user.email, 
-            exp=jwt_expiration_time
-            )
 
-        jwt_data: JWTDataModel = JWTDataModel(
-            secret=user.salt, 
-            payload=jwt_payload
-            )
-
-        jwt_token: str = await auth_tools.jwt_encoder(
-            jwt_data=jwt_data
-            )
-        
-        await user_redis_repository.save_jwt(
-            jwt_token=jwt_token, 
-            jwt_payload=jwt_payload
-        )
-
-        await user_postgres_repository.update_user_last_login(
-            user_id=jwt_payload.id
-        )
-
-        return JSONResponse(content={"jwt_token": f"{jwt_token}"})
-
-    except HTTPException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except PostgreSQLNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong email adress or password.")
-    except (Exception, RedisDatabaseError, PostgreSQLDatabaseError, RedisSetError) as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-@router.delete("/user-module/log-out/")
-async def log_out(
-    token = Depends(http_bearer),
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    redis_client: Redis = Depends(get_redis_client)
+@router.post("/user-module/login/")
+async def login(
+    login: LogInModel,
+    login_service: ILoginService = Depends(LoginService)
     ):
-
     try:
-        user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
-        
-        jwt_payload: bytes = await user_redis_repository.retrieve_jwt(
-            jwt_token=token.credentials
-            )
-        
-        jwt_payload: JWTPayloadModel = JWTPayloadModel.model_validate_json(jwt_payload)
+        jwt_token: str = await login_service.login(login)
+        return JSONResponse(content={"message": f"{jwt_token}"})
+    except CustomException as e:
+        if e.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
+        else:
+            raise HTTPException(status_code=e.status_code, detail=e.args[0])
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
 
-        await user_redis_repository.delete_jwt_token(
-            user_id=jwt_payload.id,
-            token=token.credentials
-        )
 
-        return JSONResponse(status_code=status.HTTP_200_OK, content={"detail": "User logged out."})
-    except HTTPException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except (Exception, RedisDatabaseError, RedisSetError) as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+@router.delete("/user-module/logout/")
+async def logout(
+    token = Depends(http_bearer),
+    logout_service: ILogoutService = Depends(LogoutService),
+    
+    ):
+    try:
+        await logout_service.logout(token)
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"detail": "Logout successfull."})
+    except CustomException as e:
+        if e.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
+        else:
+            raise HTTPException(status_code=e.status_code, detail=e.args[0])
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
+
     
 @router.delete("/user-module/log-out-from-all-devices/")
 async def log_out_from_all_devices(

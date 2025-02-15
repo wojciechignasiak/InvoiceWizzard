@@ -146,15 +146,15 @@ class UserRedisRepository(BaseRedisRepository):
                 child_error=e
             )
         
-    async def delete_jwt_token(self, user_id: str, token: str) -> None:
+    async def delete_jwt_token(self, token: str) -> None:
         try:
-            await self.redis_client.delete(f"JWT:{token}:{user_id}")
+            await self.redis_client.delete(f"JWT:{token}:*")
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message=f"Unexpected error occurred in UserRedisRepository durning deleting user jwt token from Redis database.",
                 class_and_method="UserRedisRepository.get_jwt_token()",
-                argument={'user_id': user_id, 'token': 'anonimized'},
+                argument={'token': 'anonimized'},
                 child_error=e
             )
         

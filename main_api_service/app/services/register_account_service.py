@@ -1,7 +1,6 @@
 #internal modules
-from app.services.user_service_interface import IUserService
-from app.services.user_service import UserService
-from app.services.auth_service_interface import IAuthService
+from app.services.user_service import IUserService, UserService
+from app.services.auth_service import IAuthService
 from app.services.auth_service import AuthService
 from app.models.user_model import (
     User, 
@@ -20,6 +19,19 @@ from fastapi import Depends, status
 
 #1st party libraries
 from uuid import uuid4
+from typing import Protocol
+
+
+class IRegisterAccountService(Protocol):
+
+    async def register_user(self, register_user_model: RegisterUserModel) -> None:
+        ...
+
+    async def _check_is_email_arleady_taken(self, email_address: str) -> None:
+        ...
+
+    async def _check_is_email_arleady_registered(self, email_address: str) -> None:
+        ...
 
 class RegisterAccountService:
     def __init__(

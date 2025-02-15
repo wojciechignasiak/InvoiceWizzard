@@ -21,6 +21,41 @@ import jwt
 #1st party libraries
 import os
 import re
+import datetime
+
+#1st party libraries
+from typing import Protocol
+import datetime
+
+class IAuthService(Protocol):
+        
+    async def get_jwt(self, token: HTTPAuthorizationCredentials) -> JWTPayloadModel:
+        ...
+
+    async def delete_jwt(self, token: str) -> None:
+        ...
+
+    async def salt_generator() -> str:
+        ...
+    
+    async def hash_password(salt: str, password: str) -> str:
+        ...
+
+    async def verify_password(salt: bytes, password: str, hash: bytes) -> bool:
+        ...
+
+    async def jwt_encoder(jwt_data: JWTDataModel) -> str:
+        ...
+
+    async def validate_password(password: str, repeated_password: str) -> bool:
+        ...
+    
+    async def validate_email_address(email_address: str, reapeated_email_address: str) -> bool:
+        ...
+    
+    async def create_and_save_jwt_token(self, user_id: str, email_address: str, jwt_expiration_time: datetime.datetime, salt: str) -> str:
+        ...
+
 
 class AuthService:
 
@@ -30,7 +65,6 @@ class AuthService:
             ):
         self._user_redis_repository: IUserRedisRepository = user_redis_repository
 
-    @staticmethod
     async def get_jwt(self, token: HTTPAuthorizationCredentials) -> JWTPayloadModel:
         try:
             jwt_payload: bytes | None = await self._user_redis_repository.retrieve_jwt(token.credentials)
@@ -55,7 +89,18 @@ class AuthService:
                 argument={'token': token},
                 child_error=e,
             )
-    
+    async def delete_jwt(self, token: str) -> None:
+        try:
+            await self._user_redis_repository.delete_jwt_token(token)
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occured in AuthService while converting jwt payload to jwt payload model.",
+                class_and_method="AuthService.delete_jwt()",
+                argument={'token': 'anonimized'},
+                child_error=e,
+            )
+
     @staticmethod
     async def _conver_jwt_payload_to_jwt_payload_model(jwt_payload: bytes) -> JWTPayloadModel:
         try:
@@ -98,11 +143,19 @@ class AuthService:
             )
 
     @staticmethod
-    async def verify_password(salt: bytes, password: str, hash: bytes) -> bool:
+    async def verify_password(salt: bytes, password: str, hash: bytes) -> None:
         try:
             ph = argon2.PasswordHasher()
-            is_the_same = ph.verify(hash, password+salt)
-            return is_the_same
+            is_the_same: bool = ph.verify(hash, password+salt)
+            if not is_the_same:
+                raise AuthError(status_code=status.HTTP_401_UNAUTHORIZED, message="Password not correct.")
+        except AuthError as e:
+            raise AuthError(
+                status_code=e.status_code,
+                message=e.args[0],
+                class_and_method="AuthService.verify_password()",
+                argument={'salt': 'anonimized', 'password': 'anonimized', 'hash': 'anonimized'}
+            )
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -189,3 +242,33 @@ class AuthService:
                 child_error=e,
             )
 
+    async def create_and_save_jwt_token(self, user_id: str, email_address: str, jwt_expiration_time: datetime.datetime, salt: str) -> str:
+        try:
+            jwt_payload: JWTPayloadModel = JWTPayloadModel(
+                id=user_id, 
+                email=email_address, 
+                exp=jwt_expiration_time
+                )
+            jwt_data: JWTDataModel = JWTDataModel(
+                secret=salt, 
+                payload=jwt_payload
+                )
+            jwt_token: str = await self.jwt_encoder(jwt_data)
+            await self._user_redis_repository.save_jwt_token(jwt_token, jwt_payload)
+            return jwt_token
+        except ServiceError as e:
+            raise ServiceError(
+                status_code=e.status_code,
+                message=e.args[0],
+                class_and_method="AuthService.create_and_save_jwt_token()",
+                argument={'user_id': user_id, 'email_address': email_address, 'jwt_expiration_time': jwt_expiration_time, 'salt': 'anonimized'},
+                child_error=e,
+            )
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred in AuthService while checking if email has a valid format.",
+                class_and_method="AuthService.create_and_save_jwt_token()",
+                argument={'user_id': user_id, 'email_address': email_address, 'jwt_expiration_time': jwt_expiration_time, 'salt': 'anonimized'},
+                child_error=e,
+            )
