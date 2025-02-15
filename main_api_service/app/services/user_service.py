@@ -5,12 +5,13 @@ from app.database.redis.repositories.user_repository_interface import IUserRedis
 from app.database.redis.repositories.user_repository import UserRedisRepository
 from app.kafka.events.user_events_interface import IUserEvents
 from app.kafka.events.user_events import UserEvents
-from app.models.user_model import User, UserModel, CreateUserModel
+from app.models.user_model import User, UserModel, CreateUserModel, UserPersonalInformationModel
 from app.custom_exceptions.custom_exceptions import (
     DataNotFoundError, 
     ServiceError, 
     DatabaseError
     )
+
 #3rd party libraries
 from fastapi import Depends, status
 
@@ -38,6 +39,9 @@ class IUserService(Protocol):
         ...
 
     async def update_last_login_date(self, user_id: str) -> None:
+        ...
+
+    async def update_user_personal_informations(self, user_id: str, personal_informations: UserPersonalInformationModel) -> None:
         ...
 
 class UserService:
@@ -260,6 +264,39 @@ class UserService:
     async def update_last_login_date(self, user_id: str) -> None:
         try:
             await self._user_postgres_repository.update_user_last_login(user_id)
+        except DatabaseError as e:
+            raise ServiceError(
+                status_code=e.status_code,
+                message=e.message,
+                class_and_method="UserService.update_last_login_date()",
+                argument={'user_id': user_id},
+                child_error=e,
+            )
         except Exception as e:
-            pass
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occured in UserService while updating user last login date.",
+                class_and_method="UserService.update_last_login_date()",
+                argument={'user_id': user_id},
+                child_error=e,
+            )
     
+    async def update_user_personal_informations(self, user_id: str, personal_informations: UserPersonalInformationModel) -> None:
+        try:
+            await self._user_postgres_repository.update_user_personal_information(user_id, personal_informations)
+        except DatabaseError as e:
+            raise ServiceError(
+                status_code=e.status_code,
+                message=e.message,
+                class_and_method="UserService.update_user_personal_information()",
+                argument={'user_id': user_id, 'personal_information': 'anonymized'},
+                child_error=e,
+            )
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occured in UserService while updating user personal informations.",
+                class_and_method="UserService.update_user_personal_information()",
+                argument={'user_id': user_id, 'personal_information': 'anonymized'},
+                child_error=e,
+            )

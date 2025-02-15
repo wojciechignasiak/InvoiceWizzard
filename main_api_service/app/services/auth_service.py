@@ -35,9 +35,12 @@ class IAuthService(Protocol):
     async def delete_jwt(self, token: str) -> None:
         ...
 
+    async def delete_all_jwts(self, user_id: str) -> None:
+        ...
+
     async def salt_generator() -> str:
         ...
-    
+
     async def hash_password(salt: str, password: str) -> str:
         ...
 
@@ -49,10 +52,10 @@ class IAuthService(Protocol):
 
     async def validate_password(password: str, repeated_password: str) -> bool:
         ...
-    
+
     async def validate_email_address(email_address: str, reapeated_email_address: str) -> bool:
         ...
-    
+
     async def create_and_save_jwt_token(self, user_id: str, email_address: str, jwt_expiration_time: datetime.datetime, salt: str) -> str:
         ...
 
@@ -92,6 +95,18 @@ class AuthService:
     async def delete_jwt(self, token: str) -> None:
         try:
             await self._user_redis_repository.delete_jwt_token(token)
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occured in AuthService while converting jwt payload to jwt payload model.",
+                class_and_method="AuthService.delete_jwt()",
+                argument={'token': 'anonimized'},
+                child_error=e,
+            )
+    
+    async def delete_all_jwts(self, user_id: str) -> None:
+        try:
+            await self._user_redis_repository.delete_all_jwt_tokens_of_user()
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
