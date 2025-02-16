@@ -128,7 +128,7 @@ class UserPostgresRepository(BasePostgresRepository):
             stmt = (
                 update(User).
                 where(User.id == new_password.id).
-                values(password = new_password.new_password)
+                values(password = new_password.new_password, salt = new_password.salt)
             )
             await self.session.execute(stmt)
         except Exception as e:

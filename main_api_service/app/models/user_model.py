@@ -155,12 +155,14 @@ class ConfirmedUserPasswordChangeModel(BaseModel):
         "example":{
                 "id": "123456789",
                 "new_password": "passw0rd!",
+                "salt": "salthere"
                 }
             }
         )
     
     id: str
     new_password: str
+    salt: str
 
 class ResetUserPasswordModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={

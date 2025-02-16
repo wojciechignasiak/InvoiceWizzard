@@ -19,13 +19,11 @@ import argon2
 import jwt
 
 #1st party libraries
+from typing import Protocol
 import os
 import re
 import datetime
 
-#1st party libraries
-from typing import Protocol
-import datetime
 
 class IAuthService(Protocol):
         
@@ -106,7 +104,7 @@ class AuthService:
     
     async def delete_all_jwts(self, user_id: str) -> None:
         try:
-            await self._user_redis_repository.delete_all_jwt_tokens_of_user()
+            await self._user_redis_repository.delete_all_jwt_tokens_of_user(user_id)
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
