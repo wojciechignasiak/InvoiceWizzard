@@ -1,3 +1,8 @@
+#internal modules
+#3rd party libraries
+#1st party libraries
+
+
 from fastapi import APIRouter, HTTPException, status, Depends, UploadFile
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.encoders import jsonable_encoder
@@ -65,13 +70,21 @@ from app.types.kafka_event_abstract_types import (
     InvoiceEventsABC
 )
 from app.files.files_repository_abc import FilesRepositoryABC
-from uuid import uuid4
-import ast
 from app.documents.invoice_builder import InvoiceBuilder
 from app.documents.invoice_builder_abc import InvoiceBuilderABC
+
+#3rd party libraries
+from fastapi.security import HTTPAuthorizationCredentials
+from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.responses import JSONResponse, Response
+from fastapi.security import HTTPBearer
+
+#1st party libraries
 from typing import Optional
 from pathlib import Path
 from datetime import date
+from uuid import uuid4
+import ast
 
 
 router = APIRouter()

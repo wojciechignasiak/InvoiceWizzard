@@ -1,8 +1,6 @@
 #internal modules
-from app.database.postgres.repositories.user_repository_interface import IUserPostgresRepository
-from app.database.postgres.repositories.user_repository import UserPostgresRepository
-from app.database.redis.repositories.user_repository_interface import IUserRedisRepository
-from app.database.redis.repositories.user_repository import UserRedisRepository
+from app.database.postgres.repositories.user_repository import IUserPostgresRepository, new_user_postgres_repository
+from app.database.redis.repositories.user_repository import IUserRedisRepository, new_user_redis_repository
 from app.kafka.events.user_events_interface import IUserEvents
 from app.kafka.events.user_events import UserEvents
 from app.models.user_model import (
@@ -69,11 +67,23 @@ class IUserService(Protocol):
     async def confirm_password_change(self, key_id: str) -> None:
         ...
 
+async def new_user_service() -> IUserService:
+    try:
+        return UserService()
+    except Exception as e:
+        raise ServiceError(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message="Unexpected error occured in while creating user service.",
+            class_and_method="new_user_service()",
+            argument=None,
+            child_error=e,
+        )
+
 class UserService:
     def __init__(
             self, 
-            user_postgres_repository: IUserPostgresRepository = Depends(UserPostgresRepository),
-            user_redis_repository: IUserRedisRepository = Depends(UserRedisRepository),
+            user_postgres_repository: IUserPostgresRepository = Depends(new_user_postgres_repository),
+            user_redis_repository: IUserRedisRepository = Depends(new_user_redis_repository),
             user_events: IUserEvents = Depends(UserEvents)
             ):
         self._user_postgres_repository: IUserPostgresRepository = user_postgres_repository

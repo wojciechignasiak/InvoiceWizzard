@@ -1,10 +1,10 @@
 #internal modules
-from app.services.auth_service import IAuthService, AuthService
-from app.services.user_service import IUserService, UserService
-from app.services.register_account_service import IRegisterAccountService, RegisterAccountService
-from app.services.login_service import LoginService, ILoginService
-from app.services.logout_service import ILogoutService, LogoutService
-from app.services.change_password_service import IChangePasswordService, ChangePasswordService
+from app.services.auth_service import IAuthService, new_auth_service
+from app.services.user_service import IUserService, new_user_service
+from app.services.register_account_service import IRegisterAccountService, new_register_account_service
+from app.services.login_service import ILoginService, new_login_service
+from app.services.logout_service import ILogoutService, new_logout_service
+from app.services.change_password_service import IChangePasswordService, new_change_password_service
 from app.custom_exceptions.custom_exceptions import CustomException
 from app.models.jwt_model import JWTPayloadModel
 from app.models.authentication_model import LogInModel
@@ -32,8 +32,8 @@ http_bearer = HTTPBearer()
 @router.get("/user-module/get-current-user/", response_model=UserModel)
 async def get_current_user(
     token: HTTPAuthorizationCredentials = Depends(http_bearer),
-    auth_service: IAuthService = Depends(AuthService),
-    user_service: IUserService = Depends(UserService)
+    auth_service: IAuthService = Depends(new_auth_service),
+    user_service: IUserService = Depends(new_user_service)
     ):
     try:
         jwt_payload: JWTPayloadModel = await auth_service.get_jwt(token)
@@ -50,7 +50,7 @@ async def get_current_user(
 @router.post("/user-module/register-account/")
 async def register_account(
     new_user: RegisterUserModel,
-    register_account_service: IRegisterAccountService = Depends(RegisterAccountService)
+    register_account_service: IRegisterAccountService = Depends(new_register_account_service)
     ):
     try:
         await register_account_service.register_user(new_user)
@@ -67,7 +67,7 @@ async def register_account(
 @router.patch("/user-module/confirm-account/")
 async def confirm_account(
     key_id: str,
-    user_service: IUserService = Depends(UserService)
+    user_service: IUserService = Depends(new_user_service)
     ):
     try:
         await user_service.confirm_user_account(key_id)
@@ -85,7 +85,7 @@ async def confirm_account(
 async def login(
     login: LogInModel,
     response: Response,
-    login_service: ILoginService = Depends(LoginService)
+    login_service: ILoginService = Depends(new_login_service)
     ):
     try:
         max_age: datetime = await login_service.set_jwt_expiration_time(login.remember_me)
@@ -111,7 +111,7 @@ async def login(
 @router.delete("/user-module/logout/")
 async def logout(
     token: HTTPAuthorizationCredentials = Depends(http_bearer),
-    logout_service: ILogoutService = Depends(LogoutService)
+    logout_service: ILogoutService = Depends(new_logout_service)
     ):
     try:
         await logout_service.logout(token)
@@ -128,7 +128,7 @@ async def logout(
 @router.delete("/user-module/logout-from-all-devices/")
 async def logout_from_all_devices(
     token = Depends(http_bearer),
-    logout_service: ILogoutService = Depends(LogoutService)
+    logout_service: ILogoutService = Depends(new_logout_service)
     ):
 
     try:
@@ -147,8 +147,8 @@ async def logout_from_all_devices(
 async def update_personal_information(
     personal_informations: UserPersonalInformationModel,
     token: HTTPAuthorizationCredentials = Depends(http_bearer), 
-    auth_service: IAuthService = Depends(AuthService),
-    user_service: IUserService = Depends(UserService)
+    auth_service: IAuthService = Depends(new_auth_service),
+    user_service: IUserService = Depends(new_user_service)
     ):
 
     try:
@@ -168,8 +168,8 @@ async def update_personal_information(
 async def change_email_address(
     new_email: UpdateUserEmailModel,
     token: HTTPAuthorizationCredentials = Depends(http_bearer), 
-    auth_service: IAuthService = Depends(AuthService),
-    user_service: IUserService = Depends(UserService)
+    auth_service: IAuthService = Depends(new_auth_service),
+    user_service: IUserService = Depends(new_user_service)
     ):
     try:
         jwt_payload: JWTPayloadModel = await auth_service.get_jwt(token)
@@ -187,7 +187,7 @@ async def change_email_address(
 @router.patch("/user-module/confirm-email-address-change")
 async def confirm_email_address_change(
     id: str,
-    user_service: IUserService = Depends(UserService)
+    user_service: IUserService = Depends(new_user_service)
     ):
     try:
         await user_service.confirm_email_address_change(id)
@@ -204,7 +204,7 @@ async def confirm_email_address_change(
 async def change_password(
     new_password: UpdateUserPasswordModel,
     token: HTTPAuthorizationCredentials = Depends(http_bearer),
-    change_password_service: IChangePasswordService = Depends(ChangePasswordService)
+    change_password_service: IChangePasswordService = Depends(new_change_password_service)
     ):
     try:
         await change_password_service.change_password(token, new_password)
@@ -220,7 +220,7 @@ async def change_password(
 @router.put("/user-module/reset-password/")
 async def reset_password(
     reset_password: ResetUserPasswordModel,
-    change_password_service: IChangePasswordService = Depends(ChangePasswordService)
+    change_password_service: IChangePasswordService = Depends(new_change_password_service)
     ):
     try:
         await change_password_service.reset_password(reset_password)
@@ -236,7 +236,7 @@ async def reset_password(
 @router.patch("/user-module/confirm-password-change/")
 async def confirm_password_change(
     id: str,
-    user_service: IUserService = Depends(UserService)
+    user_service: IUserService = Depends(new_user_service)
     ):
     try:
         await user_service.confirm_password_change(id)

@@ -1,6 +1,5 @@
 #internal modules
-from app.database.redis.repositories.user_repository_interface import IUserRedisRepository
-from app.database.redis.repositories.user_repository import UserRedisRepository
+from app.database.redis.repositories.user_repository import IUserRedisRepository, new_user_redis_repository
 from app.models.jwt_model import (
     JWTDataModel, 
     JWTPayloadModel
@@ -57,12 +56,23 @@ class IAuthService(Protocol):
     async def create_and_save_jwt_token(self, user_id: str, email_address: str, jwt_expiration_time: datetime.datetime, salt: str) -> str:
         ...
 
+async def new_auth_service() -> IAuthService:
+    try:
+        return AuthService()
+    except Exception as e:
+        raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occured in AuthService while converting jwt payload to jwt payload model.",
+                class_and_method="AuthService.delete_jwt()",
+                argument={'token': 'anonimized'},
+                child_error=e,
+            )
 
 class AuthService:
 
     def __init__(
             self, 
-            user_redis_repository: IUserRedisRepository = Depends(UserRedisRepository)
+            user_redis_repository: IUserRedisRepository = Depends(new_user_redis_repository)
             ):
         self._user_redis_repository: IUserRedisRepository = user_redis_repository
 

@@ -1,7 +1,6 @@
 #internal modules
-from app.services.user_service import IUserService, UserService
-from app.services.auth_service import IAuthService
-from app.services.auth_service import AuthService
+from app.services.user_service import IUserService, new_user_service
+from app.services.auth_service import IAuthService, new_auth_service
 from app.models.user_model import (
     User, 
     RegisterUserModel, 
@@ -33,11 +32,23 @@ class IRegisterAccountService(Protocol):
     async def _check_is_email_arleady_registered(self, email_address: str) -> None:
         ...
 
+async def new_register_account_service() -> IRegisterAccountService:
+    try:
+        return RegisterAccountService()
+    except Exception as e:
+        raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occured while creating register account service.",
+                class_and_method="new_register_account_service()",
+                argument=None,
+                child_error=e,
+            )
+
 class RegisterAccountService:
     def __init__(
             self, 
-            user_service: IUserService = Depends(UserService),
-            auth_service: IAuthService = Depends(AuthService),
+            user_service: IUserService = Depends(new_user_service),
+            auth_service: IAuthService = Depends(new_auth_service),
             ):
         self._user_service: IUserService = user_service
         self._auth_service: IAuthService = auth_service

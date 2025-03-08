@@ -1,6 +1,6 @@
+#internal modules
 from app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
 from app.custom_exceptions.custom_exceptions import DatabaseError
-from sqlalchemy import insert, select, update, Select
 from app.schema.schema import User
 from app.models.user_model import (
     CreateUserModel,
@@ -8,8 +8,58 @@ from app.models.user_model import (
     ConfirmedUserEmailChangeModel, 
     ConfirmedUserPasswordChangeModel
     )
-from datetime import date
+
+from app.models.user_model import (
+    CreateUserModel,
+    UserPersonalInformationModel,
+    ConfirmedUserEmailChangeModel, 
+    ConfirmedUserPasswordChangeModel
+    )
+from app.schema.schema import User
+
+#3rd party libraries
 from fastapi import status
+from sqlalchemy import insert, select, update, Select
+
+#1st party libraries
+from typing import Protocol
+from datetime import date
+
+
+class IUserPostgresRepository(Protocol):
+
+    async def create_user(self, new_user: CreateUserModel) -> User:
+        ...
+
+    async def get_user_by_id(self, user_id: str) -> User | None:
+        ...
+
+    async def get_user_by_email_address(self, user_email_adress: str) -> User | None:
+        ...
+
+    async def update_user_last_login(self, user_id: str) -> None:
+        ...
+
+    async def update_user_personal_information(self, user_id: str, personal_information: UserPersonalInformationModel) -> None:
+        ...
+
+    async def update_user_email_address(self, new_email: ConfirmedUserEmailChangeModel) -> None:
+        ...
+
+    async def update_user_password(self, new_password: ConfirmedUserPasswordChangeModel) -> None:
+        ...
+
+async def new_user_postgres_repository() -> IUserPostgresRepository:
+    try:
+        return UserPostgresRepository()
+    except Exception as e:
+        raise DatabaseError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message=f"Unexpected error occurred while creating user repository.",
+                class_and_method="new_user_postgres_repository()",
+                argument=None,
+                child_error=e
+            )
 
 class UserPostgresRepository(BasePostgresRepository):
 

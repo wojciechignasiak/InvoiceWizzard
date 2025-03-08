@@ -1,6 +1,6 @@
 #internal modules
-from app.services.user_service import IUserService, UserService
-from app.services.auth_service import IAuthService, AuthService
+from app.services.user_service import IUserService, new_user_service
+from app.services.auth_service import IAuthService, new_auth_service
 from app.custom_exceptions.custom_exceptions import AuthError, DataNotFoundError, ServiceError
 from app.models.user_model import (
     UpdateUserPasswordModel, 
@@ -15,7 +15,6 @@ from fastapi.security import HTTPAuthorizationCredentials
 from fastapi import Depends, status
 
 #1st party libraries
-import datetime
 from typing import Protocol
 
 
@@ -28,11 +27,22 @@ class IChangePasswordService(Protocol):
     async def reset_password(self, reset_password: ResetUserPasswordModel) -> None:
         ...
 
+async def new_change_password_service() -> IAuthService:
+    try:
+        return ChangePasswordService()
+    except Exception as e:
+        raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred while creating new change password service.",
+                class_and_method="new_change_password_service()",
+                argument=None,
+                child_error=e
+            )
 class ChangePasswordService:
     def __init__(
             self, 
-            user_service: IUserService = Depends(UserService),
-            auth_service: IAuthService = Depends(AuthService),
+            user_service: IUserService = Depends(new_user_service),
+            auth_service: IAuthService = Depends(new_auth_service),
             ):
         self._user_service: IUserService = user_service
         self._auth_service: IAuthService = auth_service

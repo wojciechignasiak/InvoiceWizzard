@@ -24,6 +24,18 @@ class ILoginService(Protocol):
     async def set_jwt_expiration_time(remember_me: bool) -> datetime.datetime:
         ...
 
+async def new_login_service() -> ILoginService:
+    try:
+        return LoginService()
+    except Exception as e:
+        raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred while creating login service.",
+                class_and_method="new_login_service()",
+                argument=None,
+                child_error=e
+            )
+
 class LoginService:
     def __init__(
             self, 
