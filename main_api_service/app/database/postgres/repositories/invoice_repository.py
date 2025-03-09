@@ -1,26 +1,29 @@
+#internal modules
 from app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
+from app.custom_exceptions.custom_exceptions import DatabaseError
 from app.database.postgres.repositories.invoice_repository_abc import InvoicePostgresRepositoryABC
 from app.models.invoice_model import CreateInvoiceModel, UpdateInvoiceModel
 from app.schema.schema import Invoice, ExternalBusinessEntity, UserBusinessEntity
+
+#3rd party modules
+from fastapi import status
 from sqlalchemy import insert, select, update, delete, func
-from app.database.postgres.exceptions.custom_postgres_exceptions import (
-    PostgreSQLDatabaseError,
-    PostgreSQLIntegrityError,
-    PostgreSQLNotFoundError,
-)
-from sqlalchemy.exc import (
-    IntegrityError, 
-    DataError, 
-    StatementError,
-    DatabaseError,
-    InterfaceError,
-    OperationalError,
-    ProgrammingError
-    )
-from typing import Optional
-from app.logging import logger
+
+#1st party modules
+from typing import Optional, Protocol
 from datetime import date
 
+class IInvoicePostgresRepository(Protocol):
+
+    async def create_invoice(self, user_id: str, new_invoice: CreateInvoiceModel) -> Invoice:
+        ...
+
+
+async def new_invoice_postgres_repository() -> IInvoicePostgresRepository:
+    try:
+        return InvoicePostgresRepository()
+    except Exception as e:
+        pass
 
 class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositoryABC):
     
@@ -48,12 +51,14 @@ class InvoicePostgresRepository(BasePostgresRepository, InvoicePostgresRepositor
             )
             created_invoice = await self.session.scalar(stmt)
             return created_invoice
-        except IntegrityError as e:
-            logger.error(f"InvoicePostgresRepository.create_invoice_manually() Error: {e}")
-            raise PostgreSQLIntegrityError("Cannot create new invoice in database. Integrity error occured.")
-        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"InvoicePostgresRepository.create_invoice_manually() Error: {e}")
-            raise PostgreSQLDatabaseError("Error related to database occured.")
+        except Exception as e:
+            raise DatabaseError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message=f"Unexpected error occurred while creating new user in sql database.",
+                class_and_method="UserPostgresRepository.create_user()",
+                argument={'new_user': new_user},
+                child_error=e
+            )
     
     async def get_invoice(self, user_id: str, invoice_id: str) -> Invoice:
         try:

@@ -70,6 +70,8 @@ async def new_auth_service() -> IAuthService:
 
 class AuthService:
 
+    __slots__ = ('user_redis_repository',)
+
     def __init__(
             self, 
             user_redis_repository: IUserRedisRepository = Depends(new_user_redis_repository)

@@ -38,7 +38,11 @@ async def new_change_password_service() -> IAuthService:
                 argument=None,
                 child_error=e
             )
+
 class ChangePasswordService:
+
+    __slots__ = ('user_service', 'auth_service',)
+
     def __init__(
             self, 
             user_service: IUserService = Depends(new_user_service),

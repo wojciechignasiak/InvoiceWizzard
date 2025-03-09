@@ -173,7 +173,7 @@ async def change_email_address(
     ):
     try:
         jwt_payload: JWTPayloadModel = await auth_service.get_jwt(token)
-        await user_service.change_email_address(jwt_payload.id)
+        await user_service.change_email_address(jwt_payload.id, new_email)
         return JSONResponse(content={"message": "New email has been saved. Email message with confirmation link has been send to old email address."})
     except CustomException as e:
         if e.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:

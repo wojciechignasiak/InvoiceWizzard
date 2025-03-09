@@ -1,29 +1,19 @@
 #internal modules
-#3rd party libraries
-#1st party libraries
-import datetime
 from app.database.redis.repositories.base_redis_repository import BaseRedisRepository
 from app.models.user_model import (
     CreateUserModel, 
     ConfirmedUserEmailChangeModel, 
     ConfirmedUserPasswordChangeModel
     )
-
-from app.custom_exceptions.custom_exceptions import DatabaseError
 from app.models.jwt_model import JWTPayloadModel
+from app.custom_exceptions.custom_exceptions import DatabaseError
 
-
+#3rd party libraries
 from fastapi import status
 
+#1st party libraries
 from typing import Protocol
-from app.models.user_model import (
-    CreateUserModel,
-    ConfirmedUserEmailChangeModel, 
-    ConfirmedUserPasswordChangeModel
-    )
-from app.models.jwt_model import (
-    JWTPayloadModel
-)
+import datetime
 
 class IUserRedisRepository(Protocol):
 
@@ -92,7 +82,7 @@ class UserRedisRepository(BaseRedisRepository):
                 ex=expiry_time
             )
             if is_user_created is False:
-                raise DatabaseError(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Cannot register new user in database.")
+                raise DatabaseError(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Can't register new user in database.")
         except DatabaseError as e:
             raise DatabaseError(
                 status_code=e.status_code,

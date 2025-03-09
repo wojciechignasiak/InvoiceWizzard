@@ -80,6 +80,9 @@ async def new_user_service() -> IUserService:
         )
 
 class UserService:
+
+    __slots__ = ('user_postgres_repository', 'user_redis_repository', 'user_events',)
+
     def __init__(
             self, 
             user_postgres_repository: IUserPostgresRepository = Depends(new_user_postgres_repository),

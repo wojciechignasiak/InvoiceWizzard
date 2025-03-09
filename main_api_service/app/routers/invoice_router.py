@@ -73,6 +73,10 @@ from app.files.files_repository_abc import FilesRepositoryABC
 from app.documents.invoice_builder import InvoiceBuilder
 from app.documents.invoice_builder_abc import InvoiceBuilderABC
 
+#internal modules
+from app.services.auth_service import IAuthService, new_auth_service
+from app.services.invoice_service import IInvoiceService, new_invoice_service
+
 #3rd party libraries
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi import APIRouter, HTTPException, status, Depends
@@ -94,13 +98,14 @@ http_bearer = HTTPBearer()
 async def create_invoice(
     new_invoice: CreateInvoiceModel,
     invoice_items: list[CreateInvoiceItemModel],
-    token = Depends(http_bearer), 
-    repositories_registry: RepositoriesRegistryABC = Depends(get_repositories_registry),
-    redis_client: Redis = Depends(get_redis_client),
-    postgres_session: AsyncSession = Depends(get_session)
+    token: HTTPAuthorizationCredentials = Depends(http_bearer), 
+    auth_service: IAuthService = Depends(new_auth_service),
+    invoice_service: IInvoiceService = Depends(new_invoice_service)
     ):
 
     try:
+        jwt_payload: JWTPayloadModel = await auth_service.get_jwt(token)
+        
         user_redis_repository: UserRedisRepositoryABC = await repositories_registry.return_user_redis_repository(redis_client)
         invoice_postgres_repository: InvoicePostgresRepositoryABC = await repositories_registry.return_invoice_postgres_repository(postgres_session)
         invoice_item_postgres_repository: InvoiceItemPostgresRepositoryABC = await repositories_registry.return_invoice_item_postgres_repository(postgres_session)

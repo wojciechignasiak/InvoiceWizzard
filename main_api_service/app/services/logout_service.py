@@ -34,6 +34,9 @@ async def new_logout_service() -> IAuthService:
             )
 
 class LogoutService:
+
+    __slots__ = ('auth_service',)
+
     def __init__(
             self, 
             auth_service: IAuthService = Depends(new_auth_service),

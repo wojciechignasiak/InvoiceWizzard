@@ -37,6 +37,9 @@ async def new_login_service() -> ILoginService:
             )
 
 class LoginService:
+
+    __slots__ = ('user_service', 'auth_service',)
+
     def __init__(
             self, 
             user_service: IUserService = Depends(UserService),

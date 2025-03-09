@@ -45,6 +45,9 @@ async def new_register_account_service() -> IRegisterAccountService:
             )
 
 class RegisterAccountService:
+
+    __slots__ = ('user_service', 'auth_service',)
+
     def __init__(
             self, 
             user_service: IUserService = Depends(new_user_service),
