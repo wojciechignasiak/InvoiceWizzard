@@ -47,6 +47,7 @@ async def get_current_user(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
 
+
 @router.post("/user-module/register-account/")
 async def register_account(
     new_user: RegisterUserModel,
@@ -124,7 +125,7 @@ async def logout(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
 
-    
+
 @router.delete("/user-module/logout-from-all-devices/")
 async def logout_from_all_devices(
     token = Depends(http_bearer),
@@ -163,7 +164,7 @@ async def update_personal_information(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
 
-    
+
 @router.put("/user-module/change-email-address/")
 async def change_email_address(
     new_email: UpdateUserEmailModel,
@@ -183,7 +184,7 @@ async def change_email_address(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
 
-    
+
 @router.patch("/user-module/confirm-email-address-change")
 async def confirm_email_address_change(
     id: str,
@@ -199,6 +200,7 @@ async def confirm_email_address_change(
             raise HTTPException(status_code=e.status_code, detail=e.args[0])
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
+
 
 @router.put("/user-module/change-password/")
 async def change_password(
@@ -217,6 +219,7 @@ async def change_password(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
 
+
 @router.put("/user-module/reset-password/")
 async def reset_password(
     reset_password: ResetUserPasswordModel,
@@ -232,6 +235,7 @@ async def reset_password(
             raise HTTPException(status_code=e.status_code, detail=e.args[0])
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Server Error")
+
 
 @router.patch("/user-module/confirm-password-change/")
 async def confirm_password_change(

@@ -29,6 +29,7 @@ async def new_user_business_entity_events() -> IUserBusinessEntityEvents:
                 argument=None,
                 child_error=e,
             )
+
 class UserBusinessEntityEvents(KafkaProducerBase):
 
     async def remove_user_business_entity(self, id: str, email_address: str, user_business_entity_name: str) -> None:
