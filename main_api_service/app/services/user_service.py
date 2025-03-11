@@ -1,8 +1,7 @@
 #internal modules
 from app.database.postgres.repositories.user_repository import IUserPostgresRepository, new_user_postgres_repository
 from app.database.redis.repositories.user_repository import IUserRedisRepository, new_user_redis_repository
-from app.kafka.events.user_events_interface import IUserEvents
-from app.kafka.events.user_events import UserEvents
+from app.kafka.events.user_events import IUserEvents, new_user_events
 from app.models.user_model import (
     UserModel,
     CreateUserModel,
@@ -15,7 +14,8 @@ from app.schema.schema import User
 from app.custom_exceptions.custom_exceptions import (
     DataNotFoundError, 
     ServiceError, 
-    DatabaseError
+    DatabaseError,
+    EventError,
     )
 
 #3rd party libraries
@@ -87,7 +87,7 @@ class UserService:
             self, 
             user_postgres_repository: IUserPostgresRepository = Depends(new_user_postgres_repository),
             user_redis_repository: IUserRedisRepository = Depends(new_user_redis_repository),
-            user_events: IUserEvents = Depends(UserEvents)
+            user_events: IUserEvents = Depends(new_user_events)
             ):
         self._user_postgres_repository: IUserPostgresRepository = user_postgres_repository
         self._user_redis_repository: IUserRedisRepository = user_redis_repository
@@ -265,7 +265,15 @@ class UserService:
 
     async def send_user_registration_event(self, key_id: str, email_address: str) -> None:
         try:
-            await self._user_events.account_registered_event(key_id, email_address)
+            await self._user_events.account_registered(key_id, email_address)
+        except EventError as e:
+            raise ServiceError(
+                status_code=e.status_code,
+                message=e.message,
+                class_and_method="UserService.save_user_registration_data()",
+                argument={'key_id': key_id, 'new_user': 'anonimized'},
+                child_error=e,
+            )
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -281,7 +289,15 @@ class UserService:
             create_user_model: CreateUserModel = CreateUserModel.model_validate_json(user_registration_data)
             await self._user_postgres_repository.create_user(create_user_model)
             await self._user_redis_repository.delete_user_registration_data_by_id(key_id)
-            await self._user_events.account_confirmed_event(create_user_model.email)
+            await self._user_events.account_confirmed(create_user_model.email)
+        except EventError as e:
+            raise ServiceError(
+                status_code=e.status_code,
+                message=e.message,
+                class_and_method="UserService.confirm_user_account()",
+                argument={'key_id': key_id},
+                child_error=e,
+            )
         except DataNotFoundError as e:
             raise DataNotFoundError(
                 status_code=e.status_code,
@@ -361,8 +377,8 @@ class UserService:
             )
             
             await self._user_redis_repository.save_new_email(key_id, new_email_data)
-            await self._user_events.change_email_event(key_id, user.email)
-        except (ServiceError, DatabaseError) as e:
+            await self._user_events.change_email(key_id, user.email)
+        except (ServiceError, DatabaseError, EventError) as e:
             raise ServiceError(
                 status_code=e.args[0],
                 message=e.message,
@@ -400,8 +416,8 @@ class UserService:
             await self._user_postgres_repository.update_user_email_address(new_email_data.id)
             await self._user_redis_repository.delete_all_jwt_tokens_of_user(new_email_data.id)
             await self._user_redis_repository.delete_new_email(key_id)
-            await self._user_events.email_changed_event(new_email_data.new_email)
-        except (ServiceError, DatabaseError) as e:
+            await self._user_events.email_changed(new_email_data.new_email)
+        except (ServiceError, DatabaseError, EventError) as e:
             raise ServiceError(
                 status_code=e.args[0],
                 message=e.message,
@@ -429,8 +445,8 @@ class UserService:
     async def change_password(self, email_address: str, new_password: ConfirmedUserPasswordChangeModel, key_id: str = str(uuid4())):
         try:
             await self._user_redis_repository.save_new_password(key_id, new_password)
-            await self._user_events.change_password_event(key_id, email_address)
-        except (ServiceError, DatabaseError) as e:
+            await self._user_events.change_password(key_id, email_address)
+        except (ServiceError, DatabaseError, EventError) as e:
             raise ServiceError(
                 status_code=e.args[0],
                 message=e.message,
@@ -450,8 +466,8 @@ class UserService:
     async def reset_password(self, email_address: str, new_password: ConfirmedUserPasswordChangeModel, key_id: str = str(uuid4)):
         try:
             await self._user_redis_repository.save_new_password(key_id, new_password)
-            await self._user_events.reset_password_event(key_id, new_password)
-        except (ServiceError, DatabaseError) as e:
+            await self._user_events.reset_password(key_id, new_password)
+        except (ServiceError, DatabaseError, EventError) as e:
             raise ServiceError(
                 status_code=e.args[0],
                 message=e.message,
@@ -478,8 +494,8 @@ class UserService:
             await self._user_postgres_repository.update_user_password(new_password_data.new_password)
             await self._user_redis_repository.delete_all_jwt_tokens_of_user(new_password_data.id)
             await self._user_redis_repository.delete_new_password(key_id)
-            await self._user_events.password_changed_event(user.email)
-        except (ServiceError, DatabaseError) as e:
+            await self._user_events.password_changed(user.email)
+        except (ServiceError, DatabaseError, EventError) as e:
             raise ServiceError(
                 status_code=e.args[0],
                 message=e.message,

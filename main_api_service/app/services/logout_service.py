@@ -9,7 +9,6 @@ from fastapi import Depends, status
 from fastapi.security import HTTPAuthorizationCredentials
 
 #1st party libraries
-import datetime
 from typing import Protocol
 
 

@@ -1,10 +1,12 @@
 #internal modules
 from app.database.redis.repositories.invoice_repository import IInvoiceRedisRepository, new_invoice_redis_repository
 from app.database.postgres.repositories.invoice_repository import IInvoicePostgresRepository, new_invoice_postgres_repository
+from app.kafka.events.invoice_events import IInvoiceEvents, new_invoice_events
 from app.custom_exceptions.custom_exceptions import (
     ServiceError,
     DatabaseError,
     LogicError,
+    EventError
 )
 
 #3rd party libraries
@@ -34,8 +36,8 @@ class InvoiceService:
         self,
         invoice_postgres_repository: IInvoicePostgresRepository = Depends(new_invoice_postgres_repository),
         invoice_redis_repository: IInvoiceRedisRepository = Depends(new_invoice_redis_repository),
-        invoice_events = 'a'
+        invoice_events: IInvoiceEvents = Depends(new_invoice_events)
     ):
         self._invoice_postgres_repository: IInvoicePostgresRepository = invoice_postgres_repository
         self._invoice_redis_repository: IInvoiceRedisRepository = invoice_redis_repository
-        self._invoice_events = invoice_events
+        self._invoice_events: IInvoiceEvents = invoice_events

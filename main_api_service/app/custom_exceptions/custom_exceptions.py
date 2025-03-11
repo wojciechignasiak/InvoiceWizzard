@@ -27,3 +27,6 @@ class DatabaseError(CustomException):
 
 class LogicError(CustomException):
     """Base exception for other related errors."""
+
+class EventError(CustomException):
+    """Base exception for events related errors"""

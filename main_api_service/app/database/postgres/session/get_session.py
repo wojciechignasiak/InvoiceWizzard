@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session, async_ses
 
 async def get_session(request: Request):
         try:
-            session = async_scoped_session(async_sessionmaker(request.app.state.engine, expire_on_commit=False, class_=AsyncSession), scopefunc=asyncio.current_task)
+            session = async_scoped_session(async_sessionmaker(request.app.state.engine, expire_on_commit=True, class_=AsyncSession), scopefunc=asyncio.current_task)
             yield session
             await session.commit()
         except Exception:

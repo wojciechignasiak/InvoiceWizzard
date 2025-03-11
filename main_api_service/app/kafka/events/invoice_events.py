@@ -1,13 +1,51 @@
-from aiokafka.errors import KafkaError
-from app.kafka.exceptions.custom_kafka_exceptions import KafkaBaseError
+#internal modules
 from app.models.kafka_topics_enum import KafkaTopicsEnum
-import json
-from app.logging import logger
 from app.kafka.events.kafka_producer_base import KafkaProducerBase
-from app.kafka.events.invoice_events_abc import InvoiceEventsABC
+from app.custom_exceptions.custom_exceptions import EventError
+
+#3rd party modules
+from fastapi import status
+
+#1st party modules
+from typing import Protocol
+import json
 
 
-class InvoiceEvents(KafkaProducerBase, InvoiceEventsABC):
+class IInvoiceEvents(Protocol):
+
+    async def remove_invoice(
+                self, 
+                id: str, 
+                email_address: str, 
+                invoice_number: str,
+                user_company_name: str,
+                external_business_entity_name: str,
+                is_issued: bool) -> None: 
+        ...
+    
+    async def invoice_removed(
+            self, 
+            id: str, 
+            email_address: str, 
+            invoice_number: str,
+            user_company_name: str,
+            external_business_entity_name: str,
+            is_issued: bool) -> None:
+        ...
+
+async def new_invoice_events() -> IInvoiceEvents:
+    try:
+        return InvoiceEvents()
+    except Exception as e:
+        raise EventError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred while creating InvoiceEvent class instance",
+                class_and_method="new_invoice_events()",
+                argument=None,
+                child_error=e,
+            )
+
+class InvoiceEvents(KafkaProducerBase):
 
     async def remove_invoice(
             self, 
@@ -16,7 +54,7 @@ class InvoiceEvents(KafkaProducerBase, InvoiceEventsABC):
             invoice_number: str,
             user_company_name: str,
             external_business_entity_name: str,
-            is_issued: bool):
+            is_issued: bool) -> None: 
         try:
             message = {
                 "id": id,
@@ -30,9 +68,21 @@ class InvoiceEvents(KafkaProducerBase, InvoiceEventsABC):
                 KafkaTopicsEnum.remove_invoice.value, 
                 json.dumps(message).encode('utf-8')
                 )
-        except KafkaError as e:
-            logger.exception(f"InvoiceEvents.remove_invoice() Error: {e}")
-            raise KafkaBaseError("Error related to Kafka occured.")
+        except Exception as e:
+            raise EventError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred in InvoiceEvents while creating remove invoice event",
+                class_and_method="UserEvents.remove_invoice()",
+                argument={
+                    'id': id, 
+                    'email_address': email_address, 
+                    'invoice_number': invoice_number, 
+                    'user_company_name': user_company_name,
+                    'external_business_entity_name': external_business_entity_name,
+                    'is_issued': is_issued
+                    },
+                child_error=e,
+            )
         
     async def invoice_removed(
             self, 
@@ -41,7 +91,7 @@ class InvoiceEvents(KafkaProducerBase, InvoiceEventsABC):
             invoice_number: str,
             user_company_name: str,
             external_business_entity_name: str,
-            is_issued: bool):
+            is_issued: bool) -> None:
         try:
             message = {
                 "id": id,
@@ -55,6 +105,18 @@ class InvoiceEvents(KafkaProducerBase, InvoiceEventsABC):
                 KafkaTopicsEnum.invoice_removed.value, 
                 json.dumps(message).encode('utf-8')
                 )
-        except KafkaError as e:
-            logger.exception(f"InvoiceEvents.invoice_removed() Error: {e}")
-            raise KafkaBaseError("Error related to Kafka occured.")
+        except Exception as e:
+            raise EventError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred in InvoiceEvents while creating invoice removed event",
+                class_and_method="UserEvents.invoice_removed()",
+                argument={
+                    'id': id, 
+                    'email_address': email_address, 
+                    'invoice_number': invoice_number, 
+                    'user_company_name': user_company_name,
+                    'external_business_entity_name': external_business_entity_name,
+                    'is_issued': is_issued
+                    },
+                child_error=e,
+            )
