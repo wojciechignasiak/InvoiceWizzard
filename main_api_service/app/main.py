@@ -1,15 +1,17 @@
 from fastapi import FastAPI
+from redis import BlockingConnectionPool
 from starlette.middleware.cors import CORSMiddleware
 from starlette import middleware
-from app.aplication_startup_processes import ApplicationStartupProcesses
-from app.kafka.consumed_events_managers.extracted_invoice_data_event_manager import ExtractedInvoiceDataMenager
-from app.kafka.consumed_events_managers.extracted_invoice_data_event_manager_abc import ExtractedInvoiceDataMenagerABC
-from app.kafka.consumed_events_managers.ai_extraction_failure_manager import AIExtractionFailureManager
-from app.kafka.consumed_events_managers.ai_extraction_failure_manager_abc import AIExtractionFailureManagerABC
-from app.kafka.clients.events_consumer import EventsConsumer
+from starlette.datastructures import State
+from main_api_service.app.aplication_startup_processes import ApplicationStartupProcesses
+from main_api_service.app.kafka.consumed_events_managers.extracted_invoice_data_event_manager import ExtractedInvoiceDataMenager
+from main_api_service.app.kafka.consumed_events_managers.extracted_invoice_data_event_manager_abc import ExtractedInvoiceDataMenagerABC
+from main_api_service.app.kafka.consumed_events_managers.ai_extraction_failure_manager import AIExtractionFailureManager
+from main_api_service.app.kafka.consumed_events_managers.ai_extraction_failure_manager_abc import AIExtractionFailureManagerABC
+from main_api_service.app.kafka.clients.events_consumer import EventsConsumer
 from contextlib import asynccontextmanager
 import asyncio
-from app.routers import (
+from main_api_service.app.routers import (
     user_router,
     user_business_entity_router,
     external_business_entity_router,
@@ -24,7 +26,11 @@ from app.routers import (
     ai_extraction_failure_router,
     report_router
     )
-
+import os
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine
+from redis.asyncio import BlockingConnectionPool
+from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
 
 middleware = [
     middleware.Middleware(
@@ -41,40 +47,55 @@ async def lifespan(app: FastAPI):
     ''' Run at startup
         Initialise databases clients.
     '''
-    application_statup_processes: ApplicationStartupProcesses = ApplicationStartupProcesses()
 
-    app.state.engine = await application_statup_processes.postgres_engine()
+    app.state.engine: AsyncEngine = create_async_engine(
+        f"postgresql+asyncpg://{os.environ.get("POSTGRES_USERNAME")}:{os.environ.get("POSTGRES_PASSWORD")}@{os.environ.get("POSTGRES_HOST")}:{os.environ.get("POSTGRES_PORT")}/{os.environ.get("POSTGRES_DB")}",
+        echo=False,
+        future=True
+    )
 
-    await application_statup_processes.kafka_topics_initialization()
+    app.state.redis_pool: BlockingConnectionPool = BlockingConnectionPool(
+        max_connections=3000,
+        host=os.environ.get("REDIS_HOST"),
+        port=os.environ.get("REDIS_PORT"),
+        password=os.environ.get("REDIS_PASSWORD")
+    )
 
-    app.state.redis_pool = await application_statup_processes.redis_pool()
+    app.state.kafka_producer: AIOKafkaProducer = AIOKafkaProducer(
+        loop=asyncio.get_event_loop(),
+        bootstrap_servers=f"{os.environ.get("KAFKA_HOST")}:{os.environ.get("KAFKA_PORT")}"
+    )
 
-    await application_statup_processes.kafka_topics_initialization()
-
-    app.state.kafka_producer = await application_statup_processes.kafka_producer()
     await app.state.kafka_producer.start()
+
+
+
     print("Kafka Producer started...")
 
-    app.state.repositories_registry = await application_statup_processes.repositories_registry()
+    app.state.repositories_registry = await application_startup_processes.repositories_registry()
 
-    app.state.events_registry = await application_statup_processes.events_registry()
+    app.state.events_registry = await application_startup_processes.events_registry()
 
-    app.state.kafka_consumer = await application_statup_processes.kafka_consumer()
+    app.state.kafka_consumer: AIOKafkaConsumer = AIOKafkaConsumer(
+                    KafkaTopicsEnum.unable_to_extract_invoice_data.value,
+                    KafkaTopicsEnum.extracted_invoice_data.value,
+                    loop=loop,
+                    bootstrap_servers=self.kafka_url)
     
-    extracted_invoice_data_manager: ExtractedInvoiceDataMenagerABC = ExtractedInvoiceDataMenager(
-        repositories_registry=app.state.repositories_registry,
-        postgres_url=application_statup_processes.postgres_url)
-    
-    ai_extraction_failure_manager: AIExtractionFailureManagerABC = AIExtractionFailureManager(
-        repositories_registry=app.state.repositories_registry,
-        postgres_url=application_statup_processes.postgres_url)
-    
-    events_consumer: EventsConsumer = EventsConsumer(
-        kafka_consumer=app.state.kafka_consumer,
-        extracted_invoice_data_event_manager=extracted_invoice_data_manager,
-        ai_extraction_failure_manager=ai_extraction_failure_manager)
-    
-    asyncio.run(events_consumer.run_consumer())
+    # extracted_invoice_data_manager: ExtractedInvoiceDataMenagerABC = ExtractedInvoiceDataMenager(
+    #     repositories_registry=app.state.repositories_registry,
+    #     postgres_url=application_startup_processes.postgres_url)
+    #
+    # # ai_extraction_failure_manager: AIExtractionFailureManagerABC = AIExtractionFailureManager(
+    # #     repositories_registry=app.state.repositories_registry,
+    # #     postgres_url=application_startup_processes.postgres_url)
+    #
+    # events_consumer: EventsConsumer = EventsConsumer(
+    #     kafka_consumer=app.state.kafka_consumer,
+    #     extracted_invoice_data_event_manager=extracted_invoice_data_manager,
+    #     ai_extraction_failure_manager=ai_extraction_failure_manager)
+    #
+    # asyncio.run(events_consumer.run_consumer())
     
     print("Kafka Consumer started...")
 

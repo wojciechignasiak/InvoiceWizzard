@@ -1,12 +1,12 @@
 #internal modules
-from app.database.redis.repositories.base_redis_repository import BaseRedisRepository
-from app.models.user_model import (
+from main_api_service.app.database.redis.repositories.base_redis_repository import BaseRedisRepository
+from main_api_service.app.models.user_model import (
     CreateUserModel, 
     ConfirmedUserEmailChangeModel, 
     ConfirmedUserPasswordChangeModel
     )
-from app.models.jwt_model import JWTPayloadModel
-from app.custom_exceptions.custom_exceptions import DatabaseError
+from main_api_service.app.models.jwt_model import JWTPayloadModel
+from main_api_service.app.custom_exceptions.custom_exceptions import DatabaseError
 
 #3rd party libraries
 from fastapi import status
@@ -14,19 +14,20 @@ from fastapi import status
 #1st party libraries
 from typing import Protocol
 import datetime
+from uuid import UUID
 
 class IUserRedisRepository(Protocol):
 
-    async def save_user_registration_data(self, key_id: str, new_user: CreateUserModel) -> None:
+    async def save_user_registration_data(self, key_id: UUID, new_user: CreateUserModel) -> None:
         ...
 
-    async def get_user_registration_data_by_id(self, key_id: str) -> bytes | None:
+    async def get_user_registration_data_by_id(self, key_id: UUID) -> bytes | None:
         ...
 
     async def get_user_registration_data_by_email_address(self, email_address: str) -> bytes | None:
         ...
 
-    async def delete_user_registration_data_by_id(self, key_id: str) -> None:
+    async def delete_user_registration_data_by_id(self, key_id: UUID) -> None:
         ...
 
     async def save_jwt_token(self, jwt_token: str, jwt_payload: JWTPayloadModel) -> None:
@@ -35,28 +36,28 @@ class IUserRedisRepository(Protocol):
     async def get_jwt_token(self, jwt_token: str) -> bytes | None:
         ...
 
-    async def delete_all_jwt_tokens_of_user(self, user_id: str) -> None:
+    async def delete_all_jwt_tokens_of_user(self, user_id: UUID) -> None:
         ...
 
     async def delete_jwt_token(self, token: str) -> None:
         ...
 
-    async def save_new_email(self, key_id: str, new_email: ConfirmedUserEmailChangeModel) -> None:
+    async def save_new_email(self, key_id: UUID, new_email: ConfirmedUserEmailChangeModel) -> None:
         ...
 
-    async def retrieve_new_email(self, key_id: str) -> bytes | None:
+    async def retrieve_new_email(self, key_id: UUID) -> bytes | None:
         ...
 
-    async def delete_new_email(self, key_id: str) -> None:
+    async def delete_new_email(self, key_id: UUID) -> None:
         ...
 
-    async def save_new_password(self, key_id: str, new_password: ConfirmedUserPasswordChangeModel) -> None:
+    async def save_new_password(self, key_id: UUID, new_password: ConfirmedUserPasswordChangeModel) -> None:
         ...
 
-    async def get_new_password(self, key_id: str) -> bytes | None:
+    async def get_new_password(self, key_id: UUID) -> bytes | None:
         ...
 
-    async def delete_new_password(self, key_id: str) -> None:
+    async def delete_new_password(self, key_id: UUID) -> None:
         ...
 
 async def new_user_redis_repository() -> IUserRedisRepository:
@@ -65,15 +66,13 @@ async def new_user_redis_repository() -> IUserRedisRepository:
     except Exception as e:
         raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in UserRedisRepository while saving user registration data.",
-                class_and_method="UserRedisRepository.save_user_registration_data()",
-                argument={'anonimized': 'anonimized'},
+                message="Unexpected error occurred in UserRedisRepository while saving user registration data.",
                 child_error=e
             )
 
-class UserRedisRepository(BaseRedisRepository):
+class UserRedisRepository(BaseRedisRepository, IUserRedisRepository):
 
-    async def save_user_registration_data(self, key_id: str, new_user: CreateUserModel) -> None:
+    async def save_user_registration_data(self, key_id: UUID, new_user: CreateUserModel) -> None:
         try:
             expiry_time = datetime.timedelta(days=14)
             is_user_created: bool = await self.redis_client.set(
@@ -81,26 +80,24 @@ class UserRedisRepository(BaseRedisRepository):
                 value=new_user.model_dump_json(),
                 ex=expiry_time
             )
-            if is_user_created is False:
+            if not is_user_created:
                 raise DatabaseError(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Can't register new user in database.")
         except DatabaseError as e:
             raise DatabaseError(
                 status_code=e.status_code,
                 message=e.args[0],
-                class_and_method="UserRedisRepository.add_user_registration_data()",
-                argument={'anonimized': 'anonimized'},
+                argument={'key_id': key_id,'new_user': 'anonymized'},
                 child_error=e
             )
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in UserRedisRepository while saving user registration data.",
-                class_and_method="UserRedisRepository.save_user_registration_data()",
-                argument={'anonimized': 'anonimized'},
+                message="Unexpected error occurred in UserRedisRepository while saving user registration data.",
+                argument={'key_id': 'anonymized'},
                 child_error=e
             )
 
-    async def get_user_registration_data_by_id(self, key_id: str) -> bytes | None:
+    async def get_user_registration_data_by_id(self, key_id: UUID) -> bytes | None:
         try:
             user_key: list[bytes] = await self.redis_client.keys(f"user:{key_id}:*")
             if user_key:
@@ -110,8 +107,7 @@ class UserRedisRepository(BaseRedisRepository):
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in UserRedisRepository while saving user registration data by id.",
-                class_and_method="UserRedisRepository.get_user_registration_data_by_id()",
+                message="Unexpected error occurred in UserRedisRepository while saving user registration data by id.",
                 argument={'key_id': key_id},
                 child_error=e
             )
@@ -126,13 +122,12 @@ class UserRedisRepository(BaseRedisRepository):
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in UserRedisRepository while getting user registration data by email address.",
-                class_and_method="UserRedisRepository.get_user_registration_data_by_email_address()",
+                message="Unexpected error occurred in UserRedisRepository while getting user registration data by email address.",
                 argument={'email_address': email_address},
                 child_error=e
             )
         
-    async def delete_user_registration_data_by_id(self, key_id: str) -> None:
+    async def delete_user_registration_data_by_id(self, key_id: UUID) -> None:
         try:
             user_key: list = await self.redis_client.keys(f"user:{key_id}:*")
             if user_key:
@@ -140,8 +135,7 @@ class UserRedisRepository(BaseRedisRepository):
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in UserRedisRepository while deleting user registration data by email address.",
-                class_and_method="UserRedisRepository.delete_user_registration_data_by_id()",
+                message="Unexpected error occurred in UserRedisRepository while deleting user registration data by email address.",
                 argument={'key_id': key_id},
                 child_error=e
             )
@@ -153,22 +147,20 @@ class UserRedisRepository(BaseRedisRepository):
                 name=f"JWT:{jwt_token}:{jwt_payload.id}",
                 value=jwt_payload.model_dump_json(),
                 ex=expiry_time)
-            if is_jwt_saved is False:
-                raise DatabaseError(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Unexpected error occured in UserRedisRepository durning saving JWT Token.")
+            if not is_jwt_saved:
+                raise DatabaseError(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Unexpected error occurred in UserRedisRepository while saving JWT Token.")
         except DatabaseError as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message=e.args[0],
-                class_and_method="UserRedisRepository.save_jwt_token()",
-                argument={'jwt_token': 'anonimized', 'jwt_payload': 'anonimized'},
+                argument={'jwt_token': 'anonymized', 'jwt_payload': 'anonymized'},
                 child_error=e
             )
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in UserRedisRepository while saving JWT token.",
-                class_and_method="UserRedisRepository.save_jwt_token()",
-                argument={'jwt_token': 'anonimized', 'jwt_payload': 'anonimized'},
+                message="Unexpected error occurred in UserRedisRepository while saving JWT token.",
+                argument={'jwt_token': 'anonymized', 'jwt_payload': 'anonymized'},
                 child_error=e
             )
     
@@ -183,13 +175,12 @@ class UserRedisRepository(BaseRedisRepository):
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message=f"Unexpected error occurred in UserRedisRepository durning getting user jwt token from Redis database.",
-                class_and_method="UserRedisRepository.get_jwt_token()",
-                argument={'jwt_token': 'anonimized'},
+                message=f"Unexpected error occurred in UserRedisRepository while getting user jwt token from Redis database.",
+                argument={'jwt_token': 'anonymized'},
                 child_error=e
             )
         
-    async def delete_all_jwt_tokens_of_user(self, user_id: str) -> None:
+    async def delete_all_jwt_tokens_of_user(self, user_id: UUID) -> None:
         try:
             jwt_token_keys: list = await self.redis_client.keys(f"JWT:*:{user_id}")
             if jwt_token_keys:
@@ -198,8 +189,7 @@ class UserRedisRepository(BaseRedisRepository):
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message=f"Unexpected error occurred in UserRedisRepository durning deleting all user jwt token from Redis database.",
-                class_and_method="UserRedisRepository.get_jwt_token()",
+                message=f"Unexpected error occurred in UserRedisRepository while deleting all user jwt token from Redis database.",
                 argument={'user_id': user_id},
                 child_error=e
             )
@@ -210,94 +200,87 @@ class UserRedisRepository(BaseRedisRepository):
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message=f"Unexpected error occurred in UserRedisRepository durning deleting user jwt token from Redis database.",
-                class_and_method="UserRedisRepository.get_jwt_token()",
-                argument={'token': 'anonimized'},
+                message=f"Unexpected error occurred in UserRedisRepository while deleting user jwt token from Redis database.",
+                argument={'token': 'anonymized'},
                 child_error=e
             )
         
-    async def save_new_email(self, key_id: str, new_email: ConfirmedUserEmailChangeModel) -> None:
+    async def save_new_email(self, key_id: UUID, new_email: ConfirmedUserEmailChangeModel) -> None:
         try:
             expiry_time = datetime.timedelta(days=2)
             is_new_email_saved: bool = await self.redis_client.set(
                 name=f"new_email:{key_id}", 
                 value=new_email.model_dump_json(),
                 ex=expiry_time)
-            if is_new_email_saved is False:
-                raise DatabaseError(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Unexpected error occured in UserRedisRepository durning saving new email address.")
+            if not is_new_email_saved:
+                raise DatabaseError(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Unexpected error occurred in UserRedisRepository while saving new email address.")
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message=f"Unexpected error occurred in UserRedisRepository durning saving new email address.",
-                class_and_method="UserRedisRepository.save_new_email()",
+                message=f"Unexpected error occurred in UserRedisRepository while saving new email address.",
                 argument={'key_id': key_id, 'new_email': new_email},
                 child_error=e
             )
         
-    async def retrieve_new_email(self, key_id: str) -> bytes | None:
+    async def retrieve_new_email(self, key_id: UUID) -> bytes | None:
         try:
             new_email: bytes | None = await self.redis_client.get(f"new_email:{key_id}")
             return new_email
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message=f"Unexpected error occurred in UserRedisRepository durning saving new email address.",
-                class_and_method="UserRedisRepository.save_new_email()",
-                argument={'key_id': key_id, 'new_email': new_email},
+                message=f"Unexpected error occurred in UserRedisRepository while saving new email address.",
+                argument={'key_id': key_id,},
                 child_error=e
             )
         
-    async def delete_new_email(self, key_id: str) -> None:
+    async def delete_new_email(self, key_id: UUID) -> None:
         try:
             await self.redis_client.delete(f"new_email:{key_id}")
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message=f"Unexpected error occurred in UserRedisRepository durning deleting new email address.",
-                class_and_method="UserRedisRepository.delete_new_email()",
+                message=f"Unexpected error occurred in UserRedisRepository while deleting new email address.",
                 argument={'key_id': key_id},
                 child_error=e
             )
         
-    async def save_new_password(self, key_id: str, new_password: ConfirmedUserPasswordChangeModel) -> None:
+    async def save_new_password(self, key_id: UUID, new_password: ConfirmedUserPasswordChangeModel) -> None:
         try:
             expiry_time = datetime.timedelta(days=2)
             is_new_password_saved: bool = await self.redis_client.set(
                 name=f"new_password:{key_id}", 
                 value=new_password.model_dump_json(),
                 ex=expiry_time)
-            if is_new_password_saved is False:
-                raise DatabaseError(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Unexpected error occured in UserRedisRepository durning saving new password.")
+            if not is_new_password_saved:
+                raise DatabaseError(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Unexpected error occurred in UserRedisRepository while saving new password.")
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message=f"Unexpected error occurred in UserRedisRepository durning saving new email address.",
-                class_and_method="UserRedisRepository.save_new_password()",
-                argument={'key_id': key_id, 'new_password': 'anonimized'},
+                message=f"Unexpected error occurred in UserRedisRepository while saving new email address.",
+                argument={'key_id': key_id, 'new_password': 'anonymized'},
                 child_error=e
             )
         
-    async def get_new_password(self, key_id: str) -> bytes | None:
+    async def get_new_password(self, key_id: UUID) -> bytes | None:
         try:
             new_password: bytes | None = await self.redis_client.get(f"new_password:{key_id}")
             return new_password
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message=f"Unexpected error occurred in UserRedisRepository durning saving new email address.",
-                class_and_method="UserRedisRepository.save_new_password()",
+                message=f"Unexpected error occurred in UserRedisRepository while saving new email address.",
                 argument={'key_id': key_id},
                 child_error=e
             )
         
-    async def delete_new_password(self, key_id: str) -> None:
+    async def delete_new_password(self, key_id: UUID) -> None:
         try:
             await self.redis_client.delete(f"new_password:{key_id}")
         except Exception as e:
             raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message=f"Unexpected error occurred in UserRedisRepository durning deleting new password.",
-                class_and_method="UserRedisRepository.delete_new_password()",
+                message=f"Unexpected error occurred in UserRedisRepository while deleting new password.",
                 argument={'key_id': key_id},
                 child_error=e
             )

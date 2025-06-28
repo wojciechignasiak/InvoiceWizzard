@@ -1,5 +1,5 @@
 # internal modules
-from app.database.redis.client.get_redis_client import get_redis_client
+from main_api_service.app.database.redis.client.get_redis_client import get_redis_client
 
 #3rd party libraries
 from fastapi import Depends

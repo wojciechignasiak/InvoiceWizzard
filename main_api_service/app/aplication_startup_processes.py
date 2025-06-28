@@ -7,33 +7,8 @@ from sqlalchemy import text
 from redis.asyncio import Redis, BlockingConnectionPool
 from aiokafka.errors import KafkaTimeoutError, KafkaError
 from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
-from app.models.kafka_topics_enum import KafkaTopicsEnum
-from app.kafka.initialize_topics.startup_topics import startup_topics
-from app.registries.repositories_registry import RepositoriesRegistry
-from app.database.postgres.repositories.user_repository import UserPostgresRepository
-from app.database.redis.repositories.user_repository import UserRedisRepository
-from app.database.postgres.repositories.user_business_entity_repository import UserBusinessEntityPostgresRepository
-from app.database.redis.repositories.user_business_entity_repository import UserBusinessEntityRedisRepository
-from app.database.postgres.repositories.external_business_entity_repository import ExternalBusinessEntityPostgresRepository
-from app.database.redis.repositories.external_business_entity_repository import ExternalBusinessEntityRedisRepository
-from app.database.postgres.repositories.invoice_repository import InvoicePostgresRepository
-from app.database.redis.repositories.invoice_repository import InvoiceRedisRepository
-from app.database.postgres.repositories.invoice_item_repository import InvoiceItemPostgresRepository
-from app.database.postgres.repositories.ai_extracted_invoice_repository import AIExtractedInvoicePostgresRepository
-from app.database.postgres.repositories.ai_extracted_invoice_item_repository import AIExtractedInvoiceItemPostgresRepository
-from app.database.postgres.repositories.ai_extracted_external_business_entity_repository import AIExtractedExternalBusinessEntityPostgresRepository
-from app.database.postgres.repositories.ai_extracted_user_business_entity_repository import AIExtractedUserBusinessEntityPostgresRepository
-from app.database.postgres.repositories.ai_is_external_business_recognized_repository import AIIsExternalBusinessEntityRecognizedPostgresRepository
-from app.database.postgres.repositories.ai_is_user_business_recognized_repository import AIIsUserBusinessRecognizedPostgresRepository
-from app.database.postgres.repositories.ai_extraction_failure_repository import AIExtractionFailurePostgresRepository
-from app.database.postgres.repositories.report_repository import ReportPostgresRepository
-from app.registries.events_registry import EventsRegistry
-from app.kafka.events.user_events import UserEvents
-from app.kafka.events.user_business_entity_events import UserBusinessEntityEvents
-from app.kafka.events.external_business_entity_events import ExternalBusinessEntityEvents
-from app.kafka.events.invoice_events import InvoiceEvents
-from app.kafka.events.ai_invoice_events import AIInvoiceEvents
-from app.files.files_repository import FilesRepository
+from main_api_service.app.models.kafka_topics_enum import KafkaTopicsEnum
+from main_api_service.app.kafka.initialize_topics.startup_topics import startup_topics
 
 class ApplicationStartupProcesses:
 
@@ -54,28 +29,7 @@ class ApplicationStartupProcesses:
         self.kafka_port = os.environ.get("KAFKA_PORT")
         self.kafka_url = f"{self.kafka_host}:{self.kafka_port}"
 
-    async def postgres_engine(self) -> AsyncEngine:
-        while True:
-            try:
-                print("Creating PostgreSQL engine...")
-                engine: AsyncEngine = create_async_engine(
-                                    self.postgres_url,
-                                    echo=False,
-                                    future=True
-                                )
-                print("Testing connection to PostgreSQL...")
-                async with engine.connect() as connection:
-                    result = await connection.execute(text("SELECT current_user;"))
-                    current_user = result.scalar()
 
-                if current_user == self.postgres_username:
-                    print('Connection to PostgreSQL status: Connected')
-                else:
-                    print('Connection to PostgreSQL status: Failed. Retrying...')
-                    raise SQLAlchemyError
-                return engine
-            except SQLAlchemyError:
-                await asyncio.sleep(3)
 
     async def redis_pool(self) -> BlockingConnectionPool:
         while True:
@@ -133,49 +87,3 @@ class ApplicationStartupProcesses:
                 return kafka_consumer
             except (KafkaError, KafkaTimeoutError) as e:
                 print(f'Error occured durning running Kafka Consumer: {e}')
-
-    async def repositories_registry(self) -> RepositoriesRegistry:
-        while True:
-            try:
-                print("Initializing repositories registry...")
-                repositories_registry: RepositoriesRegistry = RepositoriesRegistry(
-                    UserPostgresRepository, 
-                    UserRedisRepository, 
-                    UserBusinessEntityPostgresRepository,
-                    UserBusinessEntityRedisRepository,
-                    ExternalBusinessEntityPostgresRepository,
-                    ExternalBusinessEntityRedisRepository,
-                    InvoicePostgresRepository,
-                    InvoiceRedisRepository,
-                    InvoiceItemPostgresRepository,
-                    FilesRepository,
-                    AIExtractedInvoicePostgresRepository,
-                    AIExtractedInvoiceItemPostgresRepository,
-                    AIExtractedExternalBusinessEntityPostgresRepository,
-                    AIExtractedUserBusinessEntityPostgresRepository,
-                    AIIsExternalBusinessEntityRecognizedPostgresRepository,
-                    AIIsUserBusinessRecognizedPostgresRepository,
-                    AIExtractionFailurePostgresRepository,
-                    ReportPostgresRepository
-                    )
-                
-                print("Repositories registry initialized!")
-                return repositories_registry
-            except Exception as e:
-                print(f'Error occured durning initializing repositories registry: {e}')
-
-    async def events_registry(self) -> EventsRegistry:
-        while True:
-            try:
-                print("Initializing events registry...")
-                events_registry: EventsRegistry = EventsRegistry(
-                    UserEvents,
-                    UserBusinessEntityEvents,
-                    ExternalBusinessEntityEvents,
-                    InvoiceEvents,
-                    AIInvoiceEvents
-                    )
-                print("Events registry initialized!")
-                return events_registry
-            except Exception as e:
-                print(f'Error occured durning initializing events registry: {e}')

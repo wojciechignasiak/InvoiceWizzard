@@ -1,6 +1,5 @@
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 from fastapi import HTTPException, status
-from datetime import date
 from uuid import uuid4
 import re
 from typing import Optional
@@ -21,6 +20,10 @@ class UserModel(BaseModel):
     email_notification: bool
     push_notification: bool
 
+    @property
+    def email_str(self) -> str:
+        return str(self.email)
+
 class RegisterUserModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
@@ -35,6 +38,14 @@ class RegisterUserModel(BaseModel):
     repeated_email: EmailStr
     password: str
     repeated_password: str
+
+    @property
+    def email_str(self) -> str:
+        return str(self.email)
+
+    @property
+    def repeated_email_str(self) -> str:
+        return str(self.repeated_email)
 
 
 class CreateUserModel(BaseModel):
@@ -63,6 +74,10 @@ class CreateUserModel(BaseModel):
     def last_login(self):
         return date.today()
 
+    @property
+    def email_str(self) -> str:
+        return str(self.email)
+
 
 class UserPersonalInformationModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
@@ -70,7 +85,7 @@ class UserPersonalInformationModel(BaseModel):
                 "first_name": "Jan",
                 "last_name": "Kowalski",
                 "phone_number": "123456789",
-                "city": "Warszawa",
+                "city": "Warsaw",
                 "postal_code": "00-000",
                 "street": "Ul. Nowa 6/13"
                 }
@@ -128,6 +143,18 @@ class UpdateUserEmailModel(BaseModel):
     new_email: EmailStr
     new_repeated_email: EmailStr
 
+    @property
+    def current_email_str(self) -> str:
+        return str(self.current_email)
+
+    @property
+    def new_email_str(self) -> str:
+        return str(self.new_email)
+
+    @property
+    def new_repeated_email_str(self) -> str:
+        return str(self.new_repeated_email)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -135,7 +162,7 @@ class UpdateUserEmailModel(BaseModel):
 
     def _validate_email(self):
         if self.new_email != self.new_repeated_email:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided email adresses don't match.")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided email addresses don't match.")
 
 
 class ConfirmedUserEmailChangeModel(BaseModel):
@@ -147,20 +174,26 @@ class ConfirmedUserEmailChangeModel(BaseModel):
             }
         )
     
-    id: str
+    id: uuid.UUID
     new_email: EmailStr
+
+    @property
+    def new_email_str(self) -> str:
+        return str(self.new_email)
+
+
 
 class ConfirmedUserPasswordChangeModel(BaseModel):
     model_config = ConfigDict(json_schema_extra={
         "example":{
                 "id": "123456789",
                 "new_password": "passw0rd!",
-                "salt": "salthere"
+                "salt": "salt here"
                 }
             }
         )
     
-    id: str
+    id: uuid.UUID
     new_password: str
     salt: str
 
@@ -178,6 +211,10 @@ class ResetUserPasswordModel(BaseModel):
     new_password: str
     new_repeated_password: str
 
+    @property
+    def email_str(self) -> str:
+        return str(self.email)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -189,6 +226,6 @@ class ResetUserPasswordModel(BaseModel):
         if self.new_password != self.new_repeated_password:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Provided passwords don't match.")
         if not re.search(r'\d', self.new_password):
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contatain at least 1 digit.")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contain at least 1 digit.")
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', self.new_password):
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contatain at least 1 special character.")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Password needs to contain at least 1 special character.")

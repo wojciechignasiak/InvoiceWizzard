@@ -1,8 +1,9 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
+from uuid import UUID
 
 class JWTPayloadModel(BaseModel):
-    id: str
+    user_id: UUID
     email: EmailStr
     exp: datetime
 

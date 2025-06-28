@@ -1,49 +1,29 @@
-from app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
-from app.database.postgres.repositories.invoice_item_repository_abc import InvoiceItemPostgresRepositoryABC
-from app.models.invoice_item_model import UpdateInvoiceItemModel, CreateInvoiceItemModel
-from app.database.postgres.exceptions.custom_postgres_exceptions import (
-    PostgreSQLDatabaseError,
-    PostgreSQLIntegrityError,
-    PostgreSQLNotFoundError,
-)
-from sqlalchemy.exc import (
-    IntegrityError, 
-    DataError, 
-    StatementError,
-    DatabaseError,
-    InterfaceError,
-    OperationalError,
-    ProgrammingError
-    )
-from app.schema.schema import InvoiceItem
-from sqlalchemy import insert, select, update, delete
-from app.logging import logger
+#internal modules
+from main_api_service.app.database.postgres.repositories.base_postgres_repository import BasePostgresRepository
+from main_api_service.app.custom_exceptions.custom_exceptions import DatabaseError
+from main_api_service.app.models.invoice_item_model import UpdateInvoiceItemModel, CreateInvoiceItemModel
+from main_api_service.app.schema.schema import InvoiceItem
+#3rd party modules
+from fastapi import status
+from sqlalchemy import insert, select, update, delete, func, ScalarResult
+from sqlalchemy.sql import Select
 
-class InvoiceItemPostgresRepository(BasePostgresRepository, InvoiceItemPostgresRepositoryABC):
+#1st party modules
+from typing import Optional, Protocol
+from datetime import date
+from uuid import UUID
 
-    async def create_invoice_item(self, user_id: str, invoice_id: str, new_invoice_item: CreateInvoiceItemModel) -> InvoiceItem:
-        try:
-            stmt = (
-                insert(InvoiceItem).
-                values(
-                    id=new_invoice_item.id,
-                    user_id=user_id,
-                    invoice_id=invoice_id,
-                    item_description=new_invoice_item.item_description,
-                    number_of_items=new_invoice_item.number_of_items,
-                    net_value=new_invoice_item.net_value,
-                    gross_value=new_invoice_item.gross_value
-                ). 
-                returning(InvoiceItem)
-            )
-            created_invoice_item = await self.session.scalar(stmt)
-            return created_invoice_item
-        except IntegrityError as e:
-            logger.error(f"InvoiceItemPostgresRepository.create_invoice_item() Error: {e}")
-            raise PostgreSQLIntegrityError("Cannot create new invoice item in database. Integrity error occured.")
-        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"InvoiceItemPostgresRepository.create_invoice_item() Error: {e}")
-            raise PostgreSQLDatabaseError("Error related to database occured.")
+class IInvoiceItemPostgresRepository(Protocol):
+
+    ...
+
+async def new_invoice_item_postgres_repository() -> IInvoiceItemPostgresRepository:
+    try:
+        return InvoiceItemPostgresRepository()
+    except Exception as e:
+        raise e
+
+class InvoiceItemPostgresRepository(BasePostgresRepository, IInvoiceItemPostgresRepository):
 
     async def get_invoice_item(self, user_id: str, invoice_item_id: str) -> InvoiceItem:
         try:

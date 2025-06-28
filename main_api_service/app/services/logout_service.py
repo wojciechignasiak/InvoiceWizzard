@@ -1,8 +1,7 @@
 #internal modules
-from app.services.auth_service import IAuthService, new_auth_service
-from app.custom_exceptions.custom_exceptions import ServiceError
-from app.models.authentication_model import LogInModel
-from app.models.jwt_model import JWTPayloadModel
+from main_api_service.app.services.auth_service import IAuthService, new_auth_service
+from main_api_service.app.custom_exceptions.custom_exceptions import ServiceError
+from main_api_service.app.models.jwt_model import JWTPayloadModel
 
 #3rd party libraries
 from fastapi import Depends, status
@@ -14,25 +13,24 @@ from typing import Protocol
 
 class ILogoutService(Protocol):
 
-    async def logout(self, login_model: LogInModel) -> str:
+    async def logout(self, token: HTTPAuthorizationCredentials) -> None:
         ...
     
     async def logout_from_all_devices(self, token: HTTPAuthorizationCredentials) -> None:
         ...
 
-async def new_logout_service() -> IAuthService:
+async def new_logout_service() -> ILogoutService:
     try:
         return LogoutService()
     except Exception as e:
         raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occurred while trying create logout service.",
-                class_and_method="new_logout_service()",
+                message="Unexpected error occurred while trying create logout service",
                 argument=None,
                 child_error=e
             )
 
-class LogoutService:
+class LogoutService(ILogoutService):
 
     __slots__ = ('auth_service',)
 
@@ -49,16 +47,14 @@ class LogoutService:
             raise ServiceError(
                 status_code=e.status_code,
                 message=e.args[0],
-                class_and_method="LogoutService.logout()",
-                argument={'token': 'anonimized'},
+                argument={'token': 'anonymized'},
                 child_error=e
             )
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occurred in LogoutService while trying to logout user.",
-                class_and_method="LogoutService.logout()",
-                argument={'token': 'anonimized'},
+                message="Unexpected error occurred in LogoutService while trying to logout user",
+                argument={'token': 'anonymized'},
                 child_error=e
             )
     
@@ -70,15 +66,13 @@ class LogoutService:
             raise ServiceError(
                 status_code=e.status_code,
                 message=e.args[0],
-                class_and_method="LogoutService.logout()",
-                argument={'token': 'anonimized'},
+                argument={'token': 'anonymized'},
                 child_error=e
             )
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occurred in LogoutService while trying to logout user.",
-                class_and_method="LogoutService.logout()",
-                argument={'token': 'anonimized'},
+                message="Unexpected error occurred in LogoutService while trying to logout user",
+                argument={'token': 'anonymized'},
                 child_error=e
             )

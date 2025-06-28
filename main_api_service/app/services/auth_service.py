@@ -1,10 +1,10 @@
 #internal modules
-from app.database.redis.repositories.user_repository import IUserRedisRepository, new_user_redis_repository
-from app.models.jwt_model import (
+from main_api_service.app.database.redis.repositories.user_repository import IUserRedisRepository, new_user_redis_repository
+from main_api_service.app.models.jwt_model import (
     JWTDataModel, 
     JWTPayloadModel
     )
-from app.custom_exceptions.custom_exceptions import (
+from main_api_service.app.custom_exceptions.custom_exceptions import (
     AuthError,
     ServiceError,
     DatabaseError,
@@ -22,6 +22,7 @@ from typing import Protocol
 import os
 import re
 import datetime
+from uuid import UUID
 
 
 class IAuthService(Protocol):
@@ -32,28 +33,34 @@ class IAuthService(Protocol):
     async def delete_jwt(self, token: str) -> None:
         ...
 
-    async def delete_all_jwts(self, user_id: str) -> None:
+    async def delete_all_jwts(self, user_id: UUID) -> None:
         ...
 
+    @staticmethod
     async def salt_generator() -> str:
         ...
 
+    @staticmethod
     async def hash_password(salt: str, password: str) -> str:
         ...
 
-    async def verify_password(salt: bytes, password: str, hash: bytes) -> bool:
+    @staticmethod
+    async def verify_password(salt: str, password: str, password_hash: str) -> None:
         ...
 
+    @staticmethod
     async def jwt_encoder(jwt_data: JWTDataModel) -> str:
         ...
 
+    @staticmethod
     async def validate_password(password: str, repeated_password: str) -> bool:
         ...
 
-    async def validate_email_address(email_address: str, reapeated_email_address: str) -> bool:
+    @staticmethod
+    async def validate_email_address(email_address: str, repeated_email_address: str) -> bool:
         ...
 
-    async def create_and_save_jwt_token(self, user_id: str, email_address: str, jwt_expiration_time: datetime.datetime, salt: str) -> str:
+    async def create_and_save_jwt_token(self, user_id: UUID, email_address: str, jwt_expiration_time: datetime.datetime, salt: str) -> str:
         ...
 
 async def new_auth_service() -> IAuthService:
@@ -62,13 +69,12 @@ async def new_auth_service() -> IAuthService:
     except Exception as e:
         raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in AuthService while converting jwt payload to jwt payload model.",
-                class_and_method="AuthService.delete_jwt()",
-                argument={'token': 'anonimized'},
+                message="Unexpected error occurred in AuthService while converting jwt payload to jwt payload model",
+                argument={'token': 'anonymized'},
                 child_error=e,
             )
 
-class AuthService:
+class AuthService(IAuthService):
 
     __slots__ = ('user_redis_repository',)
 
@@ -80,25 +86,23 @@ class AuthService:
 
     async def get_jwt(self, token: HTTPAuthorizationCredentials) -> JWTPayloadModel:
         try:
-            jwt_payload: bytes | None = await self._user_redis_repository.retrieve_jwt(token.credentials)
+            jwt_payload: bytes | None = await self._user_redis_repository.get_jwt_token(token.credentials)
             if not jwt_payload:
-                raise AuthError(status_code=status.HTTP_401_UNAUTHORIZED, message="Unauthorized access or token expired.")
-            return await self.conver_jwt_payload_to_jwt_payload_model(jwt_payload)
+                raise AuthError(status_code=status.HTTP_401_UNAUTHORIZED, message="Unauthorized access or token expired")
+            return await self._convert_jwt_payload_to_jwt_payload_model(jwt_payload)
         except AuthError as e:
             raise e
         except (ServiceError, DatabaseError) as e:
             raise ServiceError(
                 status_code=e.status_code,
                 message=e.message,
-                class_and_method="AuthService.get_jwt()",
                 argument={'token': token},
                 child_error=e,
             )
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in AuthService while getting JWT token from database.",
-                class_and_method="AuthService.get_jwt()",
+                message="Unexpected error occurred in AuthService while getting JWT token from database",
                 argument={'token': token},
                 child_error=e,
             )
@@ -108,34 +112,31 @@ class AuthService:
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in AuthService while converting jwt payload to jwt payload model.",
-                class_and_method="AuthService.delete_jwt()",
-                argument={'token': 'anonimized'},
+                message="Unexpected error occurred in AuthService while converting jwt payload to jwt payload model",
+                argument={'token': 'anonymized'},
                 child_error=e,
             )
     
-    async def delete_all_jwts(self, user_id: str) -> None:
+    async def delete_all_jwts(self, user_id: UUID) -> None:
         try:
             await self._user_redis_repository.delete_all_jwt_tokens_of_user(user_id)
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in AuthService while converting jwt payload to jwt payload model.",
-                class_and_method="AuthService.delete_jwt()",
-                argument={'token': 'anonimized'},
+                message="Unexpected error occurred in AuthService while converting jwt payload to jwt payload model",
+                argument={'token': 'anonymized'},
                 child_error=e,
             )
 
     @staticmethod
-    async def _conver_jwt_payload_to_jwt_payload_model(jwt_payload: bytes) -> JWTPayloadModel:
+    async def _convert_jwt_payload_to_jwt_payload_model(jwt_payload: bytes) -> JWTPayloadModel:
         try:
             return JWTPayloadModel.model_validate_json(jwt_payload)
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in AuthService while converting jwt payload to jwt payload model.",
-                class_and_method="AuthService.conver_jwt_payload_to_jwt_payload_model()",
-                argument={'jwt_payload': 'anonimized'},
+                message="Unexpected error occurred in AuthService while converting jwt payload to jwt payload model",
+                argument={'jwt_payload': 'anonymized'},
                 child_error=e,
             )
 
@@ -146,8 +147,7 @@ class AuthService:
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in AuthService while generating salt.",
-                class_and_method="AuthService.salt_generator()",
+                message="Unexpected error occurred in AuthService while generating salt",
                 argument=None,
                 child_error=e,
             )
@@ -161,32 +161,29 @@ class AuthService:
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in AuthService while hashing password.",
-                class_and_method="AuthService.hash_password()",
-                argument={'salt': 'anonimized', 'password': 'anonimized'},
+                message="Unexpected error occurred in AuthService while hashing password",
+                argument={'salt': 'anonymized', 'password': 'anonymized'},
                 child_error=e,
             )
 
     @staticmethod
-    async def verify_password(salt: bytes, password: str, hash: bytes) -> None:
+    async def verify_password(salt: str, password: str, password_hash: str) -> None:
         try:
             ph = argon2.PasswordHasher()
-            is_the_same: bool = ph.verify(hash, password+salt)
+            is_the_same: bool = ph.verify(password_hash, password+salt)
             if not is_the_same:
-                raise AuthError(status_code=status.HTTP_401_UNAUTHORIZED, message="Password not correct.")
+                raise AuthError(status_code=status.HTTP_401_UNAUTHORIZED, message="Password not correct")
         except AuthError as e:
             raise AuthError(
                 status_code=e.status_code,
                 message=e.args[0],
-                class_and_method="AuthService.verify_password()",
-                argument={'salt': 'anonimized', 'password': 'anonimized', 'hash': 'anonimized'}
+                argument={'salt': 'anonymized', 'password': 'anonymized', 'password_hash': 'anonymized'}
             )
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in AuthService while converting jwt payload to jwt payload model.",
-                class_and_method="AuthService.verify_password()",
-                argument={'salt': 'anonimized', 'password': 'anonimized', 'hash': 'anonimized'},
+                message="Unexpected error occurred in AuthService while converting jwt payload to jwt payload model",
+                argument={'salt': 'anonymized', 'password': 'anonymized', 'password_hash': 'anonymized'},
                 child_error=e,
             )
 
@@ -202,8 +199,7 @@ class AuthService:
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in AuthService while converting jwt payload to jwt payload model.",
-                class_and_method="AuthService.jwt_encoder()",
+                message="Unexpected error occurred in AuthService while converting jwt payload to jwt payload model",
                 argument={'jwt_data': jwt_data},
                 child_error=e,
             )
@@ -212,62 +208,58 @@ class AuthService:
     async def validate_password(password: str, repeated_password: str) -> bool:
         try:
             if password != repeated_password:
-                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Provided passwords are not the same.")
+                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Provided passwords are not the same")
             if len(password) < 8:
-                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Provided password is too short.")
+                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Provided password is too short")
             if not re.search(r'[A-Z]', password):
-                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Password needs to contatain at least 1 capital letter.")
+                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Password needs to contain at least 1 capital letter")
             if not re.search(r'[a-z]', password):
-                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Password needs to contatain at least 1 lowercase letter.")
+                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Password needs to contain at least 1 lowercase letter")
             if not re.search(r'\d', password):
-                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Password needs to contatain at least 1 digit.")
+                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Password needs to contain at least 1 digit")
             if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Password needs to contatain at least 1 special character.")
+                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Password needs to contain at least 1 special character")
             return True
         except LogicError as e:
             raise LogicError(
                 status_code=e.args[0],
                 message=e.message,
-                class_and_method="AuthSevice.validate_password()",
-                argument={'password': 'anonimized', 'repeated_password': 'anonimized'},
+                argument={'password': 'anonymized', 'repeated_password': 'anonymized'},
                 child_error=e
             )
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occured in AuthService while checking does password meets conditions.",
-                class_and_method="AuthService.check_does_password_meets_conditions()",
-                argument={'password': 'anonimized', 'repeated_password': 'anonimized'},
+                message="Unexpected error occurred in AuthService while checking does password meets conditions",
+                argument={'password': 'anonymized', 'repeated_password': 'anonymized'},
                 child_error=e,
             )
 
     @staticmethod
-    async def validate_email_address(email_address: str, reapeated_email_address: str) -> bool:
+    async def validate_email_address(email_address: str, repeated_email_address: str) -> bool:
         try:
             email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
             if not re.match(email_regex, email_address):
                 raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Provided email is in wrong format")
-            if email_address != reapeated_email_address:
-                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Provided email adresses don't match.")
+            if email_address != repeated_email_address:
+                raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Provided email addresses don't match")
             return True
         except LogicError as e:
             raise LogicError(
                 status_code=e.args[0],
                 message=e.message,
-                class_and_method="AuthSevice.validate_email_address()",
-                argument={'email_address': email_address, 'repeated_email_address': reapeated_email_address},
+                argument={'email_address': email_address, 'repeated_email_address': repeated_email_address},
                 child_error=e
             )
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occurred in AuthService while checking if email has a valid format.",
-                class_and_method="AuthService.check_does_email_have_valid_format()",
-                argument={'email_address': email_address, 'repeated_email_address': reapeated_email_address},
+                message="Unexpected error occurred in AuthService while checking if email has a valid format",
+                argument={'email_address': email_address, 'repeated_email_address': repeated_email_address},
                 child_error=e,
             )
 
-    async def create_and_save_jwt_token(self, user_id: str, email_address: str, jwt_expiration_time: datetime.datetime, salt: str) -> str:
+    async def create_and_save_jwt_token(self, user_id: UUID, email_address: str, jwt_expiration_time: datetime.datetime, salt: str) -> str:
         try:
             jwt_payload: JWTPayloadModel = JWTPayloadModel(
                 id=user_id, 
@@ -285,15 +277,13 @@ class AuthService:
             raise ServiceError(
                 status_code=e.status_code,
                 message=e.args[0],
-                class_and_method="AuthService.create_and_save_jwt_token()",
-                argument={'user_id': user_id, 'email_address': email_address, 'jwt_expiration_time': jwt_expiration_time, 'salt': 'anonimized'},
+                argument={'user_id': user_id, 'email_address': email_address, 'jwt_expiration_time': jwt_expiration_time, 'salt': 'anonymized'},
                 child_error=e,
             )
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occurred in AuthService while checking if email has a valid format.",
-                class_and_method="AuthService.create_and_save_jwt_token()",
-                argument={'user_id': user_id, 'email_address': email_address, 'jwt_expiration_time': jwt_expiration_time, 'salt': 'anonimized'},
+                message="Unexpected error occurred in AuthService while checking if email has a valid format",
+                argument={'user_id': user_id, 'email_address': email_address, 'jwt_expiration_time': jwt_expiration_time, 'salt': 'anonymized'},
                 child_error=e,
             )

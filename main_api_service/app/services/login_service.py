@@ -1,9 +1,9 @@
 #internal modules
-from app.services.user_service import IUserService, UserService
-from app.services.auth_service import IAuthService, AuthService
-from app.custom_exceptions.custom_exceptions import AuthError, DataNotFoundError, ServiceError
-from app.models.authentication_model import LogInModel
-from app.schema.schema import User
+from main_api_service.app.services.user_service import IUserService, UserService
+from main_api_service.app.services.auth_service import IAuthService, AuthService
+from main_api_service.app.custom_exceptions.custom_exceptions import AuthError, DataNotFoundError, ServiceError
+from main_api_service.app.models.authentication_model import LogInModel
+from main_api_service.app.schema.schema import User
 
 #3rd party libraries
 from fastapi import Depends, status
@@ -12,8 +12,6 @@ from fastapi import Depends, status
 import datetime
 from typing import Protocol
 
-#internal modules
-from app.models.authentication_model import LogInModel
 
 
 class ILoginService(Protocol):
@@ -21,6 +19,7 @@ class ILoginService(Protocol):
     async def login(self, login_model: LogInModel) -> str:
         ...
 
+    @staticmethod
     async def set_jwt_expiration_time(remember_me: bool) -> datetime.datetime:
         ...
 
@@ -30,13 +29,12 @@ async def new_login_service() -> ILoginService:
     except Exception as e:
         raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occurred while creating login service.",
-                class_and_method="new_login_service()",
+                message="Unexpected error occurred while creating login service",
                 argument=None,
                 child_error=e
             )
 
-class LoginService:
+class LoginService(ILoginService):
 
     __slots__ = ('user_service', 'auth_service',)
 
@@ -60,47 +58,42 @@ class LoginService:
             raise AuthError(
                 status_code=e.status_code,
                 message=e.args[0],
-                class_and_method="LogInService.login()",
-                argument={'log_in_model': 'anonimized'},
+                argument={'log_in_model': 'anonymized'},
                 child_error=e
             )
         except DataNotFoundError as e:
             raise DataNotFoundError(
                 status_code=e.status_code,
                 message=e.args[0],
-                class_and_method="LogInService.login()",
-                argument={'log_in_model': 'anonimized'},
+                argument={'log_in_model': 'anonymized'},
                 child_error=e
             )
         except ServiceError as e:
             raise ServiceError(
                 status_code=e.status_code,
                 message=e.args[0],
-                class_and_method="LogInService.login()",
-                argument={'log_in_model': 'anonimized'},
+                argument={'log_in_model': 'anonymized'},
                 child_error=e
             )
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occurred in LogInService while trying to log in user.",
-                class_and_method="LogInService.login()",
-                argument={'log_in_model': 'anonimized'},
+                message="Unexpected error occurred in LogInService while trying to log in user",
+                argument={'log_in_model': 'anonymized'},
                 child_error=e
             )
 
     @staticmethod
     async def set_jwt_expiration_time(remember_me: bool) -> datetime.datetime:
         try:
-            if remember_me is True:
+            if remember_me:
                 return datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=24*14)
             else:
-                datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=12)
+                return datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=12)
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                message="Unexpected error occurred in LogInService while setting jwt token expiration time.",
-                class_and_method="LogInService._set_jwt_expiration_time()",
+                message="Unexpected error occurred in LogInService while setting jwt token expiration time",
                 argument={'remember_me': remember_me},
                 child_error=e
             )
