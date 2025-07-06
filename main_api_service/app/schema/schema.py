@@ -55,7 +55,7 @@ class Invoice(Base):
     user_business_entity: Mapped["UserBusinessEntity"] = relationship(back_populates="invoice")
     external_business_entity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("external_business_entity.id", ondelete="CASCADE"))
     external_business_entity: Mapped["ExternalBusinessEntity"] = relationship(back_populates="invoice")
-    invoice_pdf: Mapped[Optional[str]] = mapped_column(VARCHAR(500), nullable=True)
+    invoice_pdf: Mapped[bool] = mapped_column(BOOLEAN, nullable=False, default=False)
     invoice_number: Mapped[str] = mapped_column(VARCHAR(255), nullable=False)
     issue_date: Mapped[date] = mapped_column(DATE, nullable=False)
     sale_date: Mapped[date] = mapped_column(DATE, nullable=False)

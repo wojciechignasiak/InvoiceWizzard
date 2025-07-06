@@ -1,6 +1,6 @@
 #internal modules
-from app.files.files_repository_abc import FilesRepositoryABC
-from app.logging import logger
+from app.models.invoice_model import InvoiceModel
+from main_api_service.app.logging import logger
 
 #3rd party modules
 from PIL import Image
@@ -14,8 +14,22 @@ import os
 import shutil
 from pathlib import Path
 import asyncio
+from typing import Protocol
+from uuid import UUID
 
-class FilesRepository(FilesRepositoryABC):
+class IIOStorage(Protocol):
+
+    async def remove_invoice_file(self, user_id: UUID, invoice_id: UUID) -> None:
+        ...
+
+    async def add_invoice_file(self, user_id: UUID, invoice_id: UUID, invoice_file: bytes) -> None:
+        ...
+
+    async def get_invoice_file(self, user_id: UUID, invoice_id: UUID) -> Path | None:
+        ...
+
+
+class IOStorage():
     
     async def remove_invoice_folder(user_id: str, invoice_id: str, folder: str):
         try:

@@ -1,9 +1,9 @@
 #internal modules
+from main_api_service.app.storage.file_format_converter import IFileFormatConverter
 from main_api_service.app.models.user_business_entity_model import UserBusinessEntityModel
 from main_api_service.app.models.external_business_entity_model import ExternalBusinessEntityModel
 from main_api_service.app.schema.schema import Invoice, InvoiceItem
 from main_api_service.app.models.invoice_model import CreateInvoiceModel, InvoiceModel, InvoiceItemModel, UpdateInvoiceModel
-from main_api_service.app.models.invoice_item_model import CreateInvoiceItemModel
 from main_api_service.app.services.user_business_entity_service import IUserBusinessEntityService
 from main_api_service.app.services.external_business_entity_service import IExternalBusinessEntityService
 from main_api_service.app.database.redis.repositories.invoice_repository import IInvoiceRedisRepository, new_invoice_redis_repository
@@ -15,16 +15,18 @@ from main_api_service.app.custom_exceptions.custom_exceptions import (
     LogicError,
     EventError, DataNotFoundError
 )
+from main_api_service.app.storage.io_storage import IIOStorage
+from main_api_service.app.documents.file_builder import IFileBuilder
 
 #3rd party libraries
 from fastapi import Depends, status
 
 #1st party libraries
 from typing import Protocol
-import os
-import re
 from datetime import date
 import uuid
+import ast
+from pathlib import Path
 
 class IInvoiceService(Protocol):
 
@@ -65,6 +67,25 @@ class IInvoiceService(Protocol):
     async def update_invoice_in_trash_status(self, user_id: uuid.UUID, invoice_id: uuid.UUID, in_trash: bool) -> None:
         ...
 
+    async def initialize_invoice_removal(self, user_id: uuid.UUID, user_email: str, invoice_id: uuid.UUID) -> None:
+        ...
+
+    async def confirm_invoice_removal(self, removal_key_id: uuid.UUID, user_id: uuid.UUID, user_email: str) -> None:
+        ...
+
+    async def add_file_to_invoice(self, user_id: uuid.UUID, invoice_id: uuid.UUID, invoice_file: bytes,
+                                  invoice_file_extension: str) -> None:
+        ...
+
+    async def delete_file_from_invoice(self, user_id: uuid.UUID, invoice_id: uuid.UUID) -> None:
+        ...
+
+    async def get_invoice_file(self, user_id: uuid.UUID, invoice_id: uuid.UUID) -> Path:
+        ...
+
+    async def generate_invoice_file(self, user_id: uuid.UUID, invoice_id: uuid.UUID) -> None:
+        ...
+
 async def new_invoice_service() -> IInvoiceService:
     try:
         return InvoiceService()
@@ -91,6 +112,9 @@ class InvoiceService(IInvoiceService):
         self._invoice_events: IInvoiceEvents = invoice_events
         self._user_business_entity_service: IUserBusinessEntityService = None
         self._external_business_entity_service: IExternalBusinessEntityService = None
+        self._io_storage: IIOStorage = None
+        self._file_format_converter: IFileFormatConverter = None
+        self._file_builder: IFileBuilder = None
 
     async def create_invoice(self, user_id: uuid.UUID, new_invoice: CreateInvoiceModel) -> uuid.UUID:
         try:
@@ -382,21 +406,255 @@ class InvoiceService(IInvoiceService):
             raise DataNotFoundError(
                 status_code=e.status_code,
                 message=e.message,
-                argument={'user_id': user_id, 'invoice_id': invoice_id},
+                argument={'user_id': user_id, 'invoice_id': invoice_id, 'in_trash': in_trash},
                 child_error=e,
             )
         except (ServiceError, DatabaseError) as e:
             raise ServiceError(
                 status_code=e.status_code,
                 message=e.message,
-                argument={'user_id': user_id, 'invoice_id': invoice_id},
+                argument={'user_id': user_id, 'invoice_id': invoice_id, 'in_trash': in_trash},
                 child_error=e,
             )
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message="Unexpected error occurred in InvoiceService while changing invoice in trash status",
-                argument={'user_id': user_id, 'invoice_id': invoice_id},
+                argument={'user_id': user_id, 'invoice_id': invoice_id, 'in_trash': in_trash},
+                child_error=e,
+            )
+
+    async def initialize_invoice_removal(self, user_id: uuid.UUID, user_email: str, invoice_id: uuid.UUID) -> None:
+        try:
+            invoice: InvoiceModel = await self.get_invoice_by_id(user_id, invoice_id)
+            removal_key_id: uuid.UUID = uuid.uuid4()
+            await self._invoice_redis_repository.initialize_invoice_removal(removal_key_id, invoice_id)
+            await self._invoice_events.remove_invoice(
+                removal_key_id,
+                user_email,
+                invoice.invoice_number,
+                invoice.user_business_entity.company_name,
+                invoice.external_business_entity.company_name,
+                invoice.is_issued,
+            )
+        except DataNotFoundError as e:
+            raise DataNotFoundError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'user_email': user_email, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+        except (ServiceError, DatabaseError, EventError) as e:
+            raise ServiceError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'user_email': user_email, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred in InvoiceService while initializing invoice removal",
+                argument={'user_id': user_id, 'user_email': user_email, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+
+    async def confirm_invoice_removal(self, removal_key_id: uuid.UUID, user_id: uuid.UUID, user_email: str) -> None:
+        try:
+            invoice_removal: bytes | None = await self._invoice_redis_repository.get_invoice_removal(removal_key_id)
+            if not invoice_removal:
+                raise DataNotFoundError(
+                    message="Invoice removal process not initialized or expired", status_code=status.HTTP_404_NOT_FOUND,
+                )
+            invoice_removal: dict[str, uuid.UUID] = await  self._convert_invoice_removal_bytes_to_dict(invoice_removal)
+            invoice: InvoiceModel = await self.get_invoice_by_id(user_id, invoice_removal['invoice_id'])
+            if invoice.invoice_pdf:
+                await self._io_storage.remove_invoice_file(user_id, invoice.id)
+            await self._invoice_redis_repository.delete_invoice_removal(removal_key_id)
+            await self._invoice_events.invoice_removed(
+                uuid.uuid4(),
+                user_email,
+                invoice.invoice_number,
+                invoice.user_business_entity.company_name,
+                invoice.external_business_entity.company_name,
+                invoice.is_issued,
+            )
+
+        except DataNotFoundError as e:
+            raise DataNotFoundError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'removal_key_id': removal_key_id, 'user_id': user_id, 'user_email': user_email,},
+                child_error=e,
+            )
+        except (ServiceError, DatabaseError, EventError) as e:
+            raise ServiceError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'removal_key_id': removal_key_id, 'user_id': user_id, 'user_email': user_email,},
+                child_error=e,
+            )
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred in InvoiceService while removing invoice",
+                argument={'removal_key_id': removal_key_id, 'user_id': user_id, 'user_email': user_email,},
+                child_error=e,
+            )
+
+    async def add_file_to_invoice(self, user_id: uuid.UUID, invoice_id: uuid.UUID, invoice_file: bytes, invoice_file_extension: str) -> None:
+        try:
+            invoice: InvoiceModel = await self.get_invoice_by_id(user_id, invoice_id)
+            if invoice.invoice_pdf:
+                raise LogicError(message="Invoice already have pdf file. Delete current file first", status_code=status.HTTP_409_CONFLICT)
+
+            match invoice_file_extension:
+                case "pdf":
+                    await self._io_storage.add_invoice_file(user_id, invoice_id, invoice_file)
+                case "jpg" | "jpeg" | "png":
+                    converted_invoice_file: bytes = await  self._file_format_converter.convert_file_format(invoice_file)
+                    await self._io_storage.add_invoice_file(user_id, invoice_id, converted_invoice_file)
+                case _:
+                    raise LogicError(message="Unsupported invoice file format. Supported file formats are: pdf, jpg, jpeg, png", status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+            await self._invoice_postgres_repository.update_invoice_file_status(user_id, invoice_id, True)
+        except LogicError as e:
+            raise LogicError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'invoice_id': invoice_id, 'invoice_file': invoice_file,},
+                child_error=e,
+            )
+        except DataNotFoundError as e:
+            raise DataNotFoundError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'invoice_id': invoice_id, 'invoice_file': invoice_file,},
+                child_error=e,
+            )
+        except (ServiceError, DatabaseError, EventError) as e:
+            raise ServiceError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'invoice_id': invoice_id, 'invoice_file': invoice_file,},
+                child_error=e,
+            )
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred in InvoiceService while adding file to invoice",
+                argument={'user_id': user_id, 'invoice_id': invoice_id, 'invoice_file': invoice_file,},
+                child_error=e,
+            )
+
+    async def delete_file_from_invoice(self, user_id: uuid.UUID, invoice_id: uuid.UUID) -> None:
+        try:
+            invoice: InvoiceModel = await self.get_invoice_by_id(user_id, invoice_id)
+            if not invoice.invoice_pdf:
+                raise LogicError(message="Invoice don't have file", status_code=status.HTTP_409_CONFLICT)
+            await self._io_storage.remove_invoice_file(user_id, invoice_id)
+            await self._invoice_postgres_repository.update_invoice_file_status(user_id, invoice_id, False)
+        except LogicError as e:
+            raise LogicError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+        except DataNotFoundError as e:
+            raise DataNotFoundError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+        except (ServiceError, DatabaseError, EventError) as e:
+            raise ServiceError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred in InvoiceService while deleting file from invoice",
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+
+    async def get_invoice_file(self, user_id: uuid.UUID, invoice_id: uuid.UUID) -> Path:
+        try:
+            invoice: InvoiceModel = await self.get_invoice_by_id(user_id, invoice_id)
+            if not invoice.invoice_pdf:
+                raise LogicError(message="Invoice don't have file", status_code=status.HTTP_409_CONFLICT)
+            file: Path | None = await self._io_storage.get_invoice_file(user_id, invoice_id)
+            if not file:
+                raise DataNotFoundError(message="Invoice file not found", status_code=status.HTTP_404_NOT_FOUND)
+            return file
+        except LogicError as e:
+            raise LogicError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+        except DataNotFoundError as e:
+            raise DataNotFoundError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+        except (ServiceError, DatabaseError, EventError) as e:
+            raise ServiceError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred in InvoiceService while deleting file from invoice",
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+
+    async def generate_invoice_file(self, user_id: uuid.UUID, invoice_id: uuid.UUID) -> None:
+        try:
+            invoice: InvoiceModel = await self.get_invoice_by_id(user_id, invoice_id)
+            if invoice.invoice_pdf:
+                raise LogicError(message="Invoice already have file", status_code=status.HTTP_409_CONFLICT)
+            invoice_html: str = await self._file_builder.build_invoice_file(invoice)
+            converted_invoice_file: bytes = await self._file_format_converter.convert_file_format(invoice_html)
+            await self._io_storage.add_invoice_file(user_id, invoice_id, converted_invoice_file)
+            await self._invoice_postgres_repository.update_invoice_file_status(user_id, invoice_id, True)
+        except LogicError as e:
+            raise LogicError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+        except DataNotFoundError as e:
+            raise DataNotFoundError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+        except (ServiceError, DatabaseError, EventError) as e:
+            raise ServiceError(
+                status_code=e.status_code,
+                message=e.message,
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
+                child_error=e,
+            )
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred in InvoiceService while deleting file from invoice",
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
                 child_error=e,
             )
 
@@ -491,5 +749,19 @@ class InvoiceService(IInvoiceService):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message="Unexpected error occurred in UserService while converting invoice schema to invoice model",
                 argument={'invoice': invoice, 'user_business_entity': user_business_entity, 'external_business_entity': external_business_entity ,'invoice_items': invoice_items},
+                child_error=e,
+            )
+
+    @staticmethod
+    async def _convert_invoice_removal_bytes_to_dict(invoice_removal: bytes) -> dict[str, uuid.UUID]:
+        try:
+            invoice_removal: dict[str, str] = ast.literal_eval(invoice_removal.decode('utf-8'))
+            invoice_removal_with_uuid: dict[str, uuid.UUID] = {'invoice_id': uuid.UUID(invoice_removal['invoice_id'])}
+            return invoice_removal_with_uuid
+        except Exception as e:
+            raise ServiceError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message="Unexpected error occurred in InvoiceService while converting invoice removal bytes to dict",
+                argument={'invoice_removal': invoice_removal},
                 child_error=e,
             )

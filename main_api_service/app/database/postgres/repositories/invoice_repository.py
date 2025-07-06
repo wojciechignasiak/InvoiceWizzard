@@ -70,6 +70,13 @@ class IInvoicePostgresRepository(Protocol):
     async def update_invoice_items_in_trash_status(self, user_id: UUID, invoice_id: UUID, in_trash: bool) -> None:
         ...
 
+    async def remove_invoice(self, user_id: UUID, invoice_id: UUID) -> None:
+        ...
+
+    async def update_invoice_file_status(self, user_id: UUID, invoice_id: UUID, invoice_file_status: bool) -> None:
+        ...
+
+
 async def new_invoice_postgres_repository() -> IInvoicePostgresRepository:
     try:
         return InvoicePostgresRepository()
@@ -392,7 +399,7 @@ class InvoicePostgresRepository(BasePostgresRepository, IInvoicePostgresReposito
                 child_error=e
             )
 
-    async def remove_invoice(self, user_id: str, invoice_id: str) -> bool:
+    async def remove_invoice(self, user_id: UUID, invoice_id: UUID) -> None:
         try:
             stmt = (
                 delete(Invoice).
@@ -401,19 +408,17 @@ class InvoicePostgresRepository(BasePostgresRepository, IInvoicePostgresReposito
                     Invoice.user_id == user_id
                     )
             )
-            deleted_invoice = await self.session.execute(stmt)
-            rows_after_delete = deleted_invoice.rowcount
-
-            if rows_after_delete == 1:
-                return True
-            else:
-                return False
-        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"InvoicePostgresRepository.remove_invoice() Error: {e}")
-            raise PostgreSQLDatabaseError("Error related to database occured.")
+            await self.session.execute(stmt)
+        except Exception as e:
+            raise DatabaseError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message=f"Unexpected error occurred while deleting invoice with id: {invoice_id} and user id: {user_id} from sql database.",
+                argument={'user_id': user_id, 'invoice_id': invoice_id,},
+                child_error=e
+            )
 
         
-    async def update_invoice_file(self, user_id: str, invoice_id: str, invoice_pdf_location: str) -> None:
+    async def update_invoice_file_status(self, user_id: UUID, invoice_id: UUID, invoice_file_status: bool) -> None:
         try:
             stmt = (
                 update(Invoice).
@@ -422,16 +427,17 @@ class InvoicePostgresRepository(BasePostgresRepository, IInvoicePostgresReposito
                     Invoice.user_id == user_id
                     ).
                 values(
-                    invoice_pdf=invoice_pdf_location
-                ).
-                returning(Invoice)
+                    invoice_pdf=invoice_file_status
+                )
             )
-            updated_invoice = await self.session.scalar(stmt)
-            if updated_invoice is None:
-                raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
-        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"InvoicePostgresRepository.update_invoice_file() Error: {e}")
-            raise PostgreSQLDatabaseError("Error related to database occured.")
+            await self.session.scalar(stmt)
+        except Exception as e:
+            raise DatabaseError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message=f"Unexpected error occurred while updating invoice file status by invoice id: {invoice_id} and user id: {user_id} in sql database.",
+                argument={'user_id': user_id, 'invoice_id': invoice_id, 'invoice_file_status': invoice_file_status},
+                child_error=e
+            )
     
     async def remove_invoice_file(self, user_id: str, invoice_id: str) -> None:
         try:

@@ -1,10 +1,11 @@
-from app.models.invoice_item_model import InvoiceItemModel
-from app.models.invoice_model import InvoiceModel
-from app.models.user_business_entity_model import UserBusinessEntityModel
-from app.models.external_business_entity_model import ExternalBusinessEntityModel
-from app.logging import logger
-from typing import Union
-from app.documents.invoice_builder_abc import InvoiceBuilderABC
+from main_api_service.app.models.invoice_model import InvoiceModel
+
+from typing import Protocol
+
+class IFileBuilder(Protocol):
+
+    async def build_invoice_file(self, invoice: InvoiceModel) -> str:
+        ...
 
 class InvoiceBuilder(InvoiceBuilderABC):
     __slots__= (
@@ -13,16 +14,9 @@ class InvoiceBuilder(InvoiceBuilderABC):
         'user_business_entity',
         'external_business_entity'
     )
-    def __init__(self, 
-                invoice: InvoiceModel,
-                invoice_items: list[InvoiceItemModel],
-                user_business_entity: UserBusinessEntityModel,
-                external_business_entity: ExternalBusinessEntityModel):
-        
-        self.invoice: InvoiceModel = invoice
-        self.invoice_items: list[InvoiceItemModel] = invoice_items
-        self.user_business_entity: UserBusinessEntityModel = user_business_entity
-        self.external_business_entity: ExternalBusinessEntityModel = external_business_entity
+    def __init__(self,):
+        pass
+
 
     async def create_invoice_html_document(self) -> str:
         try:

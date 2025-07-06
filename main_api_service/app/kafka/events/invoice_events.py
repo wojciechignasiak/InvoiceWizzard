@@ -1,7 +1,7 @@
 #internal modules
-from app.models.kafka_topics_enum import KafkaTopicsEnum
-from app.kafka.events.kafka_producer_base import KafkaProducerBase
-from app.custom_exceptions.custom_exceptions import EventError
+from main_api_service.app.models.kafka_topics_enum import KafkaTopicsEnum
+from main_api_service.app.kafka.events.kafka_producer_base import KafkaProducerBase
+from main_api_service.app.custom_exceptions.custom_exceptions import EventError
 
 #3rd party modules
 from fastapi import status
@@ -9,13 +9,14 @@ from fastapi import status
 #1st party modules
 from typing import Protocol
 import json
+from uuid import UUID
 
 
 class IInvoiceEvents(Protocol):
 
     async def remove_invoice(
                 self, 
-                id: str, 
+                key_id: UUID,
                 email_address: str, 
                 invoice_number: str,
                 user_company_name: str,
@@ -25,7 +26,7 @@ class IInvoiceEvents(Protocol):
     
     async def invoice_removed(
             self, 
-            id: str, 
+            key_id: UUID,
             email_address: str, 
             invoice_number: str,
             user_company_name: str,
@@ -45,11 +46,11 @@ async def new_invoice_events() -> IInvoiceEvents:
                 child_error=e,
             )
 
-class InvoiceEvents(KafkaProducerBase):
+class InvoiceEvents(KafkaProducerBase, IInvoiceEvents):
 
     async def remove_invoice(
             self, 
-            id: str, 
+            key_id: UUID,
             email_address: str, 
             invoice_number: str,
             user_company_name: str,
@@ -57,7 +58,7 @@ class InvoiceEvents(KafkaProducerBase):
             is_issued: bool) -> None: 
         try:
             message = {
-                "id": id,
+                "key_id": key_id,
                 "email": email_address,
                 "invoice_number": invoice_number,
                 "user_company_name": user_company_name,
@@ -74,7 +75,7 @@ class InvoiceEvents(KafkaProducerBase):
                 message="Unexpected error occurred in InvoiceEvents while creating remove invoice event",
                 class_and_method="UserEvents.remove_invoice()",
                 argument={
-                    'id': id, 
+                    "key_id": key_id,
                     'email_address': email_address, 
                     'invoice_number': invoice_number, 
                     'user_company_name': user_company_name,
@@ -86,7 +87,7 @@ class InvoiceEvents(KafkaProducerBase):
         
     async def invoice_removed(
             self, 
-            id: str, 
+            key_id: UUID,
             email_address: str, 
             invoice_number: str,
             user_company_name: str,
@@ -94,7 +95,7 @@ class InvoiceEvents(KafkaProducerBase):
             is_issued: bool) -> None:
         try:
             message = {
-                "id": id,
+                "key_id": key_id,
                 "email": email_address,
                 "invoice_number": invoice_number,
                 "user_company_name": user_company_name,
@@ -111,7 +112,7 @@ class InvoiceEvents(KafkaProducerBase):
                 message="Unexpected error occurred in InvoiceEvents while creating invoice removed event",
                 class_and_method="UserEvents.invoice_removed()",
                 argument={
-                    'id': id, 
+                    "key_id": key_id,
                     'email_address': email_address, 
                     'invoice_number': invoice_number, 
                     'user_company_name': user_company_name,
