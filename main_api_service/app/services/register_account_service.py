@@ -32,7 +32,7 @@ class IRegisterAccountService(Protocol):
     async def _check_is_email_already_registered(self, email_address: str) -> None:
         ...
 
-async def new_register_account_service() -> IRegisterAccountService:
+def new_register_account_service() -> IRegisterAccountService:
     try:
         return RegisterAccountService()
     except Exception as e:
@@ -57,12 +57,12 @@ class RegisterAccountService(IRegisterAccountService):
 
     async def register_user(self, register_user_model: RegisterUserModel, key_id: uuid.UUID = uuid.uuid4()) -> None:
         try:
-            await self._auth_service.validate_email_address(register_user_model.email_address, register_user_model.repeated_email)
+            self._auth_service.validate_email_address(register_user_model.email_address, register_user_model.repeated_email)
             await self._check_is_email_already_taken(register_user_model.email)
             await self._check_is_email_already_registered(register_user_model.email)
-            await self._auth_service.validate_password(register_user_model.password, register_user_model.repeated_password)
-            salt: str = await self._auth_service.salt_generator()
-            hashed_password: str = await self._auth_service.hash_password(salt, register_user_model.password)
+            self._auth_service.validate_password(register_user_model.password, register_user_model.repeated_password)
+            salt: str = self._auth_service.salt_generator()
+            hashed_password: str = self._auth_service.hash_password(salt, register_user_model.password)
             create_user_model: CreateUserModel = CreateUserModel(
                 email=register_user_model.email,
                 password=hashed_password,
@@ -74,28 +74,28 @@ class RegisterAccountService(IRegisterAccountService):
             raise DataNotFoundError(
                 status_code=e.args[0],
                 message=e.message,
-                argument={'register_user_model':  await self.__anonymize_user_password_and_email_for_exception(register_user_model)},
+                argument={'register_user_model':  self.__anonymize_user_password_and_email_for_exception(register_user_model)},
                 child_error=e
             )
         except LogicError as e:
             raise LogicError(
                 status_code=e.status_code,
                 message=e.message,
-                argument={'register_user_model':  await self.__anonymize_user_password_and_email_for_exception(register_user_model)},
+                argument={'register_user_model':  self.__anonymize_user_password_and_email_for_exception(register_user_model)},
                 child_error=e,
             )
         except (ServiceError, DatabaseError) as e:
             raise ServiceError(
                 status_code=e.status_code,
                 message=e.message,
-                argument={'register_user_model':  await self.__anonymize_user_password_and_email_for_exception(register_user_model)},
+                argument={'register_user_model':  self.__anonymize_user_password_and_email_for_exception(register_user_model)},
                 child_error=e,
             )
         except Exception as e:
             raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message="Unexpected error occurred in RegisterAccountService while registering user",
-                argument={'register_user_model': await self.__anonymize_user_password_and_email_for_exception(register_user_model)},
+                argument={'register_user_model': self.__anonymize_user_password_and_email_for_exception(register_user_model)},
                 child_error=e,
             )
 
@@ -158,7 +158,7 @@ class RegisterAccountService(IRegisterAccountService):
             )
 
     @staticmethod
-    async def __anonymize_user_password_and_email_for_exception(register_user_model: RegisterUserModel) -> RegisterUserModel:
+    def __anonymize_user_password_and_email_for_exception(register_user_model: RegisterUserModel) -> RegisterUserModel:
         register_user_model.password = 'anonymized'
         register_user_model.repeated_password = 'anonymized'
         return register_user_model

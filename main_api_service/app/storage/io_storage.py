@@ -1,107 +1,134 @@
 #internal modules
-from app.models.invoice_model import InvoiceModel
-from main_api_service.app.logging import logger
-
+from main_api_service.app.custom_exceptions.custom_exceptions import StorageError
 #3rd party modules
-from PIL import Image
-from weasyprint import HTML
-import imageio
-import img2pdf
-
+from fastapi import status, Request
 #1st party modules
-from io import BytesIO
-import os
-import shutil
 from pathlib import Path
 import asyncio
 from typing import Protocol
 from uuid import UUID
+from contextlib import asynccontextmanager
 
 class IIOStorage(Protocol):
 
     async def remove_invoice_file(self, user_id: UUID, invoice_id: UUID) -> None:
         ...
 
-    async def add_invoice_file(self, user_id: UUID, invoice_id: UUID, invoice_file: bytes) -> None:
+    async def save_invoice_file(self, user_id: UUID, invoice_id: UUID, invoice_file: bytes) -> None:
         ...
 
     async def get_invoice_file(self, user_id: UUID, invoice_id: UUID) -> Path | None:
         ...
 
 
-class IOStorage():
-    
-    async def remove_invoice_folder(user_id: str, invoice_id: str, folder: str):
+def get_io_storage(request: Request):
         try:
-            await asyncio.to_thread(shutil.rmtree(f"/usr/app/invoice-files/{folder}/{user_id}/{invoice_id}"))
+            return request.app.state.io_storage
         except Exception as e:
-            logger.error(f"FilesRepository.remove_invoice_folder() Error: {e}")
-            raise Exception("Error durning removing file occured.")
-        
-    async def remove_ai_extraction_failure_folder(file_path: str):
-        try:
-            await asyncio.to_thread(shutil.rmtree(os.path.dirname(file_path)))
-        except Exception as e:
-            logger.error(f"FilesRepository.remove_ai_extraction_failure_folder() Error: {e}")
-            raise Exception("Error durning removing file occured.")
+            raise StorageError(
+                message="Unexpected error while getting IO storage",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                child_error=e
+            )
 
-    async def save_invoice_file(file_path: str, file_data: bytes):
-        try:
-            await asyncio.to_thread(os.makedirs, os.path.dirname(file_path), True)
-            await asyncio.to_thread(lambda: Path(file_path).write_bytes(file_data))
-        except Exception as e:
-            logger.error(f"FilesRepository.save_invoice_file() Error: {e}")
-            raise Exception("Error during saving file occurred.")
+class IOStorage(IIOStorage):
 
-    async def convert_from_img_to_pdf_and_save_invoice_file(file_path: str, file_extension: str, file_data: bytes):
-        try:
-            await asyncio.to_thread(os.makedirs, os.path.dirname(file_path), True)
-            
-            def process_image():
-                with imageio.get_reader(BytesIO(file_data)) as reader:
-                    is_it_mpo: bool = len(reader) > 1
+    def __init__(self, base_path: str = "invoices"):
+        self.base_path = Path(base_path)
+        self._file_locks: dict[str, asyncio.Lock] = {}
+        self._locks_lock = asyncio.Lock()
 
-                    if is_it_mpo:
-                        base_image = Image.fromarray(reader.get_data(0))
-                        with BytesIO() as jpeg_stream:
-                            base_image.save(jpeg_stream, format=file_extension)
-                            return jpeg_stream.getvalue()
-                return file_data
-            
-            processed_data = await asyncio.to_thread(process_image)
-            pdf_data = await asyncio.to_thread(img2pdf.convert, processed_data)
-            await asyncio.to_thread(lambda: Path(file_path).write_bytes(pdf_data))
-        except Exception as e:
-            logger.error(f"FilesRepository.convert_from_img_to_pdf_and_save_invoice_file() Error: {e}")
-            raise Exception("Error during converting img to pdf file occurred.")
 
-    async def get_invoice_pdf_file(file_path: str) -> Path:
+    @asynccontextmanager
+    async def file_lock(self, file_path: str):
         try:
-            return Path(file_path)
-        except Exception as e:
-            logger.error(f"FilesRepository.get_invoice_pdf_file() Error: {e}")
-            raise Exception("Error during getting file occurred.")
-    
-    async def invoice_html_to_pdf(invoice_html: str, file_path: str):
-        try:
-            directory = os.path.dirname(file_path)
-            await asyncio.to_thread(os.makedirs, directory, True)
-            
-            def generate_pdf():
-                return HTML(string=invoice_html).write_pdf()
-            
-            pdf_document = await asyncio.to_thread(generate_pdf)
-            if pdf_document:
-                await asyncio.to_thread(lambda: Path(file_path).write_bytes(pdf_document))
-        except Exception as e:
-            logger.error(f"FilesRepository.invoice_html_to_pdf() Error: {e}")
-            raise Exception("Error during converting HTML to PDF occurred.")
+            async with self._locks_lock:
+                if file_path not in self._file_locks:
+                    self._file_locks[file_path] = asyncio.Lock()
+                lock = self._file_locks[file_path]
 
-    async def copy_ai_invoice_to_invoice_folder(ai_invoice_id: str, user_id: str, invoice_id: str):
-        try:
-            await asyncio.to_thread(shutil.copyfile,
-                f"/usr/app/invoice-files/ai-invoice/{user_id}/{ai_invoice_id}.pdf",
-                f"/usr/app/invoice-files/invoice/{user_id}/{invoice_id}.pdf")
+            await lock.acquire()
+            try:
+                yield
+            finally:
+                lock.release()
+                async with self._locks_lock:
+                    if not lock.locked() and not lock._waiters:
+                        self._file_locks.pop(file_path, None)
         except Exception as e:
-            logger.error(f"FilesRepository.copy_ai_invoice_to_invoice_folder() Error: {e}")
-            raise Exception("Error during copying file occurred.")
+            raise StorageError(
+                message="Unexpected error while locking file lock",
+                argument={
+                    "file_path": file_path,
+                },
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                child_error=e
+            )
+
+    def _get_invoice_path(self, user_id: UUID, invoice_id: UUID) -> Path:
+        return self.base_path / str(user_id) / f"{invoice_id}.pdf"
+
+    @staticmethod
+    async def _ensure_directory_exists(directory: Path) -> None:
+        try:
+            await asyncio.to_thread(lambda: Path(directory).mkdir(exist_ok=True))
+        except Exception as e:
+            raise StorageError(
+                message="Unexpected error while ensuring directory exists",
+                argument={
+                    "directory": directory,
+                },
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                child_error=e
+            )
+
+    async def remove_invoice_file(self, user_id: UUID, invoice_id: UUID) -> None:
+        try:
+            file_path: Path = self._get_invoice_path(user_id, invoice_id)
+            async with self.file_lock(str(file_path)):
+                await asyncio.to_thread(lambda: Path(file_path).unlink(missing_ok=True))
+        except Exception as e:
+            raise StorageError(
+                message="Unexpected error while trying to remove invoice file",
+                argument={
+                    "user_id": user_id,
+                    "invoice_id": invoice_id,
+                },
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                child_error=e
+            )
+
+    async def add_invoice_file(self, user_id: UUID, invoice_id: UUID, invoice_file: bytes) -> None:
+        try:
+            file_path: Path = self._get_invoice_path(user_id, invoice_id)
+            async with self.file_lock(str(file_path)):
+                await asyncio.to_thread(lambda: Path(file_path).write_bytes(invoice_file))
+        except Exception as e:
+            raise StorageError(
+                message="Unexpected error while trying to add invoice file",
+                argument={
+                    "user_id": user_id,
+                    "invoice_id": invoice_id,
+                },
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                child_error=e
+            )
+
+    async def get_invoice_file(self, user_id: UUID, invoice_id: UUID) -> Path | None:
+        try:
+            file_path: Path = self._get_invoice_path(user_id, invoice_id)
+            async with self.file_lock(str(file_path)):
+                if await asyncio.to_thread(lambda: Path(file_path).exists()):
+                    return Path(file_path)
+                else:
+                    return None
+        except Exception as e:
+            raise StorageError(
+                message="Unexpected error while trying to get invoice file",
+                argument={
+                    "user_id": user_id,
+                    "invoice_id": invoice_id,
+                },
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                child_error=e
+            )

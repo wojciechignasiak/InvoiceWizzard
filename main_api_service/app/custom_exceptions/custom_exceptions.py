@@ -43,3 +43,6 @@ class LogicError(CustomException):
 
 class EventError(CustomException):
     """Base exception for events related errors"""
+
+class StorageError(CustomException):
+    """Base exception for storage related errors"""

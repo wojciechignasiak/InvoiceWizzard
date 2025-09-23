@@ -19,7 +19,7 @@ from main_api_service.app.custom_exceptions.custom_exceptions import (
     )
 
 #3rd party libraries
-from fastapi import Depends, status
+from fastapi import Depends, status, BackgroundTasks
 
 #1st party libraries
 from typing import Protocol
@@ -68,7 +68,7 @@ class IUserService(Protocol):
     async def confirm_password_change(self, key_id: uuid.UUID) -> None:
         ...
 
-async def new_user_service() -> IUserService:
+def new_user_service() -> IUserService:
     try:
         return UserService()
     except Exception as e:
@@ -98,7 +98,7 @@ class UserService(IUserService):
             user: User | None = await self._user_postgres_repository.get_user_by_id(user_id)
             if not user:
                 raise DataNotFoundError(status_code=status.HTTP_404_NOT_FOUND, message="User not found")
-            return await self._convert_user_schema_to_user_model(user)
+            return self._convert_user_schema_to_user_model(user)
         except DataNotFoundError as e:
             raise DataNotFoundError(
                 status_code=e.args[0],
@@ -122,7 +122,7 @@ class UserService(IUserService):
             )
 
     @staticmethod
-    async def _convert_user_schema_to_user_model(user: User) -> UserModel:
+    def _convert_user_schema_to_user_model(user: User) -> UserModel:
         try:
             return UserModel(
             id=user.id,

@@ -76,12 +76,23 @@ class IInvoicePostgresRepository(Protocol):
     async def update_invoice_file_status(self, user_id: UUID, invoice_id: UUID, invoice_file_status: bool) -> None:
         ...
 
+    async def count_invoices_related_to_user_business_entity(self, user_id: UUID, user_business_entity_id: UUID) -> int:
+        ...
+
+    async def count_invoices_related_to_external_business_entity(self, user_id: UUID,
+                                                                 external_business_entity_id: UUID) -> int:
+        ...
 
 async def new_invoice_postgres_repository() -> IInvoicePostgresRepository:
     try:
         return InvoicePostgresRepository()
     except Exception as e:
-        raise e
+        raise DatabaseError(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message=f"Unexpected error occurred while creating invoice repository.",
+            argument=None,
+            child_error=e
+        )
 
 class InvoicePostgresRepository(BasePostgresRepository, IInvoicePostgresRepository):
     
@@ -306,7 +317,7 @@ class InvoicePostgresRepository(BasePostgresRepository, IInvoicePostgresReposito
                 child_error=e
             )
 
-    async def get_invoice_items_for_multiple_invoices_by_invoice_id(self, user_id: UUID, invoices_id: tuple[UUID], in_trash: bool) -> tuple[InvoiceItem] | tuple:
+    async def get_invoice_items_for_multiple_invoices_by_invoice_id(self, user_id: UUID, invoices_id: tuple[UUID, ...], in_trash: bool) -> tuple[InvoiceItem] | tuple:
         try:
             stmt = (
                 select(InvoiceItem).
@@ -438,28 +449,8 @@ class InvoicePostgresRepository(BasePostgresRepository, IInvoicePostgresReposito
                 argument={'user_id': user_id, 'invoice_id': invoice_id, 'invoice_file_status': invoice_file_status},
                 child_error=e
             )
-    
-    async def remove_invoice_file(self, user_id: str, invoice_id: str) -> None:
-        try:
-            stmt = (
-                update(Invoice).
-                where(
-                    Invoice.id == invoice_id,
-                    Invoice.user_id == user_id
-                    ).
-                values(
-                    invoice_pdf=None
-                ).
-                returning(Invoice)
-            )
-            removed_invoice_file = await self.session.scalar(stmt)
-            if removed_invoice_file is None:
-                raise PostgreSQLNotFoundError("Invoice with provided id not found in database.")
-        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"InvoicePostgresRepository.remove_invoice_file() Error: {e}")
-            raise PostgreSQLDatabaseError("Error related to database occured.")
-        
-    async def count_invoices_related_to_user_business_entity(self, user_id: str, user_business_entity_id: str) -> int:
+
+    async def count_invoices_related_to_user_business_entity(self, user_id: UUID, user_business_entity_id: UUID) -> int:
         try:
             stmt = (
                 select(func.count()).
@@ -471,11 +462,15 @@ class InvoicePostgresRepository(BasePostgresRepository, IInvoicePostgresReposito
             )
             number_of_invoices: int = await self.session.scalar(stmt)
             return number_of_invoices
-        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"InvoicePostgresRepository.count_invoices_related_to_user_business_entity() Error: {e}")
-            raise PostgreSQLDatabaseError("Error related to database occured.")
+        except Exception as e:
+            raise DatabaseError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message=f"Unexpected error occurred while counting invoices related to user business entity with id: {user_business_entity_id} in sql database.",
+                argument={'user_id': user_id, 'user_business_entity_id': user_business_entity_id,},
+                child_error=e
+            )
         
-    async def count_invoices_related_to_external_business_entity(self, user_id: str, external_business_entity_id: str) -> int:
+    async def count_invoices_related_to_external_business_entity(self, user_id: UUID, external_business_entity_id: UUID) -> int:
         try:
             stmt = (
                 select(func.count()).
@@ -487,6 +482,10 @@ class InvoicePostgresRepository(BasePostgresRepository, IInvoicePostgresReposito
             )
             number_of_invoices: int = await self.session.scalar(stmt)
             return number_of_invoices
-        except (DataError, DatabaseError, InterfaceError, StatementError, OperationalError, ProgrammingError) as e:
-            logger.error(f"InvoicePostgresRepository.count_invoices_related_to_external_business_entity() Error: {e}")
-            raise PostgreSQLDatabaseError("Error related to database occured.")
+        except Exception as e:
+            raise DatabaseError(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message=f"Unexpected error occurred while counting invoices related to external business entity with id: {external_business_entity_id} in sql database.",
+                argument={'user_id': user_id, 'external_business_entity_id': external_business_entity_id, },
+                child_error=e
+            )

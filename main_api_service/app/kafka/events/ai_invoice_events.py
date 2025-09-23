@@ -15,13 +15,13 @@ class IAIInvoiceEvents(Protocol):
     async def extract_invoice_data(self, file_location: str, user_business_entities_nip: str) -> None:
         ...
 
-async def new_ai_invoice_events() -> IAIInvoiceEvents:
+def new_ai_invoice_events() -> IAIInvoiceEvents:
     try:
         return AIInvoiceEvents()
     except Exception as e:
         pass
 
-class AIInvoiceEvents(KafkaProducerBase):
+class AIInvoiceEvents(KafkaProducerBase, IAIInvoiceEvents):
 
     async def extract_invoice_data(self, file_location: str, user_business_entities_nip: str) -> None:
         try:

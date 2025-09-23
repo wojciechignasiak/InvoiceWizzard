@@ -20,3 +20,4 @@ img2pdf>=0.5.1,<0.5.2
 imageio>=2.36.1,<2.37.0
 python-multipart>=0.0.20,<0.0.21
 argon2-cffi>=23.1.0,<23.2.0
+aiofiles==24.1.0

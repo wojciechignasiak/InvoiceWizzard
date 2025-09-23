@@ -18,10 +18,9 @@ from main_api_service.app.models.user_model import (
     )
 
 #3rd party libraries
-from fastapi.security import HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import JSONResponse, Response
-from fastapi.security import HTTPBearer
 
 #1st party libraries
 import datetime
@@ -90,7 +89,7 @@ async def login(
     login_service: ILoginService = Depends(new_login_service)
     ):
     try:
-        expires: datetime = await login_service.set_jwt_expiration_time(login.remember_me)
+        expires: datetime.datetime = login_service.set_jwt_expiration_time(login.remember_me)
         jwt_token: str = await login_service.login(user_credentials)
         response.set_cookie(
             jwt_token,

@@ -20,10 +20,10 @@ class ILoginService(Protocol):
         ...
 
     @staticmethod
-    async def set_jwt_expiration_time(remember_me: bool) -> datetime.datetime:
+    def set_jwt_expiration_time(remember_me: bool) -> datetime.datetime:
         ...
 
-async def new_login_service() -> ILoginService:
+def new_login_service() -> ILoginService:
     try:
         return LoginService()
     except Exception as e:
@@ -49,8 +49,8 @@ class LoginService(ILoginService):
     async def login(self, login_model: LogInModel) -> str:
         try:
             user: User = await self._user_service.get_user_by_email_address(login_model.email)
-            await self._auth_service.verify_password(user.salt, login_model.password, user.password)
-            jwt_expiration_time: datetime.datetime = await self.set_jwt_expiration_time(login_model.remember_me)
+            self._auth_service.verify_password(user.salt, login_model.password, user.password)
+            jwt_expiration_time: datetime.datetime = self.set_jwt_expiration_time(login_model.remember_me)
             jwt_token: str = await self._auth_service.create_and_save_jwt_token(user.id, user.email, jwt_expiration_time, user.salt)
             await self._user_service.update_last_login_date(user.id)
             return jwt_token
@@ -84,7 +84,7 @@ class LoginService(ILoginService):
             )
 
     @staticmethod
-    async def set_jwt_expiration_time(remember_me: bool) -> datetime.datetime:
+    def set_jwt_expiration_time(remember_me: bool) -> datetime.datetime:
         try:
             if remember_me:
                 return datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=24*14)

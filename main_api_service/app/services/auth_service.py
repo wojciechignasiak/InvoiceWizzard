@@ -37,33 +37,33 @@ class IAuthService(Protocol):
         ...
 
     @staticmethod
-    async def salt_generator() -> str:
+    def salt_generator() -> str:
         ...
 
     @staticmethod
-    async def hash_password(salt: str, password: str) -> str:
+    def hash_password(salt: str, password: str) -> str:
         ...
 
     @staticmethod
-    async def verify_password(salt: str, password: str, password_hash: str) -> None:
+    def verify_password(salt: str, password: str, password_hash: str) -> None:
         ...
 
     @staticmethod
-    async def jwt_encoder(jwt_data: JWTDataModel) -> str:
+    def jwt_encoder(jwt_data: JWTDataModel) -> str:
         ...
 
     @staticmethod
-    async def validate_password(password: str, repeated_password: str) -> bool:
+    def validate_password(password: str, repeated_password: str) -> bool:
         ...
 
     @staticmethod
-    async def validate_email_address(email_address: str, repeated_email_address: str) -> bool:
+    def validate_email_address(email_address: str, repeated_email_address: str) -> bool:
         ...
 
     async def create_and_save_jwt_token(self, user_id: UUID, email_address: str, jwt_expiration_time: datetime.datetime, salt: str) -> str:
         ...
 
-async def new_auth_service() -> IAuthService:
+def new_auth_service() -> IAuthService:
     try:
         return AuthService()
     except Exception as e:
@@ -129,7 +129,7 @@ class AuthService(IAuthService):
             )
 
     @staticmethod
-    async def _convert_jwt_payload_to_jwt_payload_model(jwt_payload: bytes) -> JWTPayloadModel:
+    def _convert_jwt_payload_to_jwt_payload_model(jwt_payload: bytes) -> JWTPayloadModel:
         try:
             return JWTPayloadModel.model_validate_json(jwt_payload)
         except Exception as e:
@@ -141,7 +141,7 @@ class AuthService(IAuthService):
             )
 
     @staticmethod
-    async def salt_generator() -> str:
+    def salt_generator() -> str:
         try:
             return str(os.urandom(16))
         except Exception as e:
@@ -153,7 +153,7 @@ class AuthService(IAuthService):
             )
 
     @staticmethod
-    async def hash_password(salt: str, password: str) -> str:
+    def hash_password(salt: str, password: str) -> str:
         try:
             ph = argon2.PasswordHasher()
             hashed_password = ph.hash(password + salt)
@@ -167,7 +167,7 @@ class AuthService(IAuthService):
             )
 
     @staticmethod
-    async def verify_password(salt: str, password: str, password_hash: str) -> None:
+    def verify_password(salt: str, password: str, password_hash: str) -> None:
         try:
             ph = argon2.PasswordHasher()
             is_the_same: bool = ph.verify(password_hash, password+salt)
@@ -188,7 +188,7 @@ class AuthService(IAuthService):
             )
 
     @staticmethod
-    async def jwt_encoder(jwt_data: JWTDataModel) -> str:
+    def jwt_encoder(jwt_data: JWTDataModel) -> str:
         try:
             jwt_token = jwt.encode(
                 jwt_data.payload.model_dump(),
@@ -205,7 +205,7 @@ class AuthService(IAuthService):
             )
 
     @staticmethod
-    async def validate_password(password: str, repeated_password: str) -> bool:
+    def validate_password(password: str, repeated_password: str) -> bool:
         try:
             if password != repeated_password:
                 raise LogicError(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, message="Provided passwords are not the same")
@@ -236,7 +236,7 @@ class AuthService(IAuthService):
             )
 
     @staticmethod
-    async def validate_email_address(email_address: str, repeated_email_address: str) -> bool:
+    def validate_email_address(email_address: str, repeated_email_address: str) -> bool:
         try:
             email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
             if not re.match(email_regex, email_address):
@@ -262,7 +262,7 @@ class AuthService(IAuthService):
     async def create_and_save_jwt_token(self, user_id: UUID, email_address: str, jwt_expiration_time: datetime.datetime, salt: str) -> str:
         try:
             jwt_payload: JWTPayloadModel = JWTPayloadModel(
-                id=user_id, 
+                user_id=user_id,
                 email=email_address, 
                 exp=jwt_expiration_time
                 )
@@ -270,7 +270,7 @@ class AuthService(IAuthService):
                 secret=salt, 
                 payload=jwt_payload
                 )
-            jwt_token: str = await self.jwt_encoder(jwt_data)
+            jwt_token: str = self.jwt_encoder(jwt_data)
             await self._user_redis_repository.save_jwt_token(jwt_token, jwt_payload)
             return jwt_token
         except ServiceError as e:

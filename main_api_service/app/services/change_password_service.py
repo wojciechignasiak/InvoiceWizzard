@@ -28,7 +28,7 @@ class IChangePasswordService(Protocol):
     async def reset_password(self, reset_password: ResetUserPasswordModel) -> None:
         ...
 
-async def new_change_password_service() -> IChangePasswordService:
+def new_change_password_service() -> IChangePasswordService:
     try:
         return ChangePasswordService()
     except Exception as e:
@@ -55,10 +55,10 @@ class ChangePasswordService(IChangePasswordService):
         try:
             jwt_payload: JWTPayloadModel = await self._auth_service.get_jwt(token)
             user: UserModel = await self._user_service.get_user_by_id(jwt_payload.id)
-            await self._auth_service.verify_password(user.salt, new_password.current_password, user.password)
-            await self._auth_service.validate_password(new_password.new_password, new_password.new_repeated_password)
-            salt: str = await self._auth_service.salt_generator()
-            hashed_new_password: str = await self._auth_service.hash_password(salt, new_password.new_password)
+            self._auth_service.verify_password(user.salt, new_password.current_password, user.password)
+            self._auth_service.validate_password(new_password.new_password, new_password.new_repeated_password)
+            salt: str = self._auth_service.salt_generator()
+            hashed_new_password: str = self._auth_service.hash_password(salt, new_password.new_password)
             new_password_data: ConfirmedUserPasswordChangeModel = ConfirmedUserPasswordChangeModel(
                 id=user.id,
                 new_password=hashed_new_password,
@@ -90,9 +90,9 @@ class ChangePasswordService(IChangePasswordService):
     async def reset_password(self, reset_password: ResetUserPasswordModel) -> None:
         try:
             user: User = await self._user_service.get_user_by_email_address(reset_password.email)
-            await self._auth_service.validate_password(reset_password.new_password, reset_password.new_repeated_password)
-            salt: str = await self._auth_service.salt_generator()
-            hashed_new_password: str = await self._auth_service.hash_password(salt, reset_password.new_password)
+            self._auth_service.validate_password(reset_password.new_password, reset_password.new_repeated_password)
+            salt: str = self._auth_service.salt_generator()
+            hashed_new_password: str = self._auth_service.hash_password(salt, reset_password.new_password)
             new_password_data: ConfirmedUserPasswordChangeModel = ConfirmedUserPasswordChangeModel(
                 id=user.id,
                 new_password=hashed_new_password,

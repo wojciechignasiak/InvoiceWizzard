@@ -33,6 +33,19 @@ class IExternalBusinessEntityService(Protocol):
     async def get_multiple_external_business_entities_by_ids(self, user_id: UUID, invoices_ids: tuple[UUID, ...]) -> tuple[ExternalBusinessEntityModel]:
         ...
 
+def new_external_business_entity_service() -> IExternalBusinessEntityService:
+    try:
+        return ExternalBusinessEntityService()
+    except Exception as e:
+        raise ServiceError(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message="Unexpected error occurred in while creating external business entity service",
+            argument=None,
+            child_error=e,
+        )
+
+class ExternalBusinessEntityService(IExternalBusinessEntityService):
+    ...
 # async def new_invoice_service() -> IInvoiceService:
 #     try:
 #         return InvoiceService()

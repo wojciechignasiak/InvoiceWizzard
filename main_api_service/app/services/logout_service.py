@@ -19,7 +19,7 @@ class ILogoutService(Protocol):
     async def logout_from_all_devices(self, token: HTTPAuthorizationCredentials) -> None:
         ...
 
-async def new_logout_service() -> ILogoutService:
+def new_logout_service() -> ILogoutService:
     try:
         return LogoutService()
     except Exception as e:
