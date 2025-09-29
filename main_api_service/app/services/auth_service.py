@@ -63,9 +63,13 @@ class IAuthService(Protocol):
     async def create_and_save_jwt_token(self, user_id: UUID, email_address: str, jwt_expiration_time: datetime.datetime, salt: str) -> str:
         ...
 
-def new_auth_service() -> IAuthService:
+def new_auth_service(
+    user_redis_repository: IUserRedisRepository = Depends(new_user_redis_repository)
+) -> IAuthService:
     try:
-        return AuthService()
+        return AuthService(
+            user_redis_repository
+        )
     except Exception as e:
         raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -79,8 +83,8 @@ class AuthService(IAuthService):
     __slots__ = ('user_redis_repository',)
 
     def __init__(
-            self, 
-            user_redis_repository: IUserRedisRepository = Depends(new_user_redis_repository)
+            self,
+            user_redis_repository: IUserRedisRepository
             ):
         self._user_redis_repository: IUserRedisRepository = user_redis_repository
 

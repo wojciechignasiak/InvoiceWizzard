@@ -83,7 +83,7 @@ class IInvoicePostgresRepository(Protocol):
                                                                  external_business_entity_id: UUID) -> int:
         ...
 
-async def new_invoice_postgres_repository() -> IInvoicePostgresRepository:
+def new_invoice_postgres_repository() -> IInvoicePostgresRepository:
     try:
         return InvoicePostgresRepository()
     except Exception as e:

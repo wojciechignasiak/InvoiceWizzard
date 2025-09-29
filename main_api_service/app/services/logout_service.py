@@ -19,9 +19,13 @@ class ILogoutService(Protocol):
     async def logout_from_all_devices(self, token: HTTPAuthorizationCredentials) -> None:
         ...
 
-def new_logout_service() -> ILogoutService:
+def new_logout_service(
+    auth_service: IAuthService = Depends(new_auth_service)
+) -> ILogoutService:
     try:
-        return LogoutService()
+        return LogoutService(
+            auth_service,
+        )
     except Exception as e:
         raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -36,7 +40,7 @@ class LogoutService(ILogoutService):
 
     def __init__(
             self, 
-            auth_service: IAuthService = Depends(new_auth_service),
+            auth_service: IAuthService,
             ):
         self._auth_service: IAuthService = auth_service
 

@@ -41,9 +41,11 @@ class IUserPostgresRepository(Protocol):
     async def update_user_password(self, new_password: ConfirmedUserPasswordChangeModel) -> None:
         ...
 
-async def new_user_postgres_repository() -> IUserPostgresRepository:
+async def new_user_postgres_repository(session: AsyncSession = Depends(get_session)) -> IUserPostgresRepository:
     try:
-        return UserPostgresRepository()
+        return UserPostgresRepository(
+            session
+        )
     except Exception as e:
         raise DatabaseError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

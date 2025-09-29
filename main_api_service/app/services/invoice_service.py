@@ -1,5 +1,5 @@
 #internal modules
-from main_api_service.app.storage.file_format_converter import IFileFormatConverter
+from app.file_format_converter.file_format_converter import IFileFormatConverter
 from main_api_service.app.models.user_business_entity_model import UserBusinessEntityModel
 from main_api_service.app.models.external_business_entity_model import ExternalBusinessEntityModel
 from main_api_service.app.schema.schema import Invoice, InvoiceItem
@@ -89,9 +89,27 @@ class IInvoiceService(Protocol):
     async def generate_invoice_file(self, user_id: uuid.UUID, invoice_id: uuid.UUID) -> None:
         ...
 
-def new_invoice_service() -> IInvoiceService:
+def new_invoice_service(
+        invoice_postgres_repository: IInvoicePostgresRepository = Depends(new_invoice_postgres_repository),
+        invoice_redis_repository: IInvoiceRedisRepository = Depends(new_invoice_redis_repository),
+        invoice_events: IInvoiceEvents = Depends(new_invoice_events),
+        user_business_entity_service: IUserBusinessEntityService = None,
+        external_business_entity_service: IExternalBusinessEntityService = None,
+        io_storage: IIOStorage = Depends(get_io_storage),
+        file_format_converter: IFileFormatConverter = None,
+        file_builder: IFileBuilder = None,
+) -> IInvoiceService:
     try:
-        return InvoiceService()
+        return InvoiceService(
+            invoice_postgres_repository,
+            invoice_redis_repository,
+            invoice_events,
+            user_business_entity_service,
+            external_business_entity_service,
+            io_storage,
+            file_format_converter,
+            file_builder,
+        )
     except Exception as e:
         raise ServiceError(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -115,14 +133,14 @@ class InvoiceService(IInvoiceService):
 
     def __init__(
         self,
-        invoice_postgres_repository: IInvoicePostgresRepository = Depends(new_invoice_postgres_repository),
-        invoice_redis_repository: IInvoiceRedisRepository = Depends(new_invoice_redis_repository),
-        invoice_events: IInvoiceEvents = Depends(new_invoice_events),
-        user_business_entity_service: IUserBusinessEntityService = None,
-        external_business_entity_service: IExternalBusinessEntityService = None,
-        io_storage: IIOStorage = Depends(get_io_storage),
-        file_format_converter: IFileFormatConverter = None,
-        file_builder: IFileBuilder = None,
+        invoice_postgres_repository: IInvoicePostgresRepository,
+        invoice_redis_repository: IInvoiceRedisRepository,
+        invoice_events: IInvoiceEvents,
+        user_business_entity_service: IUserBusinessEntityService,
+        external_business_entity_service: IExternalBusinessEntityService,
+        io_storage: IIOStorage,
+        file_format_converter: IFileFormatConverter,
+        file_builder: IFileBuilder,
     ):
         self._invoice_postgres_repository: IInvoicePostgresRepository = invoice_postgres_repository
         self._invoice_redis_repository: IInvoiceRedisRepository = invoice_redis_repository
@@ -183,7 +201,7 @@ class InvoiceService(IInvoiceService):
                 user_id, invoice.external_business_entity_id)
             invoice_items: tuple[InvoiceItem] | tuple = await self._invoice_postgres_repository.get_invoice_items_by_invoice_id(user_id, invoice_id, in_trash=False)
             if invoice_items:
-                invoice_items_models: list[InvoiceItemModel] = [await self._convert_invoice_item_schema_to_invoice_item_model(invoice_item) for invoice_item in invoice_items if invoice_item.in_trash == False]
+                invoice_items_models: list[InvoiceItemModel] = [self._convert_invoice_item_schema_to_invoice_item_model(invoice_item) for invoice_item in invoice_items if invoice_item.in_trash == False]
                 invoice_gross_value: float = self._calculate_invoice_gross_value(invoice_items_models)
                 invoice_net_value: float = self._calculate_invoice_net_value(invoice_items_models)
                 invoice_model: InvoiceModel = self._convert_invoice_schema_to_invoice_model(invoice, user_business_entity, external_business_entity, invoice_items_models, invoice_gross_value, invoice_net_value)
@@ -266,7 +284,7 @@ class InvoiceService(IInvoiceService):
             external_business_entities: tuple[ExternalBusinessEntityModel] = await self._external_business_entity_service.get_multiple_external_business_entities_by_ids(user_id, tuple(invoice.external_business_entity_id for invoice in invoices))
 
             invoices_items_models: list[InvoiceItemModel] = [
-                await self._convert_invoice_item_schema_to_invoice_item_model(invoice_item) for invoice_item in
+                self._convert_invoice_item_schema_to_invoice_item_model(invoice_item) for invoice_item in
                 invoices_items if invoice_item.in_trash == False]
 
             invoice_models: list[InvoiceModel] = []

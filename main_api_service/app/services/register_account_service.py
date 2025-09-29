@@ -32,9 +32,15 @@ class IRegisterAccountService(Protocol):
     async def _check_is_email_already_registered(self, email_address: str) -> None:
         ...
 
-def new_register_account_service() -> IRegisterAccountService:
+def new_register_account_service(
+    user_service: IUserService = Depends(new_user_service),
+    auth_service: IAuthService = Depends(new_auth_service),
+) -> IRegisterAccountService:
     try:
-        return RegisterAccountService()
+        return RegisterAccountService(
+            user_service,
+            auth_service
+        )
     except Exception as e:
         raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -49,8 +55,8 @@ class RegisterAccountService(IRegisterAccountService):
 
     def __init__(
             self, 
-            user_service: IUserService = Depends(new_user_service),
-            auth_service: IAuthService = Depends(new_auth_service),
+            user_service: IUserService,
+            auth_service: IAuthService,
             ):
         self._user_service: IUserService = user_service
         self._auth_service: IAuthService = auth_service

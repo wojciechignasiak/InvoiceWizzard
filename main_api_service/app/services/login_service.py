@@ -23,9 +23,15 @@ class ILoginService(Protocol):
     def set_jwt_expiration_time(remember_me: bool) -> datetime.datetime:
         ...
 
-def new_login_service() -> ILoginService:
+def new_login_service(
+    user_service: IUserService = Depends(UserService),
+    auth_service: IAuthService = Depends(AuthService),
+) -> ILoginService:
     try:
-        return LoginService()
+        return LoginService(
+            user_service,
+            auth_service,
+        )
     except Exception as e:
         raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -40,8 +46,8 @@ class LoginService(ILoginService):
 
     def __init__(
             self, 
-            user_service: IUserService = Depends(UserService),
-            auth_service: IAuthService = Depends(AuthService),
+            user_service: IUserService,
+            auth_service: IAuthService,
             ):
         self._user_service: IUserService = user_service
         self._auth_service: IAuthService = auth_service

@@ -28,9 +28,15 @@ class IChangePasswordService(Protocol):
     async def reset_password(self, reset_password: ResetUserPasswordModel) -> None:
         ...
 
-def new_change_password_service() -> IChangePasswordService:
+def new_change_password_service(
+    user_service: IUserService = Depends(new_user_service),
+    auth_service: IAuthService = Depends(new_auth_service)
+) -> IChangePasswordService:
     try:
-        return ChangePasswordService()
+        return ChangePasswordService(
+            user_service,
+            auth_service
+        )
     except Exception as e:
         raise ServiceError(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -45,8 +51,8 @@ class ChangePasswordService(IChangePasswordService):
 
     def __init__(
             self, 
-            user_service: IUserService = Depends(new_user_service),
-            auth_service: IAuthService = Depends(new_auth_service),
+            user_service: IUserService,
+            auth_service: IAuthService,
             ):
         self._user_service: IUserService = user_service
         self._auth_service: IAuthService = auth_service

@@ -68,9 +68,17 @@ class IUserService(Protocol):
     async def confirm_password_change(self, key_id: uuid.UUID) -> None:
         ...
 
-def new_user_service() -> IUserService:
+def new_user_service(
+    user_postgres_repository: IUserPostgresRepository = Depends(new_user_postgres_repository),
+    user_redis_repository: IUserRedisRepository = Depends(new_user_redis_repository),
+    user_events: IUserEvents = Depends(new_user_events)
+) -> IUserService:
     try:
-        return UserService()
+        return UserService(
+            user_postgres_repository=user_postgres_repository,
+            user_redis_repository=user_redis_repository,
+            user_events=user_events,
+        )
     except Exception as e:
         raise ServiceError(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -85,9 +93,9 @@ class UserService(IUserService):
 
     def __init__(
             self, 
-            user_postgres_repository: IUserPostgresRepository = Depends(new_user_postgres_repository),
-            user_redis_repository: IUserRedisRepository = Depends(new_user_redis_repository),
-            user_events: IUserEvents = Depends(new_user_events)
+            user_postgres_repository: IUserPostgresRepository,
+            user_redis_repository: IUserRedisRepository,
+            user_events: IUserEvents
             ):
         self._user_postgres_repository: IUserPostgresRepository = user_postgres_repository
         self._user_redis_repository: IUserRedisRepository = user_redis_repository

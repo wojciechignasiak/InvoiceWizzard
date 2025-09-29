@@ -5,5 +5,5 @@ from fastapi import Depends
 
 class BasePostgresRepository:
     __slots__ = 'session'
-    def __init__(self, session: AsyncSession = Depends(get_session)) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         self.session: AsyncSession = session
